@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+.prose img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* --- NEWS PORTAL TYPOGRAPHY OPTIMIZATION --- */
+
+/* Menangani Baris Kosong (Enter) yang sering hilang di Tailwind */
+.ql-editor p {
+  margin-bottom: 1.75rem !important; /* Jarak antar paragraf yang lega */
+  line-height: 1.85;
+  color: #222222;
+}
+
+/* Memastikan baris kosong murni (<p><br></p>) tetap memiliki tinggi */
+.ql-editor p br {
+  content: "";
+  display: block;
+  margin-bottom: 1rem;
+}
+
+/* Style untuk kutipan (Blockquote) ala Kompas */
+.ql-editor blockquote {
+  border-left: 4px solid #2563eb;
+  padding-left: 20px;
+  font-style: italic;
+  font-size: 1.2rem;
+  color: #4b5563;
+  margin: 30px 0;
+}
+
+/* Menangani perataan teks dari Quill */
+.ql-align-justify { text-align: justify; }
+.ql-align-center { text-align: center; }
+.ql-align-right { text-align: right; }
+
+/* Link di dalam artikel */
+.ql-editor a {
+  color: #2563eb;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+/* Styling untuk card yang batal */
+.status-batal {
+  border-left: 5px solid #ff4d4d; /* Merah */
+  background-color: #fff5f5;
+  text-decoration: none;
+}
+
+.badge-batal {
+  display: inline-block;
+  padding: 4px 8px;
+  background-color: #ff4d4d;
+  color: white;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 12px;
+  margin-top: 10px;
+}
+
+.btn-cancel {
+  background-color: #f44336;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.btn-cancel:hover {
+  background-color: #d32f2f;
+}

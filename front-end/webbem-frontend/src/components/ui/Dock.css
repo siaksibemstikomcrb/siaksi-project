@@ -1,0 +1,68 @@
+/* src/components/ui/Dock.css */
+
+/* Container Utama */
+.dock-outer {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  z-index: 100; /* Pastikan di atas elemen lain */
+  pointer-events: none; /* Agar area kosong tidak menghalangi klik */
+}
+
+.dock-panel {
+  pointer-events: auto; /* Aktifkan klik pada panel */
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 1.5rem;
+  
+  /* Glassmorphism Effect */
+  background-color: rgba(2, 6, 23, 0.85); /* Sesuai tema dark blue kamu */
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+.dock-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%; /* Lingkaran */
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8; /* Slate-400 */
+  transition: color 0.2s;
+  cursor: pointer;
+}
+
+.dock-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.dock-icon {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dock-label {
+  position: absolute;
+  top: -2.5rem;
+  left: 50%;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.5rem;
+  background-color: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+}

@@ -2,7 +2,7 @@ const db = require('../config/db');
 
 // --- HELPER: HAVERSINE FORMULA (Hitung Jarak GPS) ---
 const getDistanceInMeters = (lat1, lon1, lat2, lon2) => {
-    const R = 6371e3; // Radius bumi dalam meter
+    const R = 6371e3; 
     const toRad = (val) => val * Math.PI / 180;
     
     const dLat = toRad(lat2 - lat1);
@@ -16,16 +16,22 @@ const getDistanceInMeters = (lat1, lon1, lat2, lon2) => {
     return R * c; 
 };
 
-// --- HELPER: TIMEZONE SAFE DATE (YYYY-MM-DD) ---
+// --- HELPER 1: TIMEZONE SAFE DATE (YYYY-MM-DD) ---
 const toLocalDateString = (date) => {
-    const d = new Date(date);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return new Date(date).toLocaleDateString('en-CA', { 
+        timeZone: 'Asia/Jakarta' 
+    });
 };
 
-// --- 1. SUBMIT ATTENDANCE (Melakukan Absensi) ---
+// --- HELPER 2: TIMEZONE SAFE TIME (HH:MM:SS) ---
+const getJakartaTime = () => {
+    return new Date().toLocaleTimeString('en-GB', { 
+        hour12: false, 
+        timeZone: 'Asia/Jakarta' 
+    });
+};
+
+// --- 1. SUBMIT ATTENDANCE (FIXED TIMEZONE) ---
 const submitAttendance = async (req, res) => {
     const { schedule_id, reason, latitude, longitude } = req.body;
     const user_id = req.user.id; 
@@ -44,10 +50,10 @@ const submitAttendance = async (req, res) => {
         const schedule = scheduleRes.rows[0];
         const now = new Date();
 
-        // Menggunakan Local Time untuk perbandingan agar tidak terjebak UTC
-        const currentDateStr = toLocalDateString(now);
-        const eventDateStr = toLocalDateString(schedule.event_date);
-        const currentTime = now.toLocaleTimeString('en-GB', { hour12: false }); // HH:MM:SS
+        // === PERBAIKAN ZONA WAKTU DI SINI ===
+        const currentDateStr = toLocalDateString(now); // Contoh: "2026-01-22" (WIB)
+        const eventDateStr = toLocalDateString(schedule.event_date); // Mengambil tanggal event (WIB)
+        const currentTime = getJakartaTime(); // Contoh: "14:50:00" (WIB)
 
         const isIzin = reason && reason.length > 3;
         let status = 'Hadir';
@@ -55,7 +61,7 @@ const submitAttendance = async (req, res) => {
 
         if (isIzin) {
             status = 'Izin';
-            // Validasi Izin: Tidak boleh untuk masa lalu
+            // Validasi Izin: Tidak boleh untuk masa lalu (bandingkan string tanggal)
             if (currentDateStr > eventDateStr) {
                  return res.status(400).json({ msg: 'Kegiatan sudah selesai, tidak bisa mengajukan izin.' });
             }
@@ -65,13 +71,13 @@ const submitAttendance = async (req, res) => {
             // 1. Validasi Tanggal (Hari H)
             if (currentDateStr !== eventDateStr) {
                 return res.status(400).json({ 
-                    msg: `Gagal. Kegiatan dijadwalkan tanggal ${new Date(schedule.event_date).toLocaleDateString('id-ID')}, sedangkan hari ini tanggal ${now.toLocaleDateString('id-ID')}` 
+                    msg: `Gagal. Kegiatan dijadwalkan tanggal ${new Date(schedule.event_date).toLocaleDateString('id-ID', {timeZone: 'Asia/Jakarta'})}, sedangkan hari ini tanggal ${new Date().toLocaleDateString('id-ID', {timeZone: 'Asia/Jakarta'})}` 
                 });
             }
 
             // 2. Validasi Waktu Buka
             if (currentTime < schedule.attendance_open_time) {
-                return res.status(400).json({ msg: `Presensi belum dibuka. Buka jam: ${schedule.attendance_open_time}` });
+                return res.status(400).json({ msg: `Presensi belum dibuka. Buka jam: ${schedule.attendance_open_time} WIB` });
             }
 
             // 3. Validasi Lokasi (GPS)
@@ -115,7 +121,7 @@ const getMemberHistory = async (req, res) => {
     try {
         const targetUserId = req.params.userId || req.user.id; 
 
-        // Cek User (Ganti name sesuai kolom CSV)
+        // Cek User
         const userRes = await db.query('SELECT id, name, nia, ukm_id FROM Users WHERE id = $1', [targetUserId]);
         if (userRes.rows.length === 0) {
             return res.status(404).json({ msg: 'User tidak ditemukan' });

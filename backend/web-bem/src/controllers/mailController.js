@@ -12,14 +12,14 @@ const postToDiscord = async (mailData) => {
         );
 
         if (!channel) {
-            console.log("⚠️ Discord Channel 'pengumuman' tidak ditemukan. Skip posting.");
+            console.log("?? Discord Channel 'pengumuman' tidak ditemukan. Skip posting.");
             return;
         }
 
         // Buat Tampilan Pesan (Embed)
         const embed = new EmbedBuilder()
             .setColor(0x0099FF) // Warna Biru
-            .setTitle(`📢 ${mailData.title}`)
+            .setTitle(`?? ${mailData.title}`)
             .setDescription(mailData.description)
             .setFooter({ text: `Dikirim oleh: ${mailData.sender_name || 'Admin UKM'}` })
             .setTimestamp();
@@ -30,10 +30,10 @@ const postToDiscord = async (mailData) => {
         }
 
         await channel.send({ embeds: [embed] });
-        console.log("✅ Berhasil posting ke Discord!");
+        console.log("? Berhasil posting ke Discord!");
 
     } catch (error) {
-        console.error("❌ Gagal posting ke Discord:", error.message);
+        console.error("? Gagal posting ke Discord:", error.message);
     }
 };
 
@@ -94,7 +94,7 @@ const sendMail = async (req, res) => {
             let params = [];
 
             if (targetScope === 'broadcast') {
-                targetUsersQuery = "SELECT id FROM users WHERE role_id = 3"; // Semua Member
+               targetUsersQuery = "SELECT id FROM users"; // Semua Member
             } else {
                 // Target Spesifik UKM
                 const ukmIds = target_ukm_ids.split(',').map(id => parseInt(id));
@@ -189,7 +189,7 @@ const approveBroadcast = async (req, res) => {
             });
 
             // B. Masukkan ke Inbox Semua User (Broadcast)
-            const allUsers = await db.query("SELECT id FROM users WHERE role_id = 3");
+                const allUsers = await db.query("SELECT id FROM users");
             if (allUsers.rows.length > 0) {
                 const values = allUsers.rows.map(u => `(${updatedMail.id}, ${u.id})`).join(',');
                 await db.query(`INSERT INTO mail_recipients (mail_id, user_id) VALUES ${values} ON CONFLICT DO NOTHING`);

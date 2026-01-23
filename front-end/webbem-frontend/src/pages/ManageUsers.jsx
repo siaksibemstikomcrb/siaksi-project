@@ -60,21 +60,37 @@ const ManageUsers = () => {
     };
 
     // --- 3. HANDLE TAMBAH USER ---
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoadingSubmit(true);
-        try {
-            await api.post('/admin/register-user', formData);
-            toast.success(`User ${formData.username} berhasil dibuat!`);
-            setFormData({ name: '', username: '', nia: '', password: '', role_id: '3', ukm_id: '' });
-            setShowAddForm(false);
-            fetchData(); 
-        } catch (err) {
-            toast.error(err.response?.data?.msg || 'Gagal membuat user');
-        } finally {
-            setLoadingSubmit(false);
-        }
-    };
+const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoadingSubmit(true);
+
+    // COPY DATA FORM
+    let payload = { ...formData };
+
+    // PERBAIKAN LOGIC:
+    // Jika Role = Super Admin (1), kita PAKSA ukm_id jadi "9" (ID BEM) atau null (tergantung backend)
+    // Supaya tidak mengirim string kosong "".
+    if (payload.role_id === '1') {
+        payload.ukm_id = '9'; // ID BEM STIKOM (Sesuaikan jika beda)
+        payload.nia = '-';    // Super Admin biasanya ga butuh NIA
+    }
+
+    try {
+        await api.post('/users', payload); // Pastikan endpoint benar '/users' atau '/admin/register-user'
+        
+        toast.success(`User ${payload.username} berhasil dibuat!`);
+        
+        // Reset Form
+        setFormData({ name: '', username: '', nia: '', password: '', role_id: '3', ukm_id: '' });
+        setShowAddForm(false);
+        fetchData(); 
+    } catch (err) {
+        console.error(err);
+        toast.error(err.response?.data?.msg || 'Gagal membuat user');
+    } finally {
+        setLoadingSubmit(false);
+    }
+};
 
     // --- 4. HANDLE RESET PASSWORD ---
     const openResetModal = (user) => {

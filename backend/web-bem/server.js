@@ -14,6 +14,10 @@ const PORT = process.env.PORT || 5000;
 
 require('./src/config/db');
 
+// 🔥 PENTING: AGAR IP USER TERBACA ASLI (BUKAN IP NGINX/LOCALHOST)
+// Ini solusi utama masalah "Satu ke-blokir, semua ke-logout"
+app.set('trust proxy', 1);
+
 // --- 2. SECURITY HEADER (Helmet) ---
 app.use(helmet());
 
@@ -24,8 +28,8 @@ app.use(cookieParser());
 
 // --- 4. RATE LIMITER (Anti Spam) ---
 const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, 
-    max: 100, 
+    windowMs: 15 * 60 * 1000, // 15 Menit
+    max: 1000, // 🔥 NAIKKAN BATAS (Dari 100 jadi 1000) agar aman saat input data massal
     standardHeaders: true,
     legacyHeaders: false,
     message: {
@@ -67,14 +71,20 @@ app.use('/api/notifications', require('./src/routes/notificationRoutes'));
 app.use('/api/schedules', require('./src/routes/scheduleRoutes'));
 app.use('/api/discord', require('./src/routes/discordRoutes'));
 
-// --- 8. ERROR HANDLER ---
 app.use((err, req, res, next) => {
-    console.error("🔥 ERROR LOG:", err.stack);
+
     const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+    if (process.env.NODE_ENV !== 'production') {
+        console.error("🔥 ERROR STACK:", err.stack);
+    } else {
+        console.error(`🔥 ERROR [${statusCode}]: ${err.message}`);
+    }
+
     res.status(statusCode).json({
         status: 'error',
+        // Logic Anti Bocor ke User
         msg: process.env.NODE_ENV === 'production' 
-            ? 'Terjadi kesalahan pada server.' 
+            ? 'Terjadi kesalahan pada sistem. Silakan hubungi admin.' 
             : err.message
     });
 });
@@ -82,12 +92,12 @@ app.use((err, req, res, next) => {
 // --- 9. START SERVER ---
 app.listen(PORT , async () => {
    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`📡 Socket.io ready on port ${PORT}`);
+   console.log(`📡 Socket.io ready on port ${PORT}`);
 
-    // NYALAKAN BOT DISCORD DISINI
-    try {
+   // NYALAKAN BOT DISCORD DISINI
+   try {
         await discordBot.login(process.env.DISCORD_BOT_TOKEN);
-    } catch (err) {
+   } catch (err) {
         console.error("Gagal login Discord Bot:", err.message);
-    }
+   }
 });

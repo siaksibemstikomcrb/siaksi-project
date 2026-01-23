@@ -159,6 +159,57 @@ const resetUserPassword = async (req, res) => {
     }
 };
 
+const createUser = async (req, res) => {
+    // Gunakan 'let' agar bisa diubah nilainya
+    let { username, name, password, role_id, ukm_id, nia, email } = req.body;
+
+    console.log("📥 [Create User] Data Masuk:", req.body);
+
+    try {
+        // 1. VALIDASI & FIX DATA KOSONG
+        
+        // Fix UKM_ID: Jika kosong/string, set default ke 9 (BEM)
+        // Karena di database ukm_id WAJIB ISI (NOT NULL)
+        let parsedUkmId = parseInt(ukm_id);
+        if (isNaN(parsedUkmId) || parsedUkmId === 0) {
+            console.log("⚠️ UKM ID kosong. Default set ke 9 (BEM).");
+            ukm_id = 9; 
+        } else {
+            ukm_id = parsedUkmId;
+        }
+
+        // Fix ROLE_ID: Pastikan integer
+        let parsedRoleId = parseInt(role_id);
+        if (isNaN(parsedRoleId)) {
+            return res.status(400).json({ msg: "Role Wajib Dipilih!" });
+        }
+        role_id = parsedRoleId;
+
+        // 2. CEK USERNAME
+        const userExist = await db.query('SELECT * FROM users WHERE username = $1', [username]);
+        if (userExist.rows.length > 0) {
+            return res.status(400).json({ msg: 'Username sudah digunakan!' });
+        }
+
+        // 3. HASH PASSWORD
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        // 4. INSERT KE DATABASE
+        const newUser = await db.query(
+            `INSERT INTO users (username, name, password_hash, role_id, ukm_id, nia, email, is_active) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, true) RETURNING *`,
+            [username, name, hashedPassword, role_id, ukm_id, nia, email]
+        );
+
+        res.json({ msg: "User Berhasil Ditambahkan", user: newUser.rows[0] });
+
+    } catch (err) {
+        console.error("🔥 [Gagal Create User]:", err.message);
+        res.status(500).json({ msg: "Gagal membuat user: " + err.message });
+    }
+};
+
 // Eksport SEMUA fungsi (termasuk yang baru)
 module.exports = { 
     getMyProfile, 
@@ -166,5 +217,6 @@ module.exports = {
     changePassword, 
     getUsers, 
     deleteUser,
-    resetUserPassword
+    resetUserPassword,
+    createUser
 };

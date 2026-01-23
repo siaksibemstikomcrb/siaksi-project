@@ -1,8 +1,8 @@
 const jwt = require('jsonwebtoken');
 
-// Middleware Cek Login
+// 1. Auth Middleware (Cek Token Login)
+// Dipakai di semua file route
 const authMiddleware = (req, res, next) => {
-    // CARI TOKEN DI COOKIE (Bukan di Header lagi)
     const token = req.cookies.token;
 
     if (!token) {
@@ -18,15 +18,44 @@ const authMiddleware = (req, res, next) => {
     }
 };
 
-// Middleware Cek Role (Admin/Super Admin)
+// 2. Admin Middleware (Versi Simpel)
+// Dipakai di: userRoutes.js (Create User)
+// Logic: Pokoknya kalau dia admin (apapun jenisnya), boleh lewat.
+const adminMiddleware = (req, res, next) => {
+    if (!req.user) {
+        return res.status(401).json({ msg: 'User tidak terautentikasi' });
+    }
+
+    const userRole = req.user.role; 
+
+    // Cek apakah Super Admin atau Admin UKM
+    if (userRole === 'super_admin' || (userRole && userRole.includes('admin'))) {
+        next();
+    } else {
+        return res.status(403).json({ msg: 'Akses Ditolak: Khusus Admin!' });
+    }
+};
+
+// 3. Role Middleware (Versi Spesifik)
+// Dipakai di: adminRoutes.js
+// Logic: Bisa milih role apa aja yang boleh (misal cuma ['super_admin'] aja)
 const role = (roles = []) => {
     return (req, res, next) => {
+        if (!req.user) {
+            return res.status(401).json({ msg: 'User tidak terautentikasi' });
+        }
+        
+        // Kalau role user tidak ada di dalam daftar yang diizinkan -> tolak
         if (!roles.includes(req.user.role)) {
-            return res.status(403).json({ msg: 'Akses ditolak. Anda tidak memiliki izin.' });
+            return res.status(403).json({ msg: `Akses Ditolak. Role ${req.user.role} tidak diizinkan.` });
         }
         next();
     };
 };
 
-// PENTING: Export menggunakan Object
-module.exports = { authMiddleware, role };
+// EXPORT KETIGANYA (Supaya userRoutes & adminRoutes sama-sama senang)
+module.exports = { 
+    authMiddleware, 
+    adminMiddleware, 
+    role 
+};

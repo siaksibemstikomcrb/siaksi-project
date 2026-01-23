@@ -1,5 +1,9 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
+
+// --- API ---
+import api from './api/axios'; // Pastikan path ini benar sesuai struktur foldermu
 
 // Components
 import Layout from './components/Layout';
@@ -56,11 +60,15 @@ import InboxAspiration from './pages/InboxAspiration';
 import LegalPage from './pages/LegalPage';
 // discord
 import ConnectDiscord from './pages/ConnectDiscord';
+// not found
+import NotFound from './pages/NotFound';
 
+// --- KOMPONEN UTAMA ---
 function App() {
   return (
     <Router>
       <Toaster position="top-center" richColors closeButton />
+      <IdleTimer /> {/* Komponen Pemantau Aktivitas */}
 
       <Routes>
         {/* ====================================================
@@ -165,10 +173,68 @@ function App() {
             </ProtectedRoute>
           } 
         />
-        
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
   );
 }
+
+// --- KOMPONEN IDLE TIMER (AUTO LOGOUT) ---
+// ditaruh di dalam Router agar bisa pakai useNavigate()
+const IdleTimer = () => {
+    const navigate = useNavigate();
+    
+    useEffect(() => {
+        // SETTING WAKTU AUTO LOGOUT (Contoh: 30 Menit)
+        const TIMEOUT_MS = 30 * 60 * 1000; 
+        let logoutTimer;
+
+        // Fungsi Logout Otomatis
+        const performLogout = async () => {
+           console.log("⏳ User tidak aktif (Idle), otomatis logout...");
+           try {
+               await api.post('/auth/logout'); // Hit API logout backend
+           } catch (e) {
+               console.error("Gagal logout di server (mungkin token sudah expired)", e);
+           } finally {
+               // Bersihkan Lokal
+               localStorage.clear();
+               // Redirect ke Login
+               navigate('/login');
+           }
+        };
+
+        // Fungsi Reset Timer (Setiap user gerak, timer diulang dari 0)
+        const resetTimer = () => {
+            // Jangan jalankan timer kalau user sedang di halaman login/public tertentu
+            if (window.location.pathname === '/login' || window.location.pathname === '/') return;
+
+            if (logoutTimer) clearTimeout(logoutTimer);
+            logoutTimer = setTimeout(performLogout, TIMEOUT_MS);
+        };
+
+        // Pasang Event Listener (Deteksi Gerakan)
+        window.addEventListener('mousemove', resetTimer);
+        window.addEventListener('keypress', resetTimer);
+        window.addEventListener('click', resetTimer);
+        window.addEventListener('scroll', resetTimer);
+        window.addEventListener('touchstart', resetTimer); // Support Touchscreen
+
+        // Jalankan timer pertama kali
+        resetTimer();
+
+        // Cleanup saat komponen hancur/pindah
+        return () => {
+            if (logoutTimer) clearTimeout(logoutTimer);
+            window.removeEventListener('mousemove', resetTimer);
+            window.removeEventListener('keypress', resetTimer);
+            window.removeEventListener('click', resetTimer);
+            window.removeEventListener('scroll', resetTimer);
+            window.removeEventListener('touchstart', resetTimer);
+        };
+    }, [navigate]);
+
+    return null; // Komponen ini tidak merender tampilan apa-apa (invisible)
+};
 
 export default App;

@@ -198,7 +198,7 @@ const LegalPage = () => {
                     <h4 className="font-bold text-slate-900 text-lg">Masih ada pertanyaan?</h4>
                     <p className="text-slate-500 text-sm mb-1">Hubungi tim Admin BEM STIKOM jika ada poin yang kurang jelas.</p>
                     <a href="mailto:bem@stikompoltek.ac.id" className="text-blue-600 font-bold hover:underline">
-                      bemstikomcrb@stikompoltek.ac.id
+                      bemstikomcrb@gmail.com
                     </a>
                   </div>
                 </div>

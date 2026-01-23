@@ -1,169 +1,267 @@
 import React, { useState, useEffect } from 'react';
+import api from '../api/axios';
 import { 
-  Users, Search, RefreshCw, KeyRound, 
-  AlertTriangle, CheckCircle 
+  PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
+} from 'recharts';
+import { 
+  Users, UserCheck, TrendingUp, 
+  Loader2, RefreshCcw, CalendarClock, ShieldCheck
 } from 'lucide-react';
-import { toast } from 'sonner';
-import api from '../api/axios'; // Pastikan path axios sesuai
 
-const MemberManagement = () => {
-  const [members, setMembers] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [resettingId, setResettingId] = useState(null); // Untuk loading status per tombol
+const MemberAnalytics = () => {
+  const [loading, setLoading] = useState(true);
+  
+  // State Data
+  const [stats, setStats] = useState({
+    totalMembers: 0,
+    totalAdmins: 0,
+    newMembers: 0,
+    ukmName: ''
+  });
 
-  // 1. Fetch Data Anggota
-  const fetchMembers = async () => {
+  const [angkatanData, setAngkatanData] = useState([]); 
+  const [roleData, setRoleData] = useState([]);       
+  const [recentMembers, setRecentMembers] = useState([]); 
+
+  // Warna Grafik
+  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#6366F1'];
+
+  const fetchData = async () => {
     setLoading(true);
     try {
-      // Sesuai route backend: router.get('/members', ...)
+      // 1. Ambil data User dari LocalStorage
+      const userStr = localStorage.getItem('user');
+      const currentUser = userStr ? JSON.parse(userStr) : {};
+      
+      // 2. Fetch data
       const res = await api.get('/ukms/members'); 
-      setMembers(res.data.data);
+      const members = res.data.data || res.data || []; // Tambah fallback array kosong
+
+      // --- LOGIC PENGOLAHAN DATA ---
+
+      // A. Statistik Dasar (SAFE CHECK DITAMBAHKAN DI SINI)
+      const total = members.length;
+      // PENTING: Pakai ?. untuk mencegah error jika role_name null
+      const admins = members.filter(m => m.role_name?.toLowerCase().includes('admin')).length;
+      const regular = total - admins;
+      
+      // B. Grafik Sebaran Angkatan
+      const angkatanGroups = members.reduce((acc, curr) => {
+        const year = curr.nia ? curr.nia.substring(0, 4) : 'Lainnya';
+        const label = !isNaN(year) ? `Angkatan ${year}` : 'Lainnya';
+        
+        acc[label] = (acc[label] || 0) + 1;
+        return acc;
+      }, {});
+
+      const processedAngkatan = Object.keys(angkatanGroups).map(key => ({
+        name: key,
+        jumlah: angkatanGroups[key]
+      })).sort((a, b) => a.name.localeCompare(b.name));
+
+      // C. Grafik Role
+      const processedRole = [
+        { name: 'Anggota Biasa', value: regular },
+        { name: 'Pengurus / Admin', value: admins }
+      ];
+
+      setStats({
+        totalMembers: total,
+        totalAdmins: admins,
+        newMembers: Math.ceil(total * 0.1),
+        ukmName: currentUser.ukm_name || 'Organisasi'
+      });
+      setAngkatanData(processedAngkatan);
+      setRoleData(processedRole);
+      setRecentMembers(members.slice(-5).reverse());
+
     } catch (error) {
-      console.error(error);
-      toast.error("Gagal memuat data anggota.");
+      console.error("Gagal memuat analitik UKM:", error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchMembers();
+    fetchData();
   }, []);
 
-  // 2. Handle Reset Password
-  const handleResetPassword = async (userId, username) => {
-    // Konfirmasi dulu biar gak kepencet
-    const isConfirmed = window.confirm(
-      `Yakin ingin mereset password untuk user "${username}" menjadi '123456'?`
+  if (loading) {
+    return (
+      <div className="flex h-[70vh] items-center justify-center flex-col gap-3">
+        <Loader2 size={40} className="text-blue-600 animate-spin" />
+        <p className="text-gray-500 font-medium">Memuat data organisasi...</p>
+      </div>
     );
-
-    if (!isConfirmed) return;
-
-    setResettingId(userId); // Aktifkan loading di tombol spesifik
-    try {
-      // Sesuai route backend: router.put('/members/:userId/reset-password', ...)
-      const res = await api.put(`/ukms/members/${userId}/reset-password`);
-      
-      // Tampilkan notifikasi sukses
-      toast.success(
-        <div className="flex flex-col gap-1">
-          <span className="font-bold">Berhasil Reset!</span>
-          <span className="text-xs">Password {username} sekarang: 123456</span>
-        </div>, 
-        { duration: 5000 } // Tampil agak lama biar admin bisa baca
-      );
-    } catch (error) {
-      toast.error(error.response?.data?.msg || "Gagal mereset password");
-    } finally {
-      setResettingId(null);
-    }
-  };
-
-  // Filter pencarian
-  const filteredMembers = members.filter(m => 
-    m.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    m.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    m.nia?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto min-h-screen bg-gray-50">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen bg-gray-50 pb-20">
       
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
-          <h1 className="text-2xl font-black text-gray-800 flex items-center gap-2">
-            <Users className="text-blue-600" />
-            Manajemen Anggota
+          <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">
+            Dashboard {stats.ukmName}
           </h1>
-          <p className="text-gray-500 text-sm">
-            Pantau akun anggota dan reset password jika diperlukan.
-          </p>
+          <p className="text-gray-500 mt-1">Monitoring kaderisasi dan data keanggotaan internal.</p>
         </div>
+        <button 
+          onClick={fetchData} 
+          className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 shadow-sm rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition active:scale-95"
+        >
+          <RefreshCcw size={16} /> Update Data
+        </button>
+      </div>
+
+      {/* 1. STATISTIK KARTU */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+        <StatCard 
+          label="Total Anggota" 
+          value={stats.totalMembers} 
+          icon={Users} 
+          color="bg-blue-500" 
+          sub="Terdaftar database"
+        />
+        <StatCard 
+          label="Pengurus (Admin)" 
+          value={stats.totalAdmins} 
+          icon={ShieldCheck} 
+          color="bg-purple-500" 
+          sub="Memiliki akses sistem"
+        />
+        <StatCard 
+          label="Anggota Baru" 
+          value={`+${stats.newMembers}`} 
+          icon={TrendingUp} 
+          color="bg-green-500" 
+          sub="Periode ini"
+        />
+      </div>
+
+      {/* 2. GRAFIK ANALISA */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
         
-        <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-gray-200 shadow-sm w-full md:w-auto">
-          <Search size={18} className="text-gray-400" />
-          <input 
-            type="text"
-            placeholder="Cari NIA / Nama / Username..."
-            className="bg-transparent outline-none text-sm w-full md:w-64"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        {/* CHART A: SEBARAN ANGKATAN */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col">
+          <h3 className="font-bold text-gray-800 text-lg mb-6 flex items-center gap-2">
+            <CalendarClock size={20} className="text-gray-400"/> Regenerasi Angkatan (NIA)
+          </h3>
+          <div className="h-72 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={angkatanData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB"/>
+                <XAxis dataKey="name" tick={{fontSize: 12}} axisLine={false} tickLine={false} dy={10}/>
+                <YAxis tick={{fontSize: 12}} axisLine={false} tickLine={false}/>
+                <Tooltip 
+                  cursor={{fill: '#F3F4F6'}}
+                  contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                />
+                <Bar dataKey="jumlah" fill="#3B82F6" radius={[6, 6, 0, 0]} barSize={50} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="mt-4 text-center text-xs text-gray-400">
+            Dikelompokkan berdasarkan 4 digit awal NIA (Tahun Masuk)
+          </div>
+        </div>
+
+        {/* CHART B: PIE CHART */}
+        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col">
+          <h3 className="font-bold text-gray-800 text-lg mb-6 flex items-center gap-2">
+            <UserCheck size={20} className="text-gray-400"/> Rasio Pengurus
+          </h3>
+          <div className="h-64 w-full flex-1">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={roleData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={70}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {roleData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={{ borderRadius: '12px' }} />
+                <Legend verticalAlign="bottom" height={36}/>
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+      </div>
+
+      {/* 3. TABEL TERBARU (BAGIAN YANG DIPERBAIKI) */}
+      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+          <h3 className="font-bold text-gray-800 text-lg">Anggota Terbaru Bergabung</h3>
+          <span className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">Internal</span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
+              <tr>
+                <th className="px-6 py-4">Nama</th>
+                <th className="px-6 py-4">NIA</th>
+                <th className="px-6 py-4">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {recentMembers.map((member) => (
+                <tr key={member.id} className="hover:bg-gray-50 transition">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <img 
+                        src={member.profile_pic || `https://ui-avatars.com/api/?name=${member.name}&background=random`} 
+                        className="w-8 h-8 rounded-full"
+                      />
+                      <div>
+                        <p className="font-bold text-gray-900 text-sm">{member.name}</p>
+                        <p className="text-xs text-gray-400">@{member.username}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 font-mono text-sm font-bold text-gray-600">
+                    {member.nia || '-'}
+                  </td>
+                  <td className="px-6 py-4">
+                    {/* --- PERBAIKAN DI SINI (SAFE CHECK) --- */}
+                    <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase border ${
+                      member.role_name?.toLowerCase().includes('admin') 
+                        ? 'bg-purple-50 text-purple-600 border-purple-100' 
+                        : 'bg-green-50 text-green-600 border-green-100'
+                    }`}>
+                      {member.role_name || 'Member'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      {/* Tabel Data */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        {loading ? (
-          <div className="p-8 text-center text-gray-500">Memuat data anggota...</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-gray-50 text-gray-600 font-bold uppercase text-xs border-b border-gray-100">
-                <tr>
-                  <th className="px-6 py-4">No</th>
-                  <th className="px-6 py-4">NIA</th>
-                  <th className="px-6 py-4">Username</th>
-                  <th className="px-6 py-4">Nama Lengkap</th>
-                  <th className="px-6 py-4 text-center">Aksi (Keamanan)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {filteredMembers.length > 0 ? (
-                  filteredMembers.map((member, index) => (
-                    <tr key={member.id} className="hover:bg-blue-50/50 transition-colors">
-                      <td className="px-6 py-4 font-medium text-gray-500">{index + 1}</td>
-                      <td className="px-6 py-4">
-                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold font-mono">
-                          {member.nia || '-'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 font-bold text-gray-700">
-                        {member.username}
-                      </td>
-                      <td className="px-6 py-4 text-gray-600">
-                        {member.name || 'Belum diisi'}
-                      </td>
-                      <td className="px-6 py-4 flex justify-center">
-                        <button
-                          onClick={() => handleResetPassword(member.id, member.username)}
-                          disabled={resettingId === member.id}
-                          className="flex items-center gap-2 bg-white border border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm group"
-                          title="Reset Password ke Default (123456)"
-                        >
-                          {resettingId === member.id ? (
-                            <RefreshCw size={14} className="animate-spin" />
-                          ) : (
-                            <KeyRound size={14} className="group-hover:rotate-45 transition-transform" />
-                          )}
-                          {resettingId === member.id ? 'Memproses...' : 'Reset Password'}
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="5" className="px-6 py-8 text-center text-gray-400 italic">
-                      Tidak ada data anggota ditemukan.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      <div className="mt-4 flex items-start gap-2 text-xs text-gray-500 bg-yellow-50 p-3 rounded-lg border border-yellow-100">
-        <AlertTriangle size={16} className="text-yellow-600 shrink-0" />
-        <p>
-          <span className="font-bold text-yellow-700">Catatan Admin:</span> Fitur "Reset Password" akan mengubah password anggota tersebut menjadi <span className="font-mono bg-white px-1 rounded border border-yellow-200 mx-1 font-bold">123456</span>. Pastikan anggota segera mengganti password setelah login.
-        </p>
-      </div>
     </div>
   );
 };
 
-export default MemberManagement;
+// Komponen Kartu (Helper)
+const StatCard = ({ label, value, icon: Icon, color, sub }) => (
+  <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all">
+    <div className="flex items-center justify-between mb-4">
+      <div className={`w-12 h-12 rounded-2xl ${color} flex items-center justify-center shadow-lg shadow-gray-100`}>
+        <Icon size={24} className="text-white" />
+      </div>
+    </div>
+    <div className="text-3xl font-black text-gray-800 tracking-tight">{value}</div>
+    <div className="font-bold text-sm text-gray-500">{label}</div>
+    <div className="text-xs text-gray-400 mt-2 pt-2 border-t border-gray-50">{sub}</div>
+  </div>
+);
+
+export default MemberAnalytics;

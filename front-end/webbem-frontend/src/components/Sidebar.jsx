@@ -37,9 +37,20 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     navigate('/');
   };
 
+  // --- LOGIKA ISACTIVE YANG DIPERBAIKI ---
   const isActive = (path) => {
+      // Jika path sama persis
+      if (location.pathname === path) return true;
+      
+      // Jika path root '/', harus exact match
       if (path === '/') return location.pathname === '/';
-      return location.pathname === path || location.pathname.startsWith(`${path}/`);
+
+      // Khusus untuk sub-menu yang mirip (misal: /admin/posts dan /admin/posts/create)
+      // Kita pastikan kalau lagi di 'create', menu induknya TIDAK aktif.
+      if (path === '/admin/posts' && location.pathname === '/admin/posts/create') return false;
+
+      // Default behavior: active jika diawali path tersebut (untuk detail page)
+      return location.pathname.startsWith(`${path}/`);
   };
 
   const handleLinkClick = () => {
@@ -76,7 +87,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       `}>
         
         {/* 1. BRAND HEADER */}
-        <div className="h-20 flex items-center justify-between px-6 border-b border-gray-100">
+        <div className="h-20 flex items-center justify-between px-6 border-b border-gray-100 bg-white">
             <div className="flex items-center gap-3">
                 <div className="bg-blue-600 w-9 h-9 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
                     <ShieldCheck size={20} className="text-white" />
@@ -121,7 +132,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         </div>
 
         {/* 3. NAVIGATION MENUS */}
-        <div className="flex-1 overflow-y-auto px-4 space-y-1 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto px-4 space-y-1 custom-scrollbar pb-6">
             <p className="px-4 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 mt-4">Main Menu</p>
 
             <SidebarLink 
@@ -352,14 +363,17 @@ const SidebarLink = ({ to, label, icon, active, onClick, badge }) => (
   <Link 
     to={to} 
     onClick={onClick}
-    className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 mb-1 font-medium text-sm
+    className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 mb-1 font-medium text-sm group relative overflow-hidden
     ${active 
         ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' 
         : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
     }`}
   >
-    <div className="flex items-center gap-3">
-        <div className={`${active ? 'text-white' : 'text-gray-400'}`}>
+    {/* Highlight Bar Active */}
+    {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 bg-white/20 rounded-r-full"></div>}
+
+    <div className="flex items-center gap-3 relative z-10">
+        <div className={`${active ? 'text-white' : 'text-gray-400 group-hover:text-blue-500 transition-colors'}`}>
             {icon}
         </div>
         <span>{label}</span>
@@ -367,7 +381,7 @@ const SidebarLink = ({ to, label, icon, active, onClick, badge }) => (
     
     {badge > 0 && (
         <span className={`
-            flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-bold
+            flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-bold shadow-sm
             ${active ? 'bg-white text-blue-600' : 'bg-red-500 text-white'}
         `}>
             {badge > 99 ? '99+' : badge}

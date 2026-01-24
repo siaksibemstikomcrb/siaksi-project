@@ -3,7 +3,8 @@ import api from '../api/axios';
 import { 
     Folder, FileText, Image as ImageIcon, Upload, FolderPlus, 
     ArrowLeft, Trash2, Download, Cloud, File, CheckSquare, Square, 
-    Move, X, CornerDownRight, ChevronRight, Home, FileArchive, MonitorPlay
+    Move, X, CornerDownRight, ChevronRight, Home, FileArchive, MonitorPlay,
+    Loader2, CheckCircle2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -19,9 +20,12 @@ const DocumentArchive = () => {
     const [isDragging, setIsDragging] = useState(false);
     const [dragTarget, setDragTarget] = useState(null);
 
-    // --- STATE UPLOAD & MODAL ---
+    // --- STATE UPLOAD & DOWNLOAD ---
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0); 
+    const [downloading, setDownloading] = useState(false); // State untuk loading download
+
+    // --- STATE MODAL ---
     const [showFolderModal, setShowFolderModal] = useState(false);
     const [newFolderName, setNewFolderName] = useState("");
     
@@ -59,6 +63,24 @@ const DocumentArchive = () => {
             setSelectedItems([...selectedItems, itemKey]);
         }
     };
+    
+    // FITUR BARU: PILIH SEMUA FILE
+    const selectAllFiles = () => {
+        const allFileKeys = content.files.map(f => `file-${f.id}`);
+        // Jika semua sudah terpilih, batalkan pilihan. Jika belum, pilih semua.
+        const allSelected = allFileKeys.every(k => selectedItems.includes(k));
+        
+        if (allSelected) {
+            // Hapus file dari seleksi (sisakan folder jika ada)
+            setSelectedItems(selectedItems.filter(i => !i.startsWith('file-')));
+        } else {
+            // Gabungkan seleksi folder yg sudah ada dengan semua file
+            const foldersOnly = selectedItems.filter(i => i.startsWith('folder-'));
+            setSelectedItems([...foldersOnly, ...allFileKeys]);
+            toast.success(`${allFileKeys.length} file dipilih`);
+        }
+    };
+
     const isSelected = (type, id) => selectedItems.includes(`${type}-${id}`);
 
     // --- 3. DRAG & DROP ---
@@ -170,68 +192,107 @@ const DocumentArchive = () => {
     };
 
     // =========================================================
-    // PERBAIKAN UTAMA DISINI (DOWNLOAD URL FIX)
+    // FITUR URL & DOWNLOAD
     // =========================================================
-const getDownloadUrl = (file) => {
+    const getDownloadUrl = (file) => {
         if (!file || !file.file_path) return '#';
-        
         let url = file.file_path;
         
-        // Cek apakah URL Cloudinary valid
         if (url.includes('/upload/')) {
-            
-            // 1. CEK EKSTENSI DI URL ASLI
-            // Apakah URL dari database sudah punya akhiran .pdf, .docx, .png?
             const hasExtension = /\.(pdf|docx|doc|xlsx|xls|pptx|ppt|zip|rar|jpg|jpeg|png)$/i.test(url);
-
-            // 2. JIKA FILE RUSAK (Tidak ada ekstensi di Cloudinary)
-            // Jangan dimanipulasi! Kembalikan URL asli agar setidaknya bisa dibuka di tab baru.
-            if (!hasExtension) {
-                return url; 
-            }
-
-            // 3. JIKA FILE SEHAT (Punya ekstensi)
-            // Baru kita tambahkan fitur download cantik
+            if (!hasExtension) return url; 
             
-            // Bersihkan judul file
             const safeTitle = file.title ? file.title.replace(/[^a-zA-Z0-9-_]/g, '_') : 'download';
-            
-            // Jika Gambar
-            if (url.includes('/image/upload/')) {
-                return url.replace('/upload/', `/upload/fl_attachment:${safeTitle}/`);
-            }
-            
-            // Jika Dokumen (Raw)
-            if (url.includes('/raw/upload/')) {
-                // Untuk dokumen, kita biarkan Cloudinary mengatur header attachmentnya
-                return url.replace('/upload/', '/upload/fl_attachment/');
-            }
+            if (url.includes('/image/upload/')) return url.replace('/upload/', `/upload/fl_attachment:${safeTitle}/`);
+            if (url.includes('/raw/upload/')) return url.replace('/upload/', '/upload/fl_attachment/');
         }
-        
         return url;
     };
+
+    // --- FITUR BARU: DOWNLOAD BANYAK SEKALIGUS ---
+   // --- FITUR BARU: DOWNLOAD BANYAK SEKALIGUS (DENGAN PERBAIKAN EKSTENSI) ---
+    const handleBulkDownload = async () => {
+        // Filter hanya ambil yang tipe-nya FILE
+        const filesToDownload = selectedItems
+            .filter(item => item.startsWith('file-'))
+            .map(item => {
+                const id = parseInt(item.split('-')[1]);
+                return content.files.find(f => f.id === id);
+            })
+            .filter(Boolean);
+
+        if (filesToDownload.length === 0) {
+            return toast.error("Pilih minimal satu file untuk didownload.");
+        }
+
+        setDownloading(true);
+        toast.info(`Memulai download ${filesToDownload.length} file...`);
+
+        // Loop download satu per satu
+        for (let i = 0; i < filesToDownload.length; i++) {
+            const file = filesToDownload[i];
+            
+            try {
+                // 1. Tentukan Nama File yang Benar (Paksa pakai ekstensi)
+                // Kalau judulnya 'Laporan', dan tipenya 'pdf', jadikan 'Laporan.pdf'
+                let fileName = file.title;
+                if (!fileName.toLowerCase().endsWith(`.${file.file_type}`)) {
+                    fileName = `${fileName}.${file.file_type}`;
+                }
+
+                // 2. Ambil URL (Gunakan URL asli, jangan yang dimodifikasi 'fl_attachment' dulu)
+                // Kita akan fetch manual, jadi butuh URL mentah
+                const fileUrl = file.file_path; 
+
+                // 3. FETCH DATA SEBAGAI BLOB (PENTING!)
+                // Ini membypass masalah nama file dari Cloudinary
+                const response = await fetch(fileUrl);
+                const blob = await response.blob();
+                
+                // 4. Buat Link Palsu di Memory Browser
+                const blobUrl = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                link.setAttribute('download', fileName); // Browser PASTI nurut nama ini
+                document.body.appendChild(link);
+                
+                // 5. Klik & Bersihkan
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(blobUrl);
+
+            } catch (error) {
+                console.error(`Gagal download ${file.title}`, error);
+                // Fallback: Kalau fetch gagal (kena CORS), coba buka tab baru aja
+                window.open(getDownloadUrl(file), '_blank');
+            }
+
+            // Delay kecil biar browser ga nge-hang kalau download banyak
+            await new Promise(resolve => setTimeout(resolve, 800));
+        }
+
+        setDownloading(false);
+        toast.success("Proses download selesai!");
+    };
+
     // --- ICON HELPER ---
     const getFileIcon = (type) => {
-        // Gambar
         if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(type)) return <ImageIcon size={32} className="text-purple-500" />;
-        // Dokumen
         if (type === 'pdf') return <FileText size={32} className="text-red-500" />;
-        if (['doc', 'docx'].includes(type)) return <FileText size={32} className="text-blue-600" />; // Word Biru Tua
-        if (['xls', 'xlsx', 'csv'].includes(type)) return <FileText size={32} className="text-green-600" />; // Excel Hijau
-        if (['ppt', 'pptx'].includes(type)) return <MonitorPlay size={32} className="text-orange-500" />; // PPT Orange
-        // Arsip
+        if (['doc', 'docx'].includes(type)) return <FileText size={32} className="text-blue-600" />;
+        if (['xls', 'xlsx', 'csv'].includes(type)) return <FileText size={32} className="text-green-600" />;
+        if (['ppt', 'pptx'].includes(type)) return <MonitorPlay size={32} className="text-orange-500" />;
         if (['zip', 'rar', '7z'].includes(type)) return <FileArchive size={32} className="text-yellow-600" />;
-        // Default
         return <File size={32} className="text-gray-400" />;
     };
 
     return (
-        <div className="p-4 md:p-6 h-[calc(100vh-80px)] flex flex-col bg-gray-50/50 relative">
+        <div className="p-3 md:p-6 h-[calc(100vh-80px)] flex flex-col bg-gray-50/50 relative">
             
             {/* HEADER RESPONSIVE */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                <div>
-                    <h1 className="text-xl md:text-2xl font-bold text-gray-800 flex items-center gap-2 truncate">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 md:mb-6 gap-3">
+                <div className="w-full md:w-auto">
+                    <h1 className="text-lg md:text-2xl font-bold text-gray-800 flex items-center gap-2 truncate">
                         {currentFolder && (
                             <button onClick={() => fetchContent(currentFolder.parent_id)} 
                                 onDragOver={(e) => handleDragOver(e, 'back-btn')}
@@ -242,29 +303,35 @@ const getDownloadUrl = (file) => {
                                 <ArrowLeft size={24} />
                             </button>
                         )}
-                        <span className="truncate">{currentFolder ? currentFolder.name : "My Drive (UKM)"}</span>
+                        <span className="truncate max-w-[200px] md:max-w-none">{currentFolder ? currentFolder.name : "My Drive (UKM)"}</span>
                     </h1>
-                    <p className="text-gray-500 text-xs md:text-sm mt-1 ml-1">
+                    <p className="text-gray-500 text-xs md:text-sm mt-1 ml-1 flex items-center gap-2">
                         {currentFolder ? "Folder Penyimpanan" : "Root Directory"}
+                        {/* Tombol Pilih Semua (Khusus Mobile) */}
+                        {content.files.length > 0 && (
+                            <button onClick={selectAllFiles} className="md:hidden text-blue-600 font-bold text-xs bg-blue-50 px-2 py-1 rounded ml-2">
+                                {selectedItems.length === content.files.length ? "Batal Pilih" : "Pilih Semua"}
+                            </button>
+                        )}
                     </p>
                 </div>
 
-                <div className="flex gap-2 w-full md:w-auto">
-                    <button onClick={() => setShowFolderModal(true)} className="flex-1 md:flex-none justify-center flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-medium transition text-sm">
-                        <FolderPlus size={18} /> <span className="hidden md:inline">Folder Baru</span><span className="md:hidden">Folder</span>
+                <div className="grid grid-cols-2 gap-2 w-full md:flex md:w-auto">
+                    <button onClick={() => setShowFolderModal(true)} className="justify-center flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-medium transition text-xs md:text-sm">
+                        <FolderPlus size={16} /> Folder Baru
                     </button>
-                    <button onClick={() => fileInputRef.current.click()} className="flex-1 md:flex-none justify-center flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium transition shadow-lg shadow-blue-600/20 active:scale-95 text-sm">
-                        <Upload size={18} /> Upload
+                    <button onClick={() => fileInputRef.current.click()} className="justify-center flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium transition shadow-lg shadow-blue-600/20 active:scale-95 text-xs md:text-sm">
+                        <Upload size={16} /> Upload
                     </button>
                     <input type="file" multiple className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
                 </div>
             </div>
 
             {/* CONTENT AREA */}
-            <div className="flex-1 overflow-y-auto pb-24 px-1" onClick={() => setSelectedItems([])}>
+            <div className="flex-1 overflow-y-auto pb-32 px-1" onClick={() => setSelectedItems([])}>
                 {/* Empty State */}
                 {!loading && content.folders.length === 0 && content.files.length === 0 && (
-                    <div className="flex flex-col items-center justify-center h-64 text-gray-400 border-2 border-dashed border-gray-200 rounded-2xl">
+                    <div className="flex flex-col items-center justify-center h-64 text-gray-400 border-2 border-dashed border-gray-200 rounded-2xl mx-4 mt-8">
                         <FolderPlus size={48} className="mb-2 opacity-20" />
                         <p>Folder ini kosong</p>
                     </div>
@@ -273,7 +340,7 @@ const getDownloadUrl = (file) => {
                 {/* Folders Grid */}
                 {content.folders.length > 0 && (
                     <div className="mb-6">
-                        <h3 className="text-xs font-bold text-gray-400 uppercase mb-3">Folders</h3>
+                        <h3 className="text-xs font-bold text-gray-400 uppercase mb-3 ml-1">Folders</h3>
                         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
                             {content.folders.map(folder => (
                                 <div 
@@ -285,7 +352,7 @@ const getDownloadUrl = (file) => {
                                     onDrop={(e) => { e.stopPropagation(); if (!isSelected('folder', folder.id)) handleDrop(e, folder.id); }}
                                     onClick={(e) => { e.stopPropagation(); toggleSelection('folder', folder.id); }}
                                     onDoubleClick={(e) => { e.stopPropagation(); fetchContent(folder.id); }}
-                                    className={`group p-4 rounded-xl border-2 transition cursor-pointer flex flex-col items-center text-center relative select-none
+                                    className={`group p-3 md:p-4 rounded-xl border-2 transition cursor-pointer flex flex-col items-center text-center relative select-none
                                         ${dragTarget === folder.id ? 'border-blue-500 bg-blue-100 scale-105 z-10' : 'border-transparent bg-white hover:shadow-md border-gray-200'}
                                         ${isSelected('folder', folder.id) ? 'ring-2 ring-blue-500 bg-blue-50' : ''}
                                     `}
@@ -293,7 +360,7 @@ const getDownloadUrl = (file) => {
                                     <div className={`absolute top-2 left-2 ${isSelected('folder', folder.id) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                                         {isSelected('folder', folder.id) ? <CheckSquare size={18} className="text-blue-600 fill-white"/> : <Square size={18} className="text-gray-300"/>}
                                     </div>
-                                    <Folder size={48} className={`${isSelected('folder', folder.id) ? 'text-blue-500 fill-blue-100' : 'text-blue-200 fill-blue-100'} mb-2`} />
+                                    <Folder size={40} className={`${isSelected('folder', folder.id) ? 'text-blue-500 fill-blue-100' : 'text-blue-200 fill-blue-100'} mb-2 md:w-12 md:h-12`} />
                                     <span className="text-xs md:text-sm font-medium text-gray-700 truncate w-full px-1">{folder.name}</span>
                                 </div>
                             ))}
@@ -304,7 +371,14 @@ const getDownloadUrl = (file) => {
                 {/* Files Grid */}
                 {content.files.length > 0 && (
                     <div>
-                        <h3 className="text-xs font-bold text-gray-400 uppercase mb-3">Files</h3>
+                        <div className="flex justify-between items-center mb-3 ml-1">
+                            <h3 className="text-xs font-bold text-gray-400 uppercase">Files</h3>
+                            {/* Tombol Select All Desktop */}
+                            <button onClick={selectAllFiles} className="hidden md:flex items-center gap-1 text-xs font-bold text-blue-600 hover:bg-blue-50 px-2 py-1 rounded transition">
+                                <CheckCircle2 size={14} /> Pilih Semua
+                            </button>
+                        </div>
+                        
                         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
                             {content.files.map(file => (
                                 <div 
@@ -312,7 +386,7 @@ const getDownloadUrl = (file) => {
                                     draggable
                                     onDragStart={(e) => handleDragStart(e, 'file', file.id)}
                                     onClick={(e) => { e.stopPropagation(); toggleSelection('file', file.id); }}
-                                    className={`group relative p-3 md:p-4 rounded-xl border-2 hover:shadow-md transition flex flex-col justify-between h-36 md:h-40 cursor-grab active:cursor-grabbing
+                                    className={`group relative p-2 md:p-4 rounded-xl border-2 hover:shadow-md transition flex flex-col justify-between h-32 md:h-40 cursor-grab active:cursor-grabbing
                                         ${isSelected('file', file.id) ? 'ring-2 ring-blue-500 bg-blue-50 border-blue-200' : 'bg-white border-gray-200'}
                                     `}
                                 >
@@ -325,20 +399,8 @@ const getDownloadUrl = (file) => {
                                         ) : getFileIcon(file.file_type)}
                                     </div>
                                     <div className="text-center pointer-events-none">
-                                        <p className="text-xs font-medium text-gray-700 truncate w-full">{file.title}</p>
+                                        <p className="text-[10px] md:text-xs font-medium text-gray-700 truncate w-full">{file.title}</p>
                                     </div>
-                                    {/* Download btn */}
-                                    {!isSelected('file', file.id) && (
-                                        <div className="absolute inset-0 bg-black/40 rounded-xl opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2 backdrop-blur-[1px]">
-                                            {/* PENGGUNAAN getDownloadUrl DENGAN PARAMETER LENGKAP */}
-                                            <a href={getDownloadUrl(file)} target="_blank" rel="noreferrer" className="p-2 bg-white text-blue-600 rounded-full hover:bg-blue-50" title="Download">
-                                                <Download size={16} />
-                                            </a>
-                                            <button onClick={(e) => {e.stopPropagation(); handleDeleteSingle('file', file.id)}} className="p-2 bg-white text-red-500 rounded-full hover:bg-red-50" title="Delete">
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-                                    )}
                                 </div>
                             ))}
                         </div>
@@ -346,25 +408,42 @@ const getDownloadUrl = (file) => {
                 )}
             </div>
 
-            {/* --- FLOATING ACTION BAR --- */}
+            {/* --- FLOATING ACTION BAR (OPTIMAL UNTUK MOBILE) --- */}
             <AnimatePresence>
                 {selectedItems.length > 0 && (
                     <motion.div 
                         initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }}
-                        className="fixed bottom-4 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-auto bg-white shadow-2xl rounded-2xl p-3 border border-gray-200 z-40 flex items-center justify-between md:gap-6 gap-4"
+                        className="fixed bottom-4 left-3 right-3 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-auto bg-slate-900 text-white shadow-2xl rounded-2xl p-2 md:p-3 border border-slate-700 z-40 flex items-center justify-between gap-2 md:gap-4"
                     >
-                        <div className="flex items-center gap-3 pl-2">
-                            <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-md">{selectedItems.length}</span>
-                            <span className="text-sm font-semibold text-gray-700 hidden md:inline">Item Dipilih</span>
+                        <div className="flex items-center gap-2 pl-2 border-r border-slate-700 pr-3">
+                            <span className="bg-blue-500 text-white text-[10px] md:text-xs font-bold px-2 py-0.5 rounded-full">{selectedItems.length}</span>
+                            <span className="text-xs md:text-sm font-medium hidden md:inline">Terpilih</span>
                         </div>
-                        <div className="flex gap-2">
-                            <button onClick={openMoveModal} className="flex items-center gap-1 px-4 py-2 bg-blue-50 text-blue-700 rounded-xl hover:bg-blue-100 font-bold text-xs md:text-sm transition">
-                                <CornerDownRight size={16} /> <span className="hidden md:inline">Pindah Ke...</span><span className="md:hidden">Pindah</span>
+
+                        <div className="flex items-center gap-1 md:gap-2">
+                            {/* TOMBOL BULK DOWNLOAD BARU */}
+                            <button 
+                                onClick={handleBulkDownload} 
+                                disabled={downloading}
+                                className="flex flex-col md:flex-row items-center gap-1 px-3 py-1.5 md:py-2 bg-slate-800 hover:bg-slate-700 rounded-xl transition text-blue-400"
+                            >
+                                {downloading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+                                <span className="text-[10px] md:text-sm font-medium">Unduh</span>
                             </button>
-                            <button onClick={handleDeleteSelected} className="flex items-center gap-1 px-4 py-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 font-bold text-xs md:text-sm transition">
-                                <Trash2 size={16} /> Hapus
+
+                            <button onClick={openMoveModal} className="flex flex-col md:flex-row items-center gap-1 px-3 py-1.5 md:py-2 bg-slate-800 hover:bg-slate-700 rounded-xl transition text-yellow-400">
+                                <CornerDownRight size={18} /> 
+                                <span className="text-[10px] md:text-sm font-medium">Pindah</span>
                             </button>
-                            <button onClick={() => setSelectedItems([])} className="p-2 hover:bg-gray-100 rounded-full text-gray-400">
+
+                            <button onClick={handleDeleteSelected} className="flex flex-col md:flex-row items-center gap-1 px-3 py-1.5 md:py-2 bg-slate-800 hover:bg-slate-700 rounded-xl transition text-red-400">
+                                <Trash2 size={18} /> 
+                                <span className="text-[10px] md:text-sm font-medium">Hapus</span>
+                            </button>
+
+                            <div className="w-[1px] h-8 bg-slate-700 mx-1"></div>
+
+                            <button onClick={() => setSelectedItems([])} className="p-2 hover:bg-slate-800 rounded-full text-gray-400">
                                 <X size={20} />
                             </button>
                         </div>

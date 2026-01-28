@@ -1,12 +1,18 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import path from "path"
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   base: '/',
 
+    resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
   // --- SETTINGAN PRODUCTION (KEAMANAN) ---
   build: {
     // 1. Matikan Source Map 
@@ -20,4 +26,7 @@ export default defineConfig({
     // Jadi di laptop abang (dev) log-nya muncul, tapi di server (prod) bersih total.
     drop: ['console', 'debugger'], 
   }
+
+
+
 })

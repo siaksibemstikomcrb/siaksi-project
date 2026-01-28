@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://145.79.15.166:5000/api', 
+  baseURL: 'https://siaksi.stikompoltekcirebon.ac.id/api', 
   withCredentials: true,
   timeout: 60000, // <--- TAMBAHKAN INI (60 Detik / 1 Menit)
 });

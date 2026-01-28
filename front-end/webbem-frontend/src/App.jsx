@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-route
 import { Toaster } from 'sonner';
 
 // --- API ---
-import api from './api/axios'; // Pastikan path ini benar sesuai struktur foldermu
+import api from './api/axios';
 
 // Components
 import Layout from './components/Layout';
@@ -60,8 +60,11 @@ import InboxAspiration from './pages/InboxAspiration';
 import LegalPage from './pages/LegalPage';
 // discord
 import ConnectDiscord from './pages/ConnectDiscord';
-// not found
-import NotFound from './pages/NotFound';
+
+// --- RESPONSE PAGE (ERROR & MAINTENANCE) ---
+import NotFound from './pages/response/NotFound';
+import MaintenancePage from './pages/response/MaintenancePage';
+import GeneralError from './pages/response/GeneralError'; // <-- SUDAH DITAMBAHKAN
 
 // --- KOMPONEN UTAMA ---
 function App() {
@@ -74,12 +77,12 @@ function App() {
         {/* ====================================================
             PUBLIC ROUTES (Tanpa Sidebar / Layout Dashboard)
             ==================================================== */}
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<HomePage/>} />
         <Route path="/login" element={<Login />} />
         
-        {/* Route Portal Berita (Public) */}
-        <Route path="/news" element={<NewsFeed />} />
-        <Route path="/news/:id" element={<PostDetail />} />
+        {/* Route Portal Berita (Public) - SEDANG MAINTENANCE */}
+        <Route path="/news" element={<MaintenancePage title="Portal Berita Lagi Update Dulu Ya..." />} />
+        <Route path="/news/:id" element={<MaintenancePage title="Berita Tidak Tersedia" />} />
         
         {/* ====================================================
             PROTECTED ROUTES (Dengan Sidebar & Layout Admin)
@@ -132,14 +135,14 @@ function App() {
         {/* Event Management */}
         <Route path="/admin/events" element={<Layout><EventList /></Layout>} />
         <Route path="/admin/events/:scheduleId" element={<Layout><EventReport /></Layout>} />
-        <Route path="/admin/events/edit/:id" element={<Layout><EditSchedule /></Layout>} />
+        <Route path="/admin/events/edit/:id" element={<Layout><MaintenancePage title="Edit Event Ditutup Guys..." /></Layout>} />
         
         {/* Notifications */}
         <Route path="/notifications" element={<Layout><NotificationsPage /></Layout>} />
 
         {/* Administrasi & Arsip */}
         <Route path="/admin/archives" element={<Layout><DocumentArchive /></Layout>} />
-        <Route path="/admin/letter-generator" element={<Layout><LetterGenerator /></Layout>} />
+        <Route path="/admin/letter-generator" element={<Layout><MaintenancePage title="Generator Surat Lagi Di Update ya :)" /></Layout>} />
         
         {/* --- RUTE BARU: PENCATATAN DIGITAL --- */}
         <Route path="/admin/finance-tools" element={<Layout><FinanceTools /></Layout>} />
@@ -173,14 +176,28 @@ function App() {
             </ProtectedRoute>
           } 
         />
+
+        {/* ====================================================
+            RESPONSE & ERROR PAGES (Baru Ditambahkan)
+            ==================================================== */}
+        {/* 1. Maintenance Mode (Bisa dipanggil manual) */}
+        <Route path="/maintenance" element={<MaintenancePage />} />
+
+        {/* 2. Error 403 (Forbidden / Akses Ditolak) */}
+        <Route path="/forbidden" element={<GeneralError type="403" />} />
+
+        {/* 3. Error 500 (Server Error) */}
+        <Route path="/server-error" element={<GeneralError type="500" />} />
+
+        {/* 4. Catch All (404 Not Found) - Taruh Paling Bawah */}
         <Route path="*" element={<NotFound />} />
+
       </Routes>
     </Router>
   );
 }
 
 // --- KOMPONEN IDLE TIMER (AUTO LOGOUT) ---
-// ditaruh di dalam Router agar bisa pakai useNavigate()
 const IdleTimer = () => {
     const navigate = useNavigate();
     
@@ -193,37 +210,32 @@ const IdleTimer = () => {
         const performLogout = async () => {
            console.log("⏳ User tidak aktif (Idle), otomatis logout...");
            try {
-               await api.post('/auth/logout'); // Hit API logout backend
+               await api.post('/auth/logout'); 
            } catch (e) {
                console.error("Gagal logout di server (mungkin token sudah expired)", e);
            } finally {
-               // Bersihkan Lokal
                localStorage.clear();
-               // Redirect ke Login
                navigate('/login');
            }
         };
 
-        // Fungsi Reset Timer (Setiap user gerak, timer diulang dari 0)
+        // Fungsi Reset Timer
         const resetTimer = () => {
-            // Jangan jalankan timer kalau user sedang di halaman login/public tertentu
             if (window.location.pathname === '/login' || window.location.pathname === '/') return;
 
             if (logoutTimer) clearTimeout(logoutTimer);
             logoutTimer = setTimeout(performLogout, TIMEOUT_MS);
         };
 
-        // Pasang Event Listener (Deteksi Gerakan)
+        // Pasang Event Listener
         window.addEventListener('mousemove', resetTimer);
         window.addEventListener('keypress', resetTimer);
         window.addEventListener('click', resetTimer);
         window.addEventListener('scroll', resetTimer);
-        window.addEventListener('touchstart', resetTimer); // Support Touchscreen
+        window.addEventListener('touchstart', resetTimer);
 
-        // Jalankan timer pertama kali
         resetTimer();
 
-        // Cleanup saat komponen hancur/pindah
         return () => {
             if (logoutTimer) clearTimeout(logoutTimer);
             window.removeEventListener('mousemove', resetTimer);
@@ -234,7 +246,7 @@ const IdleTimer = () => {
         };
     }, [navigate]);
 
-    return null; // Komponen ini tidak merender tampilan apa-apa (invisible)
+    return null;
 };
 
 export default App;

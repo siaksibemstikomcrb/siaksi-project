@@ -1,393 +1,322 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
-  LogOut, LayoutDashboard, Activity, Users, Calendar, 
-  ShieldCheck, Building, X, Bell, Send, FolderOpen, Inbox, 
-  ShieldAlert, Printer, Newspaper, PenTool, BookOpen, 
-  ChevronRight, Settings, User, MessageSquare, MessageCircle
+    LogOut, LayoutDashboard, Activity, Users, Calendar, 
+    ShieldCheck, Building, X, Bell, Send, FolderOpen, Inbox, 
+    ShieldAlert, Printer, Newspaper, PenTool, BookOpen, 
+    ChevronRight, Settings, User, MessageSquare, MessageCircle,
+    ChevronDown, Home
 } from 'lucide-react';
 import api from '../api/axios'; 
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const role = localStorage.getItem('role');
-  const [unreadCount, setUnreadCount] = useState(0); 
+    const navigate = useNavigate();
+    const location = useLocation();
+    const role = localStorage.getItem('role');
+    
+    // State Notifikasi & Menu Dropdown
+    const [unreadCount, setUnreadCount] = useState(0); 
+    const [openMenus, setOpenMenus] = useState({}); // Untuk melacak menu mana yang terbuka
 
-  const fetchUnreadCount = async () => {
-    try {
-      const res = await api.get('/notifications/my');
-      const unread = res.data.filter(n => !n.is_read).length;
-      setUnreadCount(unread);
-    } catch (err) {
-      console.error("Gagal mengambil notifikasi:", err);
-    }
-  };
+    // --- 1. KONFIGURASI MENU (PUSAT PENGATURAN) ---
+    // Tambah menu baru cukup disini, gaperlu ngoding html panjang lagi
+    // --- 1. KONFIGURASI MENU (PUSAT PENGATURAN) ---
+    const MENU_ITEMS = [
+        {
+            title: "Main Menu",
+            items: [
+                // UBAH DISINI: Dashboard sekarang HANYA untuk admin & super_admin
+                { label: "Dashboard", path: '/admin-dashboard', icon: Home, roles: ['admin', 'super_admin'] },
+                
+                // Menu Member tetap sama
+                { label: "Presensi", path: "/absen", icon: Activity, roles: ['member'] },
+                { label: "Riwayat Saya", path: "/my-history", icon: Calendar, roles: ['member'] },
+                { label: "Notifikasi", path: "/notifications", icon: Bell, roles: ['all'], badge: unreadCount },
+            ]
+        },
+        {
+            title: "Manajemen & Kegiatan",
+            roles: ['admin', 'super_admin'],
+            items: [
+                { 
+                    label: "Kelola Event", 
+                    icon: Calendar,
+                    roles: ['admin', 'super_admin'],
+                    children: [
+                        { label: "Buat Jadwal", path: "/admin-dashboard" },
+                        { label: "Riwayat Acara", path: "/admin/events" },
+                        { label: "Presensi Anggota", path: "/admin/members" },
+                    ]
+                },
+                { 
+                    label: "Data Master", 
+                    icon: Building,
+                    roles: ['super_admin'],
+                    children: [
+                        { label: "Kelola UKM", path: "/superadmin/manage-ukm" },
+                        { label: "Kelola Users", path: "/superadmin/manage-users" },
+                    ]
+                },
+                {
+                    label: "Keanggotaan",
+                    icon: Users,
+                    roles: ['admin'],
+                    path: "/superadmin/manage-users"
+                }
+            ]
+        },
+        {
+            title: "Publikasi & Informasi",
+            roles: ['admin', 'super_admin'],
+            items: [
+                {
+                    label: "Berita & Artikel",
+                    icon: Newspaper,
+                    roles: ['admin', 'super_admin'],
+                    children: [
+                        { label: "Kelola Berita", path: "/admin/posts" },
+                        { label: "Tulis Artikel", path: "/admin/posts/create" },
+                    ]
+                },
+                {
+                    label: "Broadcast Info",
+                    icon: Send,
+                    roles: ['admin', 'super_admin'],
+                    children: [
+                        { label: "Kirim Pesan", path: "/info/compose" },
+                        { label: "Kotak Masuk", path: "/info/inbox" },
+                        { label: "Approval", path: "/info/approval", roles: ['super_admin'] },
+                    ]
+                }
+            ]
+        },
+        {
+            title: "Tools & Arsip",
+            roles: ['admin', 'super_admin'],
+            items: [
+                { label: "Monitoring", path: "/monitoring", icon: Activity, roles: ['admin', 'super_admin'] },
+                { label: "E-Arsip (Drive)", path: "/admin/archives", icon: FolderOpen, roles: ['admin', 'super_admin'] },
+                { label: "Keuangan", path: "/admin/finance-tools", icon: BookOpen, roles: ['admin', 'super_admin'] },
+                { label: "Generator Surat", path: "/admin/letter-generator", icon: Printer, roles: ['admin', 'super_admin'] },
+            ]
+        },
+        {
+            title: "Layanan",
+            items: [
+                { label: "Lapor BEM", path: "/complaint", icon: ShieldAlert, roles: ['member', 'admin', 'admin_ukm'] },
+                { label: "Kotak Aspirasi", path: "/aspirasi", icon: MessageCircle, roles: ['member', 'admin', 'admin_ukm'] },
+                { label: "Inbox Laporan", path: "/superadmin/complaints", icon: MessageSquare, roles: ['super_admin'] },
+                { label: "Inbox Aspirasi", path: "/admin/aspirasi", icon: MessageCircle, roles: ['admin', 'super_admin'] },
+            ]
+        }
+    ];
 
-  useEffect(() => {
-    if (role) {
-      fetchUnreadCount();
-      const interval = setInterval(fetchUnreadCount, 60000);
-      return () => clearInterval(interval);
-    }
-  }, [role]);
+    // --- 2. LOGIC ---
+    
+    // Fetch Notifikasi
+    useEffect(() => {
+        if (role) {
+            const getNotif = async () => {
+                try {
+                    const res = await api.get('/notifications/my');
+                    setUnreadCount(res.data.filter(n => !n.is_read).length);
+                } catch (e) { console.error(e); }
+            };
+            getNotif();
+            const interval = setInterval(getNotif, 60000);
+            return () => clearInterval(interval);
+        }
+    }, [role]);
 
-  const handleLogout = () => {
-    localStorage.clear();
-    navigate('/');
-  };
+    // Cek Role Helper
+    const hasRole = (allowedRoles) => {
+        if (!allowedRoles || allowedRoles.includes('all')) return true;
+        return allowedRoles.includes(role);
+    };
 
-  // --- LOGIKA ISACTIVE YANG DIPERBAIKI ---
-  const isActive = (path) => {
-      // Jika path sama persis
-      if (location.pathname === path) return true;
-      
-      // Jika path root '/', harus exact match
-      if (path === '/') return location.pathname === '/';
+    // Cek Active Helper
+    const isActive = (path) => {
+        if (location.pathname === path) return true;
+        if (path !== '/' && location.pathname.startsWith(path)) return true;
+        return false;
+    };
 
-      // Khusus untuk sub-menu yang mirip (misal: /admin/posts dan /admin/posts/create)
-      // Kita pastikan kalau lagi di 'create', menu induknya TIDAK aktif.
-      if (path === '/admin/posts' && location.pathname === '/admin/posts/create') return false;
+    // Toggle Dropdown
+    const toggleMenu = (label) => {
+        setOpenMenus(prev => ({ ...prev, [label]: !prev[label] }));
+    };
 
-      // Default behavior: active jika diawali path tersebut (untuk detail page)
-      return location.pathname.startsWith(`${path}/`);
-  };
+    // Auto open dropdown jika anaknya aktif
+    useEffect(() => {
+        MENU_ITEMS.forEach(group => {
+            if(group.items) {
+                group.items.forEach(item => {
+                    if (item.children) {
+                        const childActive = item.children.some(child => isActive(child.path));
+                        if (childActive) {
+                            setOpenMenus(prev => ({ ...prev, [item.label]: true }));
+                        }
+                    }
+                });
+            }
+        });
+    }, [location.pathname]);
 
-  const handleLinkClick = () => {
-    if (window.innerWidth < 768) {
-        setIsOpen(false);
-    }
-  };
+    const handleLogout = () => {
+        localStorage.clear();
+        navigate('/');
+    };
 
-  if (!role) return null;
+    if (!role) return null;
 
-  // Tentukan Link Profil berdasarkan Role
-  const profileLink = (role === 'admin' || role === 'super_admin') 
-    ? '/admin/profile' 
-    : '/user/profile';
+    // --- 3. RENDER ---
+    return (
+        <>
+            {/* Mobile Overlay */}
+            {isOpen && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px] z-30 md:hidden transition-opacity" onClick={() => setIsOpen(false)} />
+            )}
 
-  const profileLabel = (role === 'admin' || role === 'super_admin') 
-    ? 'Kelola UKM' 
-    : 'Akun Saya';
-
-  return (
-    <>
-      {/* Mobile Backdrop */}
-      {isOpen && (
-        <div 
-            className="fixed inset-0 bg-black/50 z-30 md:hidden backdrop-blur-sm transition-opacity"
-            onClick={() => setIsOpen(false)}
-        />
-      )}
-
-      <aside className={`
-        fixed md:static inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 
-        transform transition-transform duration-300 ease-in-out flex flex-col shadow-xl md:shadow-none
-        ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-      `}>
-        
-        {/* 1. BRAND HEADER */}
-        <div className="h-20 flex items-center justify-between px-6 border-b border-gray-100 bg-white">
-            <div className="flex items-center gap-3">
-                <div className="bg-blue-600 w-9 h-9 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
-                    <ShieldCheck size={20} className="text-white" />
+            {/* Sidebar Container */}
+            <aside className={`
+                fixed md:static inset-y-0 left-0 z-40 w-72 bg-white border-r border-gray-200 
+                transform transition-transform duration-300 ease-in-out flex flex-col shadow-2xl md:shadow-none
+                ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+            `}>
+                
+                {/* A. HEADER */}
+                <div className="h-16 flex items-center justify-between px-6 border-b border-gray-100 bg-white sticky top-0 z-10">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-slate-900 w-8 h-8 rounded-lg flex items-center justify-center text-white">
+                            <ShieldCheck size={18} />
+                        </div>
+                        <span className="font-bold text-lg text-slate-800 tracking-tight">SIAKSI</span>
+                    </div>
+                    <button onClick={() => setIsOpen(false)} className="md:hidden text-gray-400">
+                        <X size={24} />
+                    </button>
                 </div>
-                <div className="flex flex-col">
-                    <span className="font-black text-xl text-gray-800 tracking-tight leading-none">SIAKSI</span>
-                    <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Dashboard</span>
-                </div>
-            </div>
-            <button onClick={() => setIsOpen(false)} className="md:hidden text-gray-400 hover:text-gray-600">
-                <X size={24} />
-            </button>
-        </div>
 
-        {/* 2. USER PROFILE CARD */}
-        <div className="px-5 pt-6 pb-2">
-            <Link 
-                to={profileLink} 
-                onClick={handleLinkClick}
-                className="group relative block"
-            >
-                <div className="absolute inset-0 bg-blue-600 rounded-2xl blur opacity-10 group-hover:opacity-30 transition-opacity duration-500"></div>
-                <div className="relative bg-gradient-to-br from-white to-blue-50/50 p-4 rounded-2xl border border-blue-100 shadow-sm group-hover:shadow-md group-hover:-translate-y-1 transition-all duration-300 flex items-center gap-3">
-                    <div className="relative">
-                        <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-md ring-2 ring-white">
+                {/* B. SCROLLABLE CONTENT */}
+                <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6 custom-scrollbar">
+                    
+                    {MENU_ITEMS.map((group, idx) => {
+                        if (!hasRole(group.roles)) return null;
+
+                        return (
+                            <div key={idx}>
+                                {group.title && (
+                                    <h3 className="px-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                                        {group.title}
+                                    </h3>
+                                )}
+                                <div className="space-y-1">
+                                    {group.items.map((item, itemIdx) => {
+                                        if (!hasRole(item.roles)) return null;
+
+                                        // 1. Jika Menu Punya Cabang (Dropdown)
+                                        if (item.children) {
+                                            const isOpen = openMenus[item.label];
+                                            const isChildActive = item.children.some(c => isActive(c.path));
+                                            
+                                            return (
+                                                <div key={itemIdx} className="mb-1">
+                                                    <button 
+                                                        onClick={() => toggleMenu(item.label)}
+                                                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all text-sm font-medium
+                                                            ${isOpen || isChildActive ? 'text-slate-800 bg-slate-50' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}
+                                                        `}
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <item.icon size={18} className={isOpen || isChildActive ? 'text-blue-600' : 'text-slate-400'} />
+                                                            <span>{item.label}</span>
+                                                        </div>
+                                                        <ChevronRight size={16} className={`text-slate-300 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />
+                                                    </button>
+
+                                                    {/* Submenu List */}
+                                                    {isOpen && (
+                                                        <div className="mt-1 ml-4 pl-4 border-l border-slate-200 space-y-1">
+                                                            {item.children.map((child, cIdx) => {
+                                                                if (child.roles && !hasRole(child.roles)) return null;
+                                                                const active = isActive(child.path);
+                                                                return (
+                                                                    <Link 
+                                                                        key={cIdx} 
+                                                                        to={child.path}
+                                                                        onClick={() => window.innerWidth < 768 && setIsOpen(false)}
+                                                                        className={`block px-3 py-2 rounded-md text-sm transition-colors
+                                                                            ${active ? 'text-blue-600 font-medium bg-blue-50' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'}
+                                                                        `}
+                                                                    >
+                                                                        {child.label}
+                                                                    </Link>
+                                                                )
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        }
+
+                                        // 2. Jika Menu Biasa (Tanpa Cabang)
+                                        const active = isActive(item.path);
+                                        return (
+                                            <Link 
+                                                key={itemIdx}
+                                                to={item.path}
+                                                onClick={() => window.innerWidth < 768 && setIsOpen(false)}
+                                                className={`flex items-center justify-between px-3 py-2.5 rounded-lg transition-all text-sm font-medium mb-1
+                                                    ${active 
+                                                        ? 'bg-slate-900 text-white shadow-md shadow-slate-200' 
+                                                        : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                                                    }
+                                                `}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <item.icon size={18} className={active ? 'text-slate-200' : 'text-slate-400'} />
+                                                    <span>{item.label}</span>
+                                                </div>
+                                                {item.badge > 0 && (
+                                                    <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                                                        {item.badge}
+                                                    </span>
+                                                )}
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* C. FOOTER (USER PROFILE) */}
+                <div className="p-4 border-t border-gray-100 bg-slate-50/50">
+                    <div className="flex items-center gap-3 p-2 rounded-xl border border-slate-200 bg-white shadow-sm mb-3">
+                        <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm">
                             {role.charAt(0).toUpperCase()}
                         </div>
-                        <div className="absolute -bottom-1 -right-1 bg-green-500 w-3 h-3 rounded-full border-2 border-white"></div>
-                    </div>
-                    <div className="flex-1 overflow-hidden">
-                        <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-0.5">{profileLabel}</p>
-                        <div className="flex items-center gap-1 text-gray-600 group-hover:text-blue-700 transition-colors">
-                            <span className="text-xs font-medium truncate">Edit Profil</span>
-                            <Settings size={10} />
+                        <div className="flex-1 overflow-hidden">
+                            <p className="text-xs font-bold text-slate-800 truncate uppercase">{role.replace('_', ' ')}</p>
+                            <Link to="/user/profile" className="text-[10px] text-slate-500 hover:text-blue-600 flex items-center gap-1">
+                                Lihat Profil <ChevronRight size={10} />
+                            </Link>
                         </div>
                     </div>
-                    <div className="text-gray-300 group-hover:text-blue-500 transition-colors">
-                        <ChevronRight size={18} />
-                    </div>
+                    
+                    <button 
+                        onClick={handleLogout}
+                        className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                        <LogOut size={16} />
+                        <span>Keluar</span>
+                    </button>
                 </div>
-            </Link>
-        </div>
 
-        {/* 3. NAVIGATION MENUS */}
-        <div className="flex-1 overflow-y-auto px-4 space-y-1 custom-scrollbar pb-6">
-            <p className="px-4 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 mt-4">Main Menu</p>
-
-            <SidebarLink 
-                to="/notifications" 
-                label="Notifikasi" 
-                icon={<Bell size={20}/>} 
-                active={isActive('/notifications')} 
-                onClick={handleLinkClick}
-                badge={unreadCount} 
-            />
-
-            {/* Member Menu */}
-            {role === 'member' && (
-              <>
-                <SidebarLink to="/absen" label="Presensi" icon={<Activity size={20}/>} active={isActive('/absen')} onClick={handleLinkClick} />
-                <SidebarLink 
-                    to="/my-history" 
-                    label="Riwayat Saya" 
-                    icon={<Calendar size={20}/>} 
-                    active={isActive('/my-history')} 
-                    onClick={handleLinkClick} 
-                />
-
-                <SidebarLink 
-                    to="/user/profile" 
-                    label="Profil Saya" 
-                    icon={<User size={20}/>} 
-                    active={isActive('/user/profile')} 
-                    onClick={handleLinkClick} 
-                />
-              </>
-            )}
-
-            {/* Admin Menu */}
-            {role === 'admin' && (
-                <>
-                    <SidebarLink to="/admin-dashboard" label="Buat Jadwal" icon={<Calendar size={20}/>} active={isActive('/admin-dashboard')} onClick={handleLinkClick} />
-                    <SidebarLink to="/admin/events" label="Riwayat Acara" icon={<LayoutDashboard size={20}/>} active={isActive('/admin/events')} onClick={handleLinkClick} />
-                    
-                    <SidebarLink 
-                        to="/admin/members" 
-                        label="Presensi Anggota" 
-                        icon={<Activity size={20}/>} 
-                        active={isActive('/admin/members')} 
-                        onClick={handleLinkClick} 
-                    />
-
-                    {/* --- MENU BARU: MANAJEMEN USER (ADMIN UKM) --- */}
-                    <SidebarLink 
-                        to="/superadmin/manage-users" 
-                        label="Kelola Anggota" 
-                        icon={<Users size={20}/>} 
-                        active={isActive('/superadmin/manage-users')} 
-                        onClick={handleLinkClick} 
-                    />
-
-                    <SidebarLink 
-                        to="/admin/aspirasi" 
-                        label="Inbox Aspirasi" 
-                        icon={<MessageCircle size={20}/>} 
-                        active={isActive('/admin/aspirasi')} 
-                        onClick={handleLinkClick} 
-                    />
-                </>
-            )}
-
-            {/* Super Admin Menu */}
-            {role === 'super_admin' && (
-                <>
-                    <SidebarLink to="/admin-dashboard" label="Overview" icon={<LayoutDashboard size={20}/>} active={isActive('/admin-dashboard')} onClick={handleLinkClick} />
-                    
-                    <SidebarLink 
-                        to="/superadmin/complaints" 
-                        label="Inbox Laporan" 
-                        icon={<MessageSquare size={20}/>} 
-                        active={isActive('/superadmin/complaints')} 
-                        onClick={handleLinkClick} 
-                    />
-
-                    <SidebarLink 
-                        to="/admin/aspirasi" 
-                        label="Inbox Aspirasi" 
-                        icon={<MessageCircle size={20}/>} 
-                        active={isActive('/admin/aspirasi')} 
-                        onClick={handleLinkClick} 
-                    />
-                </>
-            )}
-            
-            {/* --- MENU LAPOR & ASPIRASI (UNTUK SEMUA KECUALI SUPER ADMIN) --- */}
-            {(role === 'member' || role === 'admin' || role === 'admin_ukm') && (
-                <>
-                    <SidebarLink 
-                        to="/complaint" 
-                        label="Lapor ke BEM" 
-                        icon={<ShieldAlert size={20}/>} 
-                        active={isActive('/complaint')} 
-                        onClick={handleLinkClick} 
-                    />
-                    <SidebarLink 
-                        to="/aspirasi" 
-                        label="Kotak Aspirasi" 
-                        icon={<MessageCircle size={20}/>} 
-                        active={isActive('/aspirasi')} 
-                        onClick={handleLinkClick} 
-                    />
-                </>
-            )}
-
-            {/* Common Monitoring & Tools (Untuk Admin & Super Admin) */}
-            {(role === 'admin' || role === 'super_admin') && (
-                <>
-                    <div className="my-6 border-t border-gray-100 mx-2"></div>
-                    <p className="px-4 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Tools & Monitoring</p>
-
-                    <SidebarLink 
-                        to="/monitoring" 
-                        label={role === 'super_admin' ? 'Global Monitor' : 'Monitor UKM'} 
-                        icon={<Activity size={20}/>} 
-                        active={isActive('/monitoring')} 
-                        onClick={handleLinkClick}
-                    />
-                    <SidebarLink 
-                        to="/admin/archives" 
-                        label="E-Arsip (Drive)" 
-                        icon={<FolderOpen size={20}/>} 
-                        active={isActive('/admin/archives')} 
-                        onClick={handleLinkClick} 
-                    />
-                    
-                    <SidebarLink 
-                        to="/admin/finance-tools" 
-                        label="Pencatatan Digital" 
-                        icon={<BookOpen size={20}/>} 
-                        active={isActive('/admin/finance-tools')} 
-                        onClick={handleLinkClick} 
-                    />
-
-                    <SidebarLink 
-                        to="/admin/letter-generator" 
-                        label="Buat Surat Otomatis" 
-                        icon={<Printer size={20}/>} 
-                        active={isActive('/admin/letter-generator')} 
-                        onClick={handleLinkClick} 
-                    />
-                </>
-            )}
-
-            {/* --- FITUR SURAT MENYURAT & BERITA --- */}
-            {(role === 'admin' || role === 'super_admin') && (
-                <>
-                    <div className="my-6 border-t border-gray-100 mx-2"></div>
-                    <p className="px-4 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Publikasi & Info</p>
-                    
-                    <SidebarLink 
-                        to="/admin/posts" 
-                        label="Kelola Berita" 
-                        icon={<Newspaper size={20}/>} 
-                        active={isActive('/admin/posts')} 
-                        onClick={handleLinkClick} 
-                    />
-                    
-                    <SidebarLink 
-                        to="/admin/posts/create" 
-                        label="Tulis Artikel" 
-                        icon={<PenTool size={20}/>} 
-                        active={isActive('/admin/posts/create')} 
-                        onClick={handleLinkClick} 
-                    />
-
-                    <div className="h-2"></div>
-
-                    <SidebarLink 
-                        to="/info/compose" 
-                        label="Broadcast Pesan" 
-                        icon={<Send size={20}/>} 
-                        active={isActive('/info/compose')} 
-                        onClick={handleLinkClick} 
-                    />
-                    <SidebarLink 
-                        to="/info/inbox" 
-                        label="Kotak Masuk" 
-                        icon={<Inbox size={20}/>} 
-                        active={isActive('/info/inbox')} 
-                        onClick={handleLinkClick} 
-                    />
-                    
-                    {role === 'super_admin' && (
-                        <SidebarLink 
-                            to="/info/approval" 
-                            label="Acc Broadcast" 
-                            icon={<ShieldAlert size={20}/>} 
-                            active={isActive('/info/approval')} 
-                            onClick={handleLinkClick} 
-                        />
-                    )}
-                </>
-            )}
-
-            {/* Data Master Section (Super Admin Only) */}
-            {role === 'super_admin' && (
-                <>
-                    <div className="my-6 border-t border-gray-100 mx-2"></div>
-                    <p className="px-4 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Data Master</p>
-                    <SidebarLink to="/superadmin/manage-ukm" label="Kelola UKM" icon={<Building size={20}/>} active={isActive('/superadmin/manage-ukm')} onClick={handleLinkClick} />
-                    <SidebarLink to="/superadmin/manage-users" label="Kelola Users" icon={<Users size={20}/>} active={isActive('/superadmin/manage-users')} onClick={handleLinkClick} />
-                </>
-            )}
-        </div>
-
-        {/* 4. LOGOUT SECTION */}
-        <div className="p-4 border-t border-gray-100 bg-gray-50/50">
-            <button 
-                onClick={handleLogout}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold text-red-600 bg-white border border-red-100 hover:bg-red-50 hover:border-red-200 rounded-xl transition-all shadow-sm"
-            >
-                <LogOut size={18} />
-                <span>Sign Out</span>
-            </button>
-        </div>
-      </aside>
-    </>
-  );
+            </aside>
+        </>
+    );
 };
-
-// Sub-component Link
-const SidebarLink = ({ to, label, icon, active, onClick, badge }) => (
-  <Link 
-    to={to} 
-    onClick={onClick}
-    className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 mb-1 font-medium text-sm group relative overflow-hidden
-    ${active 
-        ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' 
-        : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
-    }`}
-  >
-    {/* Highlight Bar Active */}
-    {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 bg-white/20 rounded-r-full"></div>}
-
-    <div className="flex items-center gap-3 relative z-10">
-        <div className={`${active ? 'text-white' : 'text-gray-400 group-hover:text-blue-500 transition-colors'}`}>
-            {icon}
-        </div>
-        <span>{label}</span>
-    </div>
-    
-    {badge > 0 && (
-        <span className={`
-            flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-bold shadow-sm
-            ${active ? 'bg-white text-blue-600' : 'bg-red-500 text-white'}
-        `}>
-            {badge > 99 ? '99+' : badge}
-        </span>
-    )}
-  </Link>
-);
 
 export default Sidebar;

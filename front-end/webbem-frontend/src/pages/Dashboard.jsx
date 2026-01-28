@@ -2,25 +2,23 @@ import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { useNavigate } from 'react-router-dom';
 import { 
-  BarChart, Bar, ResponsiveContainer, XAxis, Tooltip, Cell, YAxis, CartesianGrid 
+  BarChart, Bar, ResponsiveContainer, XAxis, Tooltip, CartesianGrid 
 } from 'recharts';
 import { 
-  Users, Calendar, ShieldCheck, PlusCircle, 
-  Clock, ArrowRight, CheckCircle, MapPin, Globe, Search, Crosshair, Link, Loader2, Map as MapIcon, ChevronRight
+  Plus, Calendar, MapPin, Globe, Clock, Check, 
+  Search, Crosshair, Loader2, ChevronRight, ArrowLeft, 
+  MoreHorizontal, CalendarDays, Users
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-// --- IMPORT LEAFLET MAPS ---
+// --- LEAFLET MAPS ---
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 
-// Koordinat Default (Kampus)
 const KAMPUS_COORDS = { lat: -6.7126309, lng: 108.531254 };
-
 let DefaultIcon = L.icon({
     iconUrl: icon,
     shadowUrl: iconShadow,
@@ -29,13 +27,11 @@ let DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// --- HELPER MAP COMPONENTS ---
+// --- MAP COMPONENTS ---
 const MapController = ({ centerCoords }) => {
     const map = useMap();
     useEffect(() => {
-        if (centerCoords) {
-            map.flyTo(centerCoords, 17, { duration: 1.5 });
-        }
+        if (centerCoords) map.flyTo(centerCoords, 17, { duration: 1.5 });
     }, [centerCoords, map]);
     return null;
 };
@@ -50,20 +46,21 @@ const LocationPicker = ({ position, setPosition }) => {
 const Dashboard = () => {
   const navigate = useNavigate();
   const role = localStorage.getItem('role');
-  const [stats, setStats] = useState({ total_ukm: 0, total_users: 0, total_events: 0 });
+  
+  // STATE
   const [chartData, setChartData] = useState([]); 
+  const [recentSchedules, setRecentSchedules] = useState([]);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [viewMode, setViewMode] = useState('dashboard'); // 'dashboard' | 'create'
   const [submitting, setSubmitting] = useState(false);
 
-  // --- MAP & FORM STATE ---
+  // MAP & FORM
   const [isOnline, setIsOnline] = useState(false);
   const [useRadius, setUseRadius] = useState(false);
   const [mapPosition, setMapPosition] = useState(null); 
   const [mapCenter, setMapCenter] = useState([KAMPUS_COORDS.lat, KAMPUS_COORDS.lng]); 
   const [searchQuery, setSearchQuery] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
 
-  // FORM DATA
   const [formData, setFormData] = useState({
     event_name: '', description: '', location: '', event_date: '',
     start_time: '', end_time: '', attendance_open_time: '',
@@ -71,11 +68,9 @@ const Dashboard = () => {
     latitude: '', longitude: '', radius_meters: 50, meeting_link: ''
   });
 
-  // --- LOGIC EFFECT ---
+  // --- LOGIC ---
   useEffect(() => {
-    if (mapPosition) {
-        setFormData(prev => ({ ...prev, latitude: mapPosition.lat, longitude: mapPosition.lng }));
-    }
+    if (mapPosition) setFormData(prev => ({ ...prev, latitude: mapPosition.lat, longitude: mapPosition.lng }));
   }, [mapPosition]);
 
   useEffect(() => {
@@ -83,7 +78,7 @@ const Dashboard = () => {
         setMapPosition(KAMPUS_COORDS);
         setMapCenter([KAMPUS_COORDS.lat, KAMPUS_COORDS.lng]);
         setFormData(prev => ({ ...prev, latitude: KAMPUS_COORDS.lat, longitude: KAMPUS_COORDS.lng }));
-        toast.info("Lokasi default diatur ke Kampus");
+        toast.info("Lokasi default: Kampus");
     } else {
         setMapPosition(null);
         setFormData(prev => ({ ...prev, latitude: '', longitude: '' }));
@@ -105,44 +100,40 @@ const Dashboard = () => {
     return () => clearInterval(timer);
   }, []);
 
+  // FETCH DATA SIMPLE
   useEffect(() => {
-    if (role === 'super_admin') {
-      const fetchGlobalStats = async () => {
+    const fetchData = async () => {
         try {
-          const res = await api.get('/monitoring/global');
-          setStats({
-            total_ukm: res.data.summary.total_ukm,
-            total_users: res.data.summary.total_users,
-            total_events: res.data.ukm_list.reduce((acc, ukm) => acc + parseInt(ukm.total_events || 0), 0)
-          });
-          const formattedChartData = res.data.ukm_list.map(ukm => ({
-            name: ukm.ukm_name || ukm.name, 
-            events: parseInt(ukm.total_events || 0)
-          }));
-          setChartData(formattedChartData);
-        } catch (err) { console.error(err); }
-      };
-      fetchGlobalStats();
-    }
-  }, [role]);
+            if (role === 'super_admin') {
+                const res = await api.get('/monitoring/global');
+                setChartData(res.data.ukm_list.map(ukm => ({
+                    name: ukm.ukm_name || ukm.name, 
+                    events: parseInt(ukm.total_events || 0)
+                })));
+            } else if (role === 'admin') {
+                // Ambil 5 jadwal terakhir saja untuk list ringkas
+                const res = await api.get('/schedules'); 
+                setRecentSchedules(res.data.slice(0, 5));
+            }
+        } catch (err) { console.error("Error fetching data:", err); }
+    };
+    fetchData();
+  }, [role, viewMode]); // Refresh saat mode berubah
 
-  // --- HANDLERS ---
+  // HANDLERS
   const handleMyLocation = () => {
     if (navigator.geolocation) {
-        toast.info("Mencari titik GPS...");
         navigator.geolocation.getCurrentPosition((position) => {
             const { latitude, longitude } = position.coords;
             setMapPosition({ lat: latitude, lng: longitude });
             setMapCenter([latitude, longitude]);
-            toast.success("Lokasi ditemukan!");
-        }, () => toast.error("Gagal mengambil lokasi. Aktifkan GPS."));
+        });
     }
   };
 
   const handleSearchLocation = async (e) => {
     e.preventDefault();
     if (!searchQuery) return;
-    setIsSearching(true);
     try {
         const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${searchQuery}&limit=1`);
         const data = await response.json();
@@ -150,15 +141,13 @@ const Dashboard = () => {
             const { lat, lon } = data[0];
             setMapPosition({ lat: parseFloat(lat), lng: parseFloat(lon) });
             setMapCenter([parseFloat(lat), parseFloat(lon)]);
-            toast.success("Ketemu!");
-        } else { toast.error("Lokasi tidak ditemukan!"); }
-    } catch { toast.error("Error mencari lokasi."); } finally { setIsSearching(false); }
+        } else { toast.error("Lokasi tidak ditemukan."); }
+    } catch { toast.error("Gagal koneksi peta."); }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    const toastId = toast.loading("Menerbitkan...");
     try {
       const payload = {
           ...formData,
@@ -167,259 +156,289 @@ const Dashboard = () => {
           meeting_link: isOnline ? formData.meeting_link : null
       };
       await api.post('/schedules', payload);
-      toast.success('Agenda Terbit!', { id: toastId });
-      setTimeout(() => navigate('/monitoring'), 1000);
+      toast.success('Agenda Diterbitkan');
+      
+      // Reset Form
+      setFormData({
+        event_name: '', description: '', location: '', event_date: '',
+        start_time: '', end_time: '', attendance_open_time: '',
+        attendance_close_time: '', tolerance_minutes: 15, type: 'Rapat',
+        latitude: '', longitude: '', radius_meters: 50, meeting_link: ''
+      });
+      setIsOnline(false);
+      setUseRadius(false);
+      
+      setTimeout(() => {
+          setViewMode('dashboard');
+          setSubmitting(false);
+      }, 500);
     } catch (err) {
-      toast.error(err.response?.data?.msg || 'Gagal.', { id: toastId });
-    } finally { setSubmitting(false); }
+      setSubmitting(false);
+      toast.error('Gagal menerbitkan agenda.');
+    }
   };
 
   if (!role) return null;
 
   return (
-    // CONTAINER UTAMA: Background abu-abu muda, padding bawah besar untuk sticky button
-    <div className="min-h-screen bg-gray-50 pb-32 font-sans selection:bg-blue-100">
+    <div className="min-h-screen bg-white font-sans text-slate-800 pb-20">
         
-        {/* HEADER SECTION */}
-        <div className="bg-white px-6 py-6 rounded-b-3xl shadow-sm border-b border-gray-100 mb-6">
-            <div className="flex justify-between items-start">
-                <div>
-                    <h1 className="text-2xl font-black text-gray-900 tracking-tight">
-                        {role === 'super_admin' ? 'Super Dashboard' : 'Buat Agenda'}
-                    </h1>
-                    <p className="text-gray-500 font-medium text-sm mt-1">SIAKSI Console</p>
+        {/* --- HEADER: CLEAN & SIMPLE --- */}
+        <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-slate-100 px-6 py-4">
+            <div className="max-w-5xl mx-auto flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                    {viewMode === 'create' && (
+                        <button onClick={() => setViewMode('dashboard')} className="p-2 -ml-2 hover:bg-slate-50 rounded-full transition-colors">
+                            <ArrowLeft size={20} className="text-slate-600" />
+                        </button>
+                    )}
+                    <div>
+                        <h1 className="text-xl font-semibold tracking-tight text-slate-900">
+                            {role === 'super_admin' ? 'Global Overview' : (viewMode === 'create' ? 'Agenda Baru' : 'Dashboard')}
+                        </h1>
+                        <p className="text-xs text-slate-500 font-medium hidden md:block">
+                            {currentTime.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                        </p>
+                    </div>
                 </div>
-                <div className="bg-gray-50 px-3 py-2 rounded-xl border border-gray-100 text-right">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase">Waktu Server</p>
-                    <p className="text-sm font-bold text-gray-900 tabular-nums">
-                        {currentTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                </div>
+                
+                {/* Actions Header */}
+                {viewMode === 'dashboard' && role === 'admin' && (
+                    <button 
+                        onClick={() => setViewMode('create')}
+                        className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 shadow-lg shadow-slate-200 active:scale-95"
+                    >
+                        <Plus size={16} /> <span className="hidden sm:inline">Buat Agenda</span>
+                    </button>
+                )}
             </div>
         </div>
 
-        <div className="px-4 md:px-8 max-w-7xl mx-auto">
-        {role === 'super_admin' ? (
-          /* SUPER ADMIN VIEW */
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <StatCard title="Total UKM" value={stats.total_ukm} icon={<ShieldCheck size={24}/>} color="bg-blue-500" />
-                <StatCard title="Total User" value={stats.total_users} icon={<Users size={24}/>} color="bg-purple-500" />
-                <StatCard title="Kegiatan" value={stats.total_events} icon={<Calendar size={24}/>} color="bg-orange-500" />
-            </div>
-            
-            <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-                <h3 className="font-bold text-gray-900 mb-6">Statistik Kegiatan</h3>
-                <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chartData}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10}} interval={0} />
-                            <Tooltip cursor={{fill: '#f9fafb'}} contentStyle={{borderRadius: '12px', border:'none', boxShadow:'0 10px 15px -3px rgba(0,0,0,0.1)'}} />
-                            <Bar dataKey="events" radius={[6, 6, 0, 0]} fill="#3B82F6" barSize={30} />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-                <NavButton onClick={() => navigate('/superadmin/manage-ukm')} label="Kelola UKM" color="blue" />
-                <NavButton onClick={() => navigate('/superadmin/manage-users')} label="Kelola User" color="purple" />
-            </div>
-          </div>
-        ) : (
-          /* ADMIN UKM FORM - MODIFIKASI LEGA */
-          <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-            
-            {/* SECTION 1: INFO DASAR */}
-            <div className="bg-white p-5 md:p-8 rounded-3xl shadow-sm border border-gray-100 space-y-5">
-                <SectionHeader icon={<PlusCircle size={20}/>} title="Informasi Dasar" />
-                
-                <InputGroup label="Nama Kegiatan" value={formData.event_name} onChange={(v) => setFormData({...formData, event_name: v})} placeholder="Cth: Rapat Rutin" />
-                
-                <InputGroup label="Deskripsi" isTextArea value={formData.description} onChange={(v) => setFormData({...formData, description: v})} placeholder="Detail agenda..." />
-
-                <InputGroup label="Kategori" value={formData.type} onChange={(v) => setFormData({...formData, type: v})} isSelect options={['Rapat', 'Kegiatan', 'Pelatihan']} />
-            </div>
-
-            {/* SECTION 2: LOKASI & MAPS */}
-            <div className="bg-white p-5 md:p-8 rounded-3xl shadow-sm border border-gray-100 space-y-6">
-                <SectionHeader icon={<MapPin size={20}/>} title="Lokasi & Presensi" />
-
-                {/* TOGGLE CARD */}
-                <div className="bg-gray-50 p-4 rounded-2xl flex items-center justify-between border border-gray-200">
-                    <div className="flex items-center gap-3">
-                        <div className={`p-3 rounded-xl ${isOnline ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>
-                            {isOnline ? <Globe size={24}/> : <MapPin size={24}/>}
-                        </div>
-                        <div>
-                            <p className="font-bold text-gray-900 text-sm">Metode Acara</p>
-                            <p className="text-xs text-gray-500 font-medium">{isOnline ? 'Online (Daring)' : 'Offline (Luring)'}</p>
-                        </div>
+        <div className="max-w-5xl mx-auto px-6 py-8">
+        
+        {/* --- VIEW: SUPER ADMIN --- */}
+        {role === 'super_admin' && (
+            <div className="space-y-8 animate-in fade-in duration-500">
+                <div className="bg-slate-50 rounded-3xl p-6 border border-slate-100">
+                    <h3 className="text-sm font-semibold text-slate-900 mb-6 flex items-center gap-2">
+                        <Users size={16} className="text-blue-600"/> Aktivitas UKM
+                    </h3>
+                    <div className="h-64 w-full">
+                        <ResponsiveContainer>
+                            <BarChart data={chartData}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 11, fill: '#64748b'}} />
+                                <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{borderRadius:'12px', border:'none', boxShadow:'0 4px 6px -1px rgba(0, 0, 0, 0.1)'}} />
+                                <Bar dataKey="events" fill="#4f46e5" radius={[6, 6, 6, 6]} barSize={30} />
+                            </BarChart>
+                        </ResponsiveContainer>
                     </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" className="sr-only peer" checked={isOnline} onChange={() => setIsOnline(!isOnline)} />
-                        <div className="w-12 h-7 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600"></div>
-                    </label>
                 </div>
+            </div>
+        )}
 
-                {isOnline ? (
-                     <div className="animate-in fade-in slide-in-from-top-2">
-                        <InputGroup label="Link Meeting" value={formData.meeting_link} onChange={(v) => setFormData({...formData, meeting_link: v})} placeholder="https://zoom.us/..." />
-                        <div className="h-2"></div>
-                        <InputGroup label="Platform / Info" value={formData.location} onChange={(v) => setFormData({...formData, location: v})} placeholder="Zoom Meeting" />
-                     </div>
-                ) : (
-                    <div className="space-y-5 animate-in fade-in slide-in-from-top-2">
-                        {/* RADIUS TOGGLE */}
-                        <div className="flex items-center justify-between bg-blue-50/50 p-4 rounded-2xl border border-blue-100">
-                            <div>
-                                <p className="font-bold text-gray-800 text-sm">Wajib Radius?</p>
-                                <p className="text-xs text-gray-500">Member harus ada di lokasi</p>
-                            </div>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" className="sr-only peer" checked={useRadius} onChange={() => setUseRadius(!useRadius)} />
-                                <div className="w-10 h-6 bg-gray-300 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                            </label>
+        {/* --- VIEW: ADMIN DASHBOARD (SIMPLE LIST) --- */}
+        {role === 'admin' && viewMode === 'dashboard' && (
+            <div className="animate-in fade-in duration-500">
+                {recentSchedules.length > 0 ? (
+                    <div className="space-y-4">
+                        <div className="flex justify-between items-end mb-2">
+                            <h2 className="text-lg font-semibold text-slate-900">Jadwal Terakhir</h2>
+                            <button onClick={() => navigate('/admin/events')} className="text-sm text-blue-600 font-medium hover:underline flex items-center gap-1">
+                                Lihat Semua <ChevronRight size={14}/>
+                            </button>
                         </div>
-
-                        {useRadius && (
-                            <div className="space-y-4">
-                                {/* SEARCH BAR MAP */}
-                                <div className="flex gap-2">
-                                    <div className="relative flex-1">
-                                        <input type="text" className="w-full pl-10 pr-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none text-sm font-bold transition-all" placeholder="Cari gedung/jalan..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-                                        <Search className="absolute left-3 top-3.5 text-gray-400" size={18} />
-                                    </div>
-                                    <button type="button" onClick={handleSearchLocation} className="bg-blue-600 text-white px-4 rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform">Cari</button>
-                                </div>
-
-                                {/* MAP CONTAINER */}
-                                <div className="h-72 w-full rounded-2xl overflow-hidden shadow-lg border-2 border-white relative z-0">
-                                    <MapContainer center={mapCenter} zoom={17} scrollWheelZoom={false} style={{ height: "100%", width: "100%" }}>
-                                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                                        <MapController centerCoords={mapCenter} />
-                                        <LocationPicker position={mapPosition} setPosition={setMapPosition} />
-                                    </MapContainer>
-                                    <button type="button" onClick={handleMyLocation} className="absolute bottom-4 right-4 bg-white text-blue-600 p-3 rounded-full shadow-lg z-[400] active:scale-90 transition-transform">
-                                        <Crosshair size={24}/>
-                                    </button>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-200">
-                                        <p className="text-[10px] uppercase text-gray-400 font-bold mb-1">Jarak Toleransi</p>
-                                        <div className="flex items-center gap-2">
-                                            <input type="number" className="w-full bg-transparent font-bold text-gray-900 outline-none text-lg" value={formData.radius_meters} onChange={(e) => setFormData({...formData, radius_meters: e.target.value})} />
-                                            <span className="text-xs font-bold text-gray-400">Meter</span>
+                        
+                        {/* LIST JADWAL HALUS */}
+                        <div className="grid gap-3">
+                            {recentSchedules.map((item, idx) => (
+                                <div key={idx} className="group bg-white border border-slate-100 hover:border-blue-200 p-4 rounded-2xl shadow-sm hover:shadow-md transition-all flex justify-between items-center cursor-pointer">
+                                    <div className="flex gap-4 items-center">
+                                        <div className="h-12 w-12 bg-blue-50 text-blue-600 rounded-xl flex flex-col items-center justify-center border border-blue-100">
+                                            <span className="text-[10px] font-bold uppercase">{new Date(item.event_date).toLocaleString('id-ID', { month: 'short' })}</span>
+                                            <span className="text-lg font-bold leading-none">{new Date(item.event_date).getDate()}</span>
+                                        </div>
+                                        <div>
+                                            <h3 className="font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">{item.event_name}</h3>
+                                            <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
+                                                <span className="flex items-center gap-1"><Clock size={12}/> {item.start_time.slice(0,5)}</span>
+                                                <span className="flex items-center gap-1"><MapPin size={12}/> {item.is_online ? 'Online' : 'Offline'}</span>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-200">
-                                        <p className="text-[10px] uppercase text-gray-400 font-bold mb-1">Titik Koordinat</p>
-                                        <p className="text-xs font-mono text-gray-600 truncate">{formData.latitude ? `${formData.latitude}, ${formData.longitude}` : 'Belum dipilih'}</p>
+                                    <div className="bg-slate-50 p-2 rounded-full text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                                        <ChevronRight size={18} />
                                     </div>
                                 </div>
-                            </div>
-                        )}
-                        <InputGroup label="Nama Lokasi / Ruangan" value={formData.location} onChange={(v) => setFormData({...formData, location: v})} placeholder="Gedung A, Lantai 2" />
+                            ))}
+                        </div>
+                    </div>
+                ) : (
+                    /* EMPTY STATE */
+                    <div className="text-center py-20 px-6">
+                        <div className="bg-slate-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <CalendarDays size={32} className="text-slate-300" />
+                        </div>
+                        <h2 className="text-xl font-semibold text-slate-900 mb-2">Belum ada agenda</h2>
+                        <p className="text-slate-500 mb-8 max-w-xs mx-auto text-sm">
+                            Agenda yang Anda buat akan muncul di sini. Mulai buat jadwal untuk anggota sekarang.
+                        </p>
+                        <button 
+                            onClick={() => setViewMode('create')}
+                            className="bg-slate-900 text-white px-6 py-3 rounded-full font-medium shadow-lg shadow-slate-200 hover:scale-105 transition-transform"
+                        >
+                            Buat Agenda Pertama
+                        </button>
                     </div>
                 )}
             </div>
+        )}
 
-            {/* SECTION 3: WAKTU */}
-            <div className="bg-white p-5 md:p-8 rounded-3xl shadow-sm border border-gray-100 space-y-6">
-                <SectionHeader icon={<Clock size={20}/>} title="Waktu & Presensi" />
-
-                <InputGroup label="Tanggal Acara" type="date" value={formData.event_date} onChange={(v) => setFormData({...formData, event_date: v})} />
-
-                <div className="grid grid-cols-2 gap-4">
-                    <InputGroup label="Mulai" type="time" value={formData.start_time} onChange={(v) => setFormData({...formData, start_time: v})} />
-                    <InputGroup label="Selesai" type="time" value={formData.end_time} onChange={(v) => setFormData({...formData, end_time: v})} />
-                </div>
-
-                <div className="bg-orange-50 p-5 rounded-2xl border border-orange-100">
-                    <p className="text-xs font-extrabold text-orange-600 uppercase mb-3 flex items-center gap-2">
-                        <CheckCircle size={14}/> Jam Absen Dibuka
-                    </p>
-                    <div className="flex items-center gap-3">
-                        <div className="flex-1">
-                            <input type="time" className="w-full bg-white border border-orange-200 rounded-xl px-2 py-3 text-center font-bold text-gray-900 shadow-sm focus:ring-2 focus:ring-orange-400 outline-none" value={formData.attendance_open_time} onChange={(e) => setFormData({...formData, attendance_open_time: e.target.value})} />
-                            <p className="text-[10px] text-center text-gray-400 mt-1 font-medium">BUKA</p>
-                        </div>
-                        <span className="text-orange-300 font-bold">-</span>
-                        <div className="flex-1">
-                            <input type="time" className="w-full bg-white border border-orange-200 rounded-xl px-2 py-3 text-center font-bold text-gray-900 shadow-sm focus:ring-2 focus:ring-orange-400 outline-none" value={formData.attendance_close_time} onChange={(e) => setFormData({...formData, attendance_close_time: e.target.value})} />
-                            <p className="text-[10px] text-center text-gray-400 mt-1 font-medium">TUTUP</p>
+        {/* --- VIEW: CREATE FORM (SOFT UI) --- */}
+        {viewMode === 'create' && (
+            <form onSubmit={handleSubmit} className="space-y-8 animate-in slide-in-from-right-8 duration-500">
+                
+                {/* 1. DETAIL */}
+                <section className="space-y-4">
+                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Detail Kegiatan</h3>
+                    <div className="grid gap-4">
+                        <SoftInput placeholder="Nama Kegiatan (Cth: Rapat Bulanan)" value={formData.event_name} onChange={(e) => setFormData({...formData, event_name: e.target.value})} autoFocus />
+                        <textarea 
+                            className="w-full bg-slate-50 border-0 rounded-2xl px-5 py-4 text-sm font-medium text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all resize-none h-32"
+                            placeholder="Deskripsi singkat..."
+                            value={formData.description}
+                            onChange={(e) => setFormData({...formData, description: e.target.value})}
+                        />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <SoftSelect value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})} options={['Rapat', 'Kegiatan', 'Pelatihan', 'Lainnya']} />
+                            <SoftInput type="date" value={formData.event_date} onChange={(e) => setFormData({...formData, event_date: e.target.value})} />
                         </div>
                     </div>
-                    <div className="mt-4 pt-4 border-t border-orange-200/50">
-                        <div className="flex justify-between items-center">
-                            <span className="text-xs font-bold text-gray-500 uppercase">Toleransi Keterlambatan</span>
-                            <div className="flex items-center gap-2 bg-white px-3 py-1 rounded-lg border border-orange-100">
-                                <input type="number" className="w-10 text-right font-bold text-gray-900 outline-none" value={formData.tolerance_minutes} onChange={(e) => setFormData({...formData, tolerance_minutes: e.target.value})} />
-                                <span className="text-xs font-bold text-gray-400">Menit</span>
+                </section>
+
+                {/* 2. WAKTU */}
+                <section className="space-y-4">
+                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Waktu & Presensi</h3>
+                    <div className="bg-slate-50 p-6 rounded-3xl space-y-6">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-xs font-medium text-slate-500 ml-2 mb-1 block">Mulai</label>
+                                <SoftInput type="time" value={formData.start_time} onChange={(e) => setFormData({...formData, start_time: e.target.value})} bg="bg-white" />
+                            </div>
+                            <div>
+                                <label className="text-xs font-medium text-slate-500 ml-2 mb-1 block">Selesai</label>
+                                <SoftInput type="time" value={formData.end_time} onChange={(e) => setFormData({...formData, end_time: e.target.value})} bg="bg-white" />
+                            </div>
+                        </div>
+                        
+                        <div className="pt-4 border-t border-slate-200">
+                            <div className="flex items-center justify-between mb-4">
+                                <span className="text-sm font-semibold text-slate-700">Jendela Presensi</span>
+                                <div className="flex items-center gap-2 bg-white px-3 py-1 rounded-full border border-slate-200">
+                                    <span className="text-[10px] text-slate-400">Toleransi</span>
+                                    <input type="number" className="w-8 text-center font-bold text-slate-900 outline-none text-sm" value={formData.tolerance_minutes} onChange={(e) => setFormData({...formData, tolerance_minutes: e.target.value})} />
+                                    <span className="text-[10px] text-slate-400">Menit</span>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div className="flex-1 text-center">
+                                    <input type="time" className="w-full bg-white border border-slate-200 rounded-xl px-2 py-3 text-center font-bold text-slate-900 shadow-sm outline-none focus:ring-2 focus:ring-blue-100" value={formData.attendance_open_time} onChange={(e) => setFormData({...formData, attendance_open_time: e.target.value})} />
+                                    <p className="text-[10px] text-slate-400 mt-2">Buka</p>
+                                </div>
+                                <span className="text-slate-300">-</span>
+                                <div className="flex-1 text-center">
+                                    <input type="time" className="w-full bg-white border border-slate-200 rounded-xl px-2 py-3 text-center font-bold text-slate-900 shadow-sm outline-none focus:ring-2 focus:ring-blue-100" value={formData.attendance_close_time} onChange={(e) => setFormData({...formData, attendance_close_time: e.target.value})} />
+                                    <p className="text-[10px] text-slate-400 mt-2">Tutup</p>
+                                </div>
                             </div>
                         </div>
                     </div>
+                </section>
+
+                {/* 3. LOKASI */}
+                <section className="space-y-4">
+                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Lokasi</h3>
+                    
+                    <div className="flex gap-2 p-1 bg-slate-100 rounded-xl w-fit">
+                        <button type="button" onClick={() => setIsOnline(false)} className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${!isOnline ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Offline (Kampus)</button>
+                        <button type="button" onClick={() => setIsOnline(true)} className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${isOnline ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Online (Zoom)</button>
+                    </div>
+
+                    {isOnline ? (
+                        <div className="space-y-4 animate-in fade-in">
+                            <SoftInput placeholder="Link Meeting (https://...)" value={formData.meeting_link} onChange={(e) => setFormData({...formData, meeting_link: e.target.value})} />
+                            <SoftInput placeholder="Platform (Zoom / Google Meet)" value={formData.location} onChange={(e) => setFormData({...formData, location: e.target.value})} />
+                        </div>
+                    ) : (
+                        <div className="space-y-4 animate-in fade-in">
+                            <div className="relative">
+                                <input type="text" className="w-full pl-10 pr-4 py-4 rounded-2xl bg-slate-50 border-0 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all text-sm font-medium placeholder-slate-400" placeholder="Cari lokasi..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                                <Search className="absolute left-3.5 top-4 text-slate-400" size={18} />
+                                <button type="button" onClick={handleSearchLocation} className="absolute right-2 top-2 bg-slate-200 text-slate-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-slate-300 transition-colors">Cari</button>
+                            </div>
+
+                            <div className="h-64 w-full bg-slate-200 rounded-3xl overflow-hidden relative z-0">
+                                <MapContainer center={mapCenter} zoom={17} scrollWheelZoom={false} style={{ height: "100%", width: "100%" }}>
+                                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                                    <MapController centerCoords={mapCenter} />
+                                    <LocationPicker position={mapPosition} setPosition={setMapPosition} />
+                                </MapContainer>
+                                <button type="button" onClick={handleMyLocation} className="absolute bottom-4 right-4 bg-white p-3 rounded-full shadow-lg z-[400] hover:scale-105 transition-transform text-slate-700">
+                                    <Crosshair size={20}/>
+                                </button>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <input type="checkbox" id="radius" className="w-5 h-5 text-blue-600 rounded-md border-slate-300 focus:ring-blue-500" checked={useRadius} onChange={() => setUseRadius(!useRadius)} />
+                                <label htmlFor="radius" className="text-sm font-medium text-slate-700">Wajib dalam radius</label>
+                                {useRadius && (
+                                    <div className="flex items-center gap-2 bg-slate-50 px-3 py-1 rounded-lg border border-slate-200 ml-auto">
+                                        <input type="number" className="w-12 bg-transparent text-right font-bold text-slate-900 outline-none text-sm" value={formData.radius_meters} onChange={(e) => setFormData({...formData, radius_meters: e.target.value})} />
+                                        <span className="text-xs text-slate-400">Meter</span>
+                                    </div>
+                                )}
+                            </div>
+                            <SoftInput placeholder="Nama Ruangan (Gedung A)" value={formData.location} onChange={(e) => setFormData({...formData, location: e.target.value})} />
+                        </div>
+                    )}
+                </section>
+
+                <div className="pt-6">
+                    <button type="submit" disabled={submitting} className="w-full bg-slate-900 text-white font-medium py-4 rounded-2xl hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 active:scale-[0.98] disabled:opacity-70 flex justify-center items-center gap-2">
+                        {submitting ? <Loader2 className="animate-spin" size={20} /> : <Check size={20} />}
+                        {submitting ? 'Memproses...' : 'Terbitkan Agenda'}
+                    </button>
                 </div>
-            </div>
 
-            {/* STICKY BOTTOM BUTTON (MOBILE STYLE) */}
-            <div className="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-md border-t border-gray-200 p-4 z-50 md:static md:bg-transparent md:border-none md:p-0">
-                <button type="submit" disabled={submitting} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-200 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:bg-gray-400 disabled:scale-100">
-                    {submitting ? <Loader2 className="animate-spin" /> : <CheckCircle size={22} />}
-                    {submitting ? 'Menyimpan...' : 'Terbitkan Agenda'}
-                </button>
-            </div>
-
-          </form>
+            </form>
         )}
         </div>
     </div>
   );
 };
 
-// --- COMPONENTS YANG DIPERBAIKI (LEBIH LEGA) ---
-
-const SectionHeader = ({ icon, title }) => (
-    <div className="flex items-center gap-3 border-b border-gray-100 pb-4 mb-2">
-        <div className="text-gray-400">{icon}</div>
-        <h2 className="text-lg font-bold text-gray-900">{title}</h2>
-    </div>
+// --- SOFT UI COMPONENTS ---
+const SoftInput = ({ type = "text", placeholder, value, onChange, bg = "bg-slate-50", ...props }) => (
+    <input 
+        type={type} 
+        className={`w-full ${bg} border-0 rounded-2xl px-5 py-4 text-sm font-medium text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none`}
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        {...props}
+    />
 );
 
-const StatCard = ({ title, value, icon, color }) => (
-    <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4">
-        <div className={`p-4 rounded-2xl text-white shadow-md ${color}`}>{icon}</div>
-        <div>
-            <p className="text-xs font-bold text-gray-400 uppercase">{title}</p>
-            <h3 className="text-2xl font-black text-gray-900">{value}</h3>
-        </div>
-    </div>
-);
-
-const NavButton = ({ onClick, label, color }) => (
-    <button onClick={onClick} className="w-full bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between hover:bg-gray-50 active:scale-95 transition-all">
-        <span className="font-bold text-gray-700">{label}</span>
-        <ChevronRight size={20} className="text-gray-300" />
-    </button>
-);
-
-const InputGroup = ({ label, value, onChange, placeholder, isTextArea, isSelect, options, type="text" }) => (
-    <div className="flex flex-col gap-2">
-        <label className="text-xs font-bold text-gray-500 uppercase ml-1">{label}</label>
-        {isTextArea ? (
-            <textarea className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 text-gray-900 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm font-medium min-h-[120px]" placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)} />
-        ) : isSelect ? (
-            <div className="relative">
-                <select className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 text-gray-900 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm font-bold appearance-none" value={value} onChange={(e) => onChange(e.target.value)}>
-                    {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                </select>
-                <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">▼</div>
-            </div>
-        ) : (
-            <input type={type} className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 text-gray-900 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm font-bold placeholder-gray-400" placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)} />
-        )}
+const SoftSelect = ({ value, onChange, options }) => (
+    <div className="relative">
+        <select 
+            className="w-full bg-slate-50 border-0 rounded-2xl px-5 py-4 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none appearance-none cursor-pointer"
+            value={value}
+            onChange={onChange}
+        >
+            {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+        </select>
+        <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">▼</div>
     </div>
 );
 

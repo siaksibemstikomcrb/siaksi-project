@@ -50,12 +50,31 @@ const updateUKM = async (req, res) => {
 // Hapus UKM Permanen
 const deleteUKM = async (req, res) => {
     const { id } = req.params;
+
     try {
-        // Karena ada ON DELETE CASCADE, user & jadwal terkait akan ikut terhapus
-        await db.query('DELETE FROM UKMs WHERE id = $1', [id]);
-        res.json({ msg: 'Organisasi dan seluruh datanya telah dihapus.' });
+        // 1. HAPUS SEMUA USER DI UKM INI DULU (PENTING!)
+        // Kita hapus manual biar yakin bersih
+        await db.query("DELETE FROM users WHERE ukm_id = $1", [id]);
+
+        // 2. (Opsional) Hapus Jadwal/Event UKM biar bersih
+        await db.query("DELETE FROM schedules WHERE ukm_id = $1", [id]);
+
+        // 3. BARU HAPUS UKM-NYA
+        const result = await db.query("DELETE FROM ukms WHERE id = $1 RETURNING *", [id]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ msg: "UKM tidak ditemukan." });
+        }
+
+        res.json({ msg: `UKM '${result.rows[0].ukm_name}' dan seluruh anggotanya berhasil dihapus.` });
+
     } catch (err) {
-        res.status(500).send('Server Error saat menghapus UKM');
+        console.error("Error Delete UKM:", err.message);
+        // Cek error foreign key lain jika ada
+        if (err.code === '23503') {
+            return res.status(400).json({ msg: "Gagal hapus: Masih ada data terkait (Dokumen/Postingan) yang harus dibersihkan dulu." });
+        }
+        res.status(500).send('Server Error saat menghapus UKM.');
     }
 };
 
@@ -234,6 +253,8 @@ const resetMemberPassword = async (req, res) => {
         res.status(500).send('Server Error');
     }
 };
+
+
 
 // JANGAN LUPA: Masukkan getAllUKMs ke module.exports
 module.exports = { createUKM, getGlobalStats, updateUKM, deleteUKM, getAllUKMs, getMyProfile, updateDescription, updateLogo, updateContact, getUkmMembers, resetMemberPassword };

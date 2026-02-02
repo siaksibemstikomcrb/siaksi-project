@@ -4,7 +4,6 @@ const xlsx = require('xlsx');
 const axios = require('axios'); 
 const fs = require('fs');
 
-// --- HELPER: GENERATE KODE UKM ---
 const generateUkmCode = (ukmName) => {
     if (!ukmName) return "MHS";
     const name = ukmName.toLowerCase();
@@ -37,7 +36,6 @@ const uploadBulkUsers = async (req, res) => {
             finalUkmCode = generateUkmCode(ukmQuery.rows[0].ukm_name);
         }
 
-        // --- BACA FILE (Support Cloudinary & Lokal) ---
         let workbook;
         if (req.file.path.startsWith('http')) {
             const response = await axios.get(req.file.path, { responseType: 'arraybuffer' });
@@ -47,19 +45,15 @@ const uploadBulkUsers = async (req, res) => {
         }
 
         const sheetName = workbook.SheetNames[0];
-        // Defval: "" agar cell kosong terbaca string kosong
         const rawData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, defval: "" });
 
-        // --- LOGIC PINTAR: CARI BARIS HEADER ---
         let headerRowIndex = 0;
-        let headerMap = {}; // Menyimpan index kolom: 0 -> 'no', 1 -> 'nia', 2 -> 'nama'
+        let headerMap = {};
 
-        // Cari baris mana yang mengandung 'nama' atau 'nia'
-        for (let i = 0; i < Math.min(rawData.length, 5); i++) { // Cek 5 baris pertama saja
+        for (let i = 0; i < Math.min(rawData.length, 5); i++) {
             const row = rawData[i].map(val => String(val).toLowerCase().trim());
             if (row.includes('nama') || row.includes('nia') || row.includes('nim')) {
                 headerRowIndex = i;
-                // Mapping kolom
                 row.forEach((colName, idx) => {
                     if (colName === 'nama') headerMap['nama'] = idx;
                     if (colName === 'nia' || colName === 'nim') headerMap['nia'] = idx;
@@ -68,7 +62,6 @@ const uploadBulkUsers = async (req, res) => {
             }
         }
 
-        // Jika tidak ketemu kolom nama/nia
         if (!('nama' in headerMap) || !('nia' in headerMap)) {
             return res.status(400).json({ msg: "Gagal membaca Excel. Pastikan ada kolom 'NAMA' dan 'NIA'." });
         }
@@ -78,15 +71,12 @@ const uploadBulkUsers = async (req, res) => {
 
         console.log(`📂 Header ditemukan di baris ke-${headerRowIndex + 1}. Memproses data...`);
 
-        // --- LOOPING DATA (Mulai dari baris setelah header) ---
         for (let i = headerRowIndex + 1; i < rawData.length; i++) {
             const row = rawData[i];
             
-            // Ambil data berdasarkan index kolom yang sudah dimapping
             const nameRaw = row[headerMap['nama']];
             const niaRaw = row[headerMap['nia']];
 
-            // Validasi data kosong
             if (!nameRaw || !niaRaw) continue;
 
             const name = String(nameRaw).trim();
@@ -95,16 +85,12 @@ const uploadBulkUsers = async (req, res) => {
 
             if(name === "" || cleanNIA === "") continue;
 
-            // 1. FORMAT PASSWORD (ART + NIA) -> ART102024041
             const rawPassword = `${finalUkmCode}${cleanNIA}`;
             
-            // 2. FORMAT USERNAME (Sesuai Request: HURUF BESAR) -> ART102024041
-            // Hapus .toLowerCase() disini agar Username jadi UPPERCASE
             const usernameGen = rawPassword.replace(/\s/g, ''); 
 
             const passwordHash = await bcrypt.hash(rawPassword, salt);
 
-            // Cek Duplikasi (Case Insensitive Check untuk PostgreSQL)
             const checkUser = await db.query("SELECT id FROM users WHERE LOWER(username) = LOWER($1)", [usernameGen]);
             
             if (checkUser.rows.length === 0) {
@@ -117,7 +103,6 @@ const uploadBulkUsers = async (req, res) => {
             }
         }
 
-        // Hapus file temp (Jika Lokal)
         if (!req.file.path.startsWith('http') && fs.existsSync(req.file.path)) {
             fs.unlinkSync(req.file.path);
         }

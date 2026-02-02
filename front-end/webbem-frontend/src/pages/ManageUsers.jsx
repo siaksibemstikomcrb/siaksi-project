@@ -7,27 +7,21 @@ import {
 import { toast } from 'sonner';
 
 const ManageUsers = () => {
-    // --- STATE MANAGEMENT ---
     const [users, setUsers] = useState([]);
     const [search, setSearch] = useState('');
     const [loadingUsers, setLoadingUsers] = useState(true);
-    
-    // Form Tambah User
     const [ukmList, setUkmList] = useState([]);
     const [showAddForm, setShowAddForm] = useState(false);
     const [formData, setFormData] = useState({ 
         name: '', username: '', nia: '', password: '', role_id: '3', ukm_id: '' 
     });
-    const [loadingSubmit, setLoadingSubmit] = useState(false);
 
-    // Modal Reset Password
+    const [loadingSubmit, setLoadingSubmit] = useState(false);
     const [resetModal, setResetModal] = useState({ show: false, userId: null, userName: '' });
     const [newPass, setNewPass] = useState('');
     const [loadingReset, setLoadingReset] = useState(false);
-
     const myRole = localStorage.getItem('role');
 
-    // --- 1. FETCH DATA ---
     const fetchData = async () => {
         setLoadingUsers(true);
         try {
@@ -47,7 +41,6 @@ const ManageUsers = () => {
 
     useEffect(() => { fetchData(); }, []);
 
-    // --- 2. HANDLE DELETE ---
     const handleDelete = async (userId, userName) => {
         if (!window.confirm(`Yakin ingin mengeluarkan ${userName}?`)) return;
         try {
@@ -59,28 +52,22 @@ const ManageUsers = () => {
         }
     };
 
-    // --- 3. HANDLE TAMBAH USER ---
 const handleSubmit = async (e) => {
     e.preventDefault();
     setLoadingSubmit(true);
 
-    // COPY DATA FORM
     let payload = { ...formData };
 
-    // PERBAIKAN LOGIC:
-    // Jika Role = Super Admin (1), kita PAKSA ukm_id jadi "9" (ID BEM) atau null (tergantung backend)
-    // Supaya tidak mengirim string kosong "".
     if (payload.role_id === '1') {
-        payload.ukm_id = '9'; // ID BEM STIKOM (Sesuaikan jika beda)
-        payload.nia = '-';    // Super Admin biasanya ga butuh NIA
+        payload.ukm_id = '9';
+        payload.nia = '-';
     }
 
     try {
-        await api.post('/users', payload); // Pastikan endpoint benar '/users' atau '/admin/register-user'
+        await api.post('/users', payload);
         
         toast.success(`User ${payload.username} berhasil dibuat!`);
         
-        // Reset Form
         setFormData({ name: '', username: '', nia: '', password: '', role_id: '3', ukm_id: '' });
         setShowAddForm(false);
         fetchData(); 
@@ -92,7 +79,6 @@ const handleSubmit = async (e) => {
     }
 };
 
-    // --- 4. HANDLE RESET PASSWORD ---
     const openResetModal = (user) => {
         setResetModal({ show: true, userId: user.id, userName: user.name });
         setNewPass('');
@@ -114,7 +100,6 @@ const handleSubmit = async (e) => {
         }
     };
 
-    // FILTER & OPTIONS
     const filteredUsers = users.filter(user => 
         user.name.toLowerCase().includes(search.toLowerCase()) || 
         (user.nia && user.nia.includes(search))
@@ -127,13 +112,11 @@ const handleSubmit = async (e) => {
     ];
     const ukmOptions = ukmList.map(ukm => ({ value: ukm.id, label: ukm.ukm_name }));
 
-    // ACCESS CONTROL
     if (myRole !== 'super_admin' && myRole !== 'admin') return <DeniedView />;
 
     return (
         <div className="min-h-screen bg-gray-50 p-4 md:p-8 font-sans text-slate-800 relative pb-20">
             
-            {/* --- HEADER --- */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <div>
                     <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">Manajemen Anggota</h1>
@@ -153,7 +136,6 @@ const handleSubmit = async (e) => {
                 )}
             </div>
 
-            {/* --- FORM TAMBAH USER --- */}
             {showAddForm && myRole === 'super_admin' && (
                 <div className="bg-white p-6 md:p-8 rounded-3xl border border-blue-100 shadow-xl mb-8 animate-in slide-in-from-top-4 fade-in duration-300">
                     <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
@@ -178,15 +160,11 @@ const handleSubmit = async (e) => {
                 </div>
             )}
 
-            {/* --- SEARCH BAR --- */}
             <div className="bg-white p-2 rounded-xl border border-gray-200 shadow-sm mb-6 flex items-center gap-3 sticky top-0 z-20 md:static">
                 <div className="p-3 bg-gray-50 rounded-lg text-gray-400"><Search size={20} /></div>
                 <input type="text" placeholder="Cari Nama atau NIA..." className="flex-1 outline-none text-gray-700 bg-transparent py-2" onChange={(e) => setSearch(e.target.value)} />
             </div>
 
-            {/* ========================================================= */}
-            {/* TAMPILAN 1: TABLE VIEW (HANYA UNTUK LAPTOP/TABLET)      */}
-            {/* ========================================================= */}
             <div className="hidden md:block bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                 <table className="w-full text-left border-collapse">
                     <thead className="bg-gray-50 border-b border-gray-200">
@@ -233,9 +211,6 @@ const handleSubmit = async (e) => {
                 </table>
             </div>
 
-            {/* ========================================================= */}
-            {/* TAMPILAN 2: CARD VIEW (HANYA UNTUK HP - LEGA & RAPI)    */}
-            {/* ========================================================= */}
             <div className="md:hidden flex flex-col gap-4">
                 {loadingUsers ? (
                     <div className="py-20 text-center text-gray-400 flex flex-col items-center">
@@ -248,7 +223,6 @@ const handleSubmit = async (e) => {
                 ) : (
                     filteredUsers.map((user) => (
                         <div key={user.id} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col gap-4 active:scale-[0.99] transition-transform">
-                            {/* Header Kartu */}
                             <div className="flex items-start justify-between">
                                 <div className="flex items-center gap-3">
                                     <img src={user.profile_pic || `https://ui-avatars.com/api/?name=${user.name}&background=random`} className="w-14 h-14 rounded-full object-cover border border-gray-100 shadow-sm"/>
@@ -260,13 +234,11 @@ const handleSubmit = async (e) => {
                                 <RoleBadge role={user.role_name} />
                             </div>
 
-                            {/* Info Detail */}
                             <div className="bg-gray-50 rounded-xl p-3 flex justify-between items-center border border-gray-100">
                                 <span className="text-xs font-bold text-gray-400 uppercase">Nomor Induk (NIA)</span>
                                 <span className="font-mono font-bold text-gray-800 text-lg tracking-wide">{user.nia || '-'}</span>
                             </div>
 
-                            {/* Tombol Aksi (Besar biar enak dipencet) */}
                             <div className="grid grid-cols-2 gap-3 mt-1">
                                 <button 
                                     onClick={() => openResetModal(user)}
@@ -286,7 +258,6 @@ const handleSubmit = async (e) => {
                 )}
             </div>
 
-            {/* --- MODAL RESET PASSWORD --- */}
             {resetModal.show && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in duration-200">
                     <div className="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl">
@@ -328,7 +299,6 @@ const handleSubmit = async (e) => {
     );
 };
 
-// --- SUB COMPONENTS (Helper) ---
 
 const RoleBadge = ({ role }) => {
     const isAdmin = role?.toLowerCase().includes('admin');

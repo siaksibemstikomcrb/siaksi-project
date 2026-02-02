@@ -5,7 +5,6 @@ import Navbar from '../components/Navbar';
 import { Pin, Calendar, ArrowRight, Search, XCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../api/axios';
 
-// --- SKELETON LOADER (RESPONSIVE) ---
 const NewsSkeleton = () => (
     <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm flex flex-col h-full animate-pulse">
         <div className="aspect-video w-full bg-gray-200" />
@@ -23,7 +22,6 @@ const NewsFeed = () => {
     const location = useLocation();
     const scrollRef = useRef(null);
 
-    // State
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filterCategory, setFilterCategory] = useState('Semua');
@@ -40,7 +38,6 @@ const NewsFeed = () => {
         e.target.src = 'https://via.placeholder.com/600x400?text=No+Image'; 
     };
 
-    // 1. Fetch Data
     useEffect(() => {
         const fetchPosts = async () => {
             setLoading(true);
@@ -56,7 +53,6 @@ const NewsFeed = () => {
         fetchPosts();
     }, []);
 
-    // 2. Handle URL Params
     useEffect(() => {
         const params = new URLSearchParams(location.search);
         const cat = params.get('cat');
@@ -67,7 +63,6 @@ const NewsFeed = () => {
         setVisibleCount(6); 
     }, [location.search]);
 
-    // 3. Filtering Logic
     const filteredPosts = useMemo(() => {
         return posts.filter(post => {
             const dbName = post.ukm_name ? post.ukm_name.toLowerCase().trim() : '';
@@ -91,7 +86,6 @@ const NewsFeed = () => {
     const pinnedPosts = useMemo(() => filteredPosts.filter(p => p.is_pinned), [filteredPosts]);
     const displayPosts = filteredPosts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-    // Scroll Handler
     const scroll = (direction) => {
         if(scrollRef.current){
             const { current } = scrollRef;
@@ -110,7 +104,6 @@ const NewsFeed = () => {
             
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 md:pt-32">
                 
-                {/* HEADER SECTION */}
                 <div className="mb-8 md:mb-12">
                     <h2 className="text-2xl md:text-4xl font-black text-gray-900 flex flex-col md:flex-row md:items-center gap-2 mb-3 leading-tight">
                         {searchQuery ? (
@@ -144,7 +137,6 @@ const NewsFeed = () => {
                     </div>
                 ) : (
                     <>
-                        {/* --- PINNED / HIGHLIGHT SECTION --- */}
                         {!searchQuery && filterCategory === 'Semua' && pinnedPosts.length > 0 && (
                             <div className="mb-12 md:mb-16 relative group">
                                 <div className="flex items-center gap-2 mb-4 md:mb-6 pl-1">
@@ -154,7 +146,6 @@ const NewsFeed = () => {
                                     <h3 className="font-extrabold text-gray-800 uppercase tracking-widest text-xs md:text-sm">Highlight</h3>
                                 </div>
 
-                                {/* Navigation Arrows (Desktop Only) */}
                                 {pinnedPosts.length > 1 && (
                                     <>
                                         <button onClick={() => scroll('left')} className="hidden md:flex absolute -left-5 top-1/2 -translate-y-1/2 z-30 bg-white hover:bg-gray-50 text-gray-800 p-3 rounded-full shadow-xl border border-gray-100 transition-all opacity-0 group-hover:opacity-100 hover:scale-110">
@@ -166,7 +157,6 @@ const NewsFeed = () => {
                                     </>
                                 )}
 
-                                {/* Carousel Container */}
                                 <div 
                                     ref={scrollRef}
                                     className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar gap-4 md:gap-6 pb-4"
@@ -202,7 +192,6 @@ const NewsFeed = () => {
                             </div>
                         )}
 
-                        {/* --- REGULAR GRID --- */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                             <AnimatePresence mode='popLayout'>
                                 {displayPosts.slice(0, visibleCount).map((post) => (
@@ -259,7 +248,6 @@ const NewsFeed = () => {
                             </AnimatePresence>
                         </div>
 
-                        {/* EMPTY STATE */}
                         {displayPosts.length === 0 && (
                             <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border-2 border-dashed border-gray-200 text-center px-4">
                                 <div className="bg-gray-50 p-4 rounded-full mb-4">
@@ -273,7 +261,6 @@ const NewsFeed = () => {
                             </div>
                         )}
 
-                        {/* LOAD MORE */}
                         {displayPosts.length > visibleCount && (
                             <div className="mt-12 flex justify-center">
                                 <button 

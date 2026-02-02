@@ -4,7 +4,7 @@ import api from '../api/axios';
 import { 
   Calendar, Clock, Search, MapPin, 
   Edit3, Trash2, XCircle, Ban, CheckCircle2, 
-  History // Icon baru untuk Riwayat
+  History
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -13,11 +13,8 @@ const EventList = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  
-  // Default tab kita ubah jadi 'upcoming' biar user lihat jadwal depan dulu
   const [activeTab, setActiveTab] = useState('upcoming'); 
 
-  // --- 1. FETCH DATA ---
   const fetchEvents = async () => {
     try {
       const res = await api.get('/schedules?all=true');
@@ -34,7 +31,6 @@ const EventList = () => {
     fetchEvents();
   }, []);
 
-  // --- 2. ACTION HANDLERS ---
   const handleDelete = async (id) => {
     if (!confirm("Hapus permanen? Data absensi juga akan hilang.")) return;
     try {
@@ -61,24 +57,18 @@ const EventList = () => {
     navigate(`/admin/events/edit/${id}`);
   };
 
-  // --- 3. FILTERING & GROUPING (VERSI SIMPEL) ---
   const filteredData = useMemo(() => {
-    // 1. Filter Search dulu
     const searchFiltered = events.filter(ev => 
       ev.event_name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // 2. Grouping jadi 3 Kategori Saja
     return searchFiltered.reduce((acc, ev) => {
-      // Cek status BATAL dulu
       if (ev.status === 'BATAL') {
         acc.cancelled.push(ev);
       } 
-      // Cek status Upcoming (Akan Datang)
       else if (ev.status_kegiatan === 'upcoming') {
         acc.upcoming.push(ev);
       } 
-      // Sisanya (Ongoing + Completed) masuk ke HISTORY
       else {
         acc.history.push(ev);
       }
@@ -86,7 +76,6 @@ const EventList = () => {
     }, { upcoming: [], history: [], cancelled: [] });
   }, [events, searchTerm]);
 
-  // --- 4. UI COMPONENTS ---
   const TabButton = ({ id, label, icon, count, colorClass }) => (
     <button
       onClick={() => setActiveTab(id)}
@@ -109,7 +98,6 @@ const EventList = () => {
   return (
     <div className="font-sans min-h-screen pb-20">
       
-      {/* HEADER & SEARCH */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-black text-gray-800">Manajemen Kegiatan</h1>
@@ -128,7 +116,6 @@ const EventList = () => {
         </div>
       </div>
 
-      {/* TABS NAVIGATION (Cuma 3 Tab Sekarang) */}
       <div className="flex gap-2 overflow-x-auto pb-4 mb-4 scrollbar-hide">
         <TabButton 
           id="upcoming" 
@@ -153,7 +140,6 @@ const EventList = () => {
         />
       </div>
 
-      {/* CARD LIST */}
       <div className="grid gap-4">
         {filteredData[activeTab].length === 0 ? (
           <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-gray-200">
@@ -164,7 +150,7 @@ const EventList = () => {
             <EventCard 
               key={ev.id} 
               ev={ev} 
-              tabType={activeTab} // pass tabType to styling
+              tabType={activeTab}
               onDelete={() => handleDelete(ev.id)}
               onCancel={() => handleCancel(ev.id)}
               onEdit={() => handleEdit(ev.id)}
@@ -177,10 +163,8 @@ const EventList = () => {
   );
 };
 
-// --- SUB-COMPONENT: EVENT CARD ---
 const EventCard = ({ ev, tabType, onDelete, onCancel, onEdit, navigate }) => {
   const isBatal = tabType === 'cancelled';
-  // Cek manual jika user ingin tahu mana yang "LIVE" di dalam tab History
   const isActuallyLive = ev.status_kegiatan === 'ongoing'; 
 
   return (
@@ -189,9 +173,7 @@ const EventCard = ({ ev, tabType, onDelete, onCancel, onEdit, navigate }) => {
       ${isBatal ? 'opacity-70 bg-gray-50' : ''}
     `}>
       
-      {/* INFO KIRI */}
       <div className="flex items-start gap-4">
-        {/* Tanggal Box */}
         <div className={`flex flex-col items-center justify-center w-14 h-14 rounded-xl shrink-0 font-bold border
           ${isBatal ? 'bg-gray-100 border-gray-200 text-gray-400' : 
             isActuallyLive ? 'bg-blue-600 border-blue-600 text-white' : 'bg-gray-50 border-gray-100 text-gray-700'}`
@@ -203,7 +185,6 @@ const EventCard = ({ ev, tabType, onDelete, onCancel, onEdit, navigate }) => {
         <div>
           <h3 className={`font-bold text-lg leading-tight ${isBatal ? 'line-through text-gray-500' : 'text-gray-800'}`}>
             {ev.event_name}
-            {/* Tampilkan Badge LIVE jika sedang berlangsung di tab History */}
             {isActuallyLive && !isBatal && (
                 <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
                     SEDANG BERLANGSUNG
@@ -225,10 +206,8 @@ const EventCard = ({ ev, tabType, onDelete, onCancel, onEdit, navigate }) => {
         </div>
       </div>
 
-      {/* TOMBOL AKSI (KANAN) */}
       <div className="flex items-center gap-2 self-end md:self-center border-t md:border-t-0 border-gray-100 pt-4 md:pt-0 w-full md:w-auto justify-end">
         
-        {/* Tombol Lihat Laporan */}
         <button 
           onClick={() => navigate(`/admin/events/${ev.id}`)}
           className="px-4 py-2 bg-gray-900 text-white rounded-lg text-xs font-bold hover:bg-gray-800 transition-colors"
@@ -242,7 +221,6 @@ const EventCard = ({ ev, tabType, onDelete, onCancel, onEdit, navigate }) => {
           </button>
         )}
 
-        {/* Tombol Batal hanya muncul jika Akan Datang atau Sedang Live */}
         {(tabType === 'upcoming' || isActuallyLive) && !isBatal && (
           <button onClick={onCancel} className="p-2 text-gray-500 hover:text-orange-600 hover:bg-orange-50 rounded-lg border border-gray-200">
             <Ban size={18}/>

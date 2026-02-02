@@ -8,14 +8,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
 const InfoInbox = () => {
-    // --- STATE ---
     const [mails, setMails] = useState([]);
     const [selected, setSelected] = useState(null);
-    const [filterType, setFilterType] = useState('all'); // 'all', 'direct', 'broadcast'
+    const [filterType, setFilterType] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
 
-    // --- FETCH DATA ---
     useEffect(() => {
         fetchInbox();
     }, []);
@@ -24,7 +22,6 @@ const InfoInbox = () => {
         setLoading(true);
         try {
             const res = await api.get('/mail/inbox');
-            // Jika backend belum support is_read, default ke false
             const data = res.data.map(m => ({ ...m, is_read: m.is_read || false }));
             setMails(data);
         } catch (err) {
@@ -35,16 +32,13 @@ const InfoInbox = () => {
         }
     };
 
-    // --- ACTIONS ---
     const markAsRead = async (mail) => {
         if (mail.is_read) return;
         
-        // Optimistic Update
         const updatedMails = mails.map(m => m.id === mail.id ? { ...m, is_read: true } : m);
         setMails(updatedMails);
 
         try {
-            // await api.put(`/mail/read/${mail.id}`); 
         } catch (err) {
             console.error("Gagal menandai pesan terbaca");
         }
@@ -57,7 +51,6 @@ const InfoInbox = () => {
         setMails(updatedMails);
         toast.success("Semua pesan ditandai sudah dibaca");
         
-        // api.put('/mail/read-all');
     };
 
     const handleSelectMessage = (mail) => {
@@ -65,7 +58,6 @@ const InfoInbox = () => {
         markAsRead(mail);
     };
 
-    // --- FILTER & SEARCH LOGIC ---
     const filteredMails = useMemo(() => {
         return mails.filter(mail => {
             const matchesType = 
@@ -92,7 +84,6 @@ const InfoInbox = () => {
     return (
         <div className="p-3 md:p-8 max-w-6xl mx-auto font-sans min-h-screen bg-gray-50 pb-24">
             
-            {/* HEADER & CONTROLS */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <div>
                     <h1 className="text-2xl md:text-3xl font-black text-gray-900 flex items-center gap-3">
@@ -114,9 +105,7 @@ const InfoInbox = () => {
                 </button>
             </div>
 
-            {/* SEARCH & TABS */}
             <div className="bg-white p-3 md:p-2 rounded-2xl border border-gray-200 shadow-sm mb-6 flex flex-col md:flex-row gap-3">
-                {/* Search Bar */}
                 <div className="relative flex-1">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                     <input 
@@ -128,7 +117,6 @@ const InfoInbox = () => {
                     />
                 </div>
 
-                {/* Filter Tabs - SCROLLABLE ON MOBILE */}
                 <div className="flex overflow-x-auto pb-1 md:pb-0 gap-2 no-scrollbar bg-gray-50 md:bg-gray-100 p-1 rounded-xl">
                     <button 
                         onClick={() => setFilterType('all')}
@@ -151,7 +139,6 @@ const InfoInbox = () => {
                 </div>
             </div>
 
-            {/* MESSAGE LIST */}
             <div className="flex flex-col gap-3">
                 {loading ? (
                     <div className="text-center py-12 text-gray-400 flex flex-col items-center gap-2">
@@ -177,12 +164,10 @@ const InfoInbox = () => {
                                 ${!m.is_read ? 'bg-white border-blue-200 shadow-md ring-1 ring-blue-50' : 'bg-white border-gray-100 hover:border-blue-200'}
                             `}
                         >
-                            {/* Unread Indicator (Mobile Friendly) */}
                             {!m.is_read && (
                                 <div className="absolute top-4 right-4 w-2.5 h-2.5 bg-blue-500 rounded-full z-10 shadow-sm ring-2 ring-white" />
                             )}
 
-                            {/* Icon / Thumbnail */}
                             <div className={`w-12 h-12 md:w-16 md:h-16 rounded-2xl flex items-center justify-center shrink-0 border 
                                 ${m.target_scope === 'broadcast' ? 'bg-orange-50 border-orange-100 text-orange-500' : 'bg-blue-50 border-blue-100 text-blue-500'}
                             `}>
@@ -232,7 +217,6 @@ const InfoInbox = () => {
                 )}
             </div>
 
-            {/* DETAIL MODAL */}
             <AnimatePresence>
                 {selected && (
                     <div className="fixed inset-0 z-50 bg-black/60 flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm" onClick={() => setSelected(null)}>
@@ -243,7 +227,6 @@ const InfoInbox = () => {
                             className="bg-white w-full max-w-2xl rounded-t-3xl md:rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]" 
                             onClick={e => e.stopPropagation()}
                         >
-                            {/* Header Modal */}
                             <div className="p-5 md:p-6 border-b border-gray-100 bg-gray-50/80 sticky top-0 z-10 backdrop-blur-sm">
                                 <div className="flex justify-between items-start gap-4">
                                     <div>
@@ -270,7 +253,6 @@ const InfoInbox = () => {
                                 </div>
                             </div>
 
-                            {/* Content Scrollable */}
                             <div className="p-5 md:p-6 overflow-y-auto custom-scrollbar bg-white">
                                 {['jpg','png','jpeg'].includes(selected.file_type) && (
                                     <div className="mb-6 rounded-2xl overflow-hidden border border-gray-100 bg-gray-50 p-2">
@@ -283,7 +265,6 @@ const InfoInbox = () => {
                                 </div>
                             </div>
 
-                            {/* Footer / Action */}
                             {selected.file_path && (
                                 <div className="p-4 md:p-6 border-t border-gray-100 bg-gray-50 flex justify-end">
                                     <a 

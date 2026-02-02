@@ -10,7 +10,6 @@ const CreatePost = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   
-  // State Form
   const [title, setTitle] = useState('');
   const [subtitle, setSubtitle] = useState('');
   const [content, setContent] = useState('');
@@ -18,11 +17,10 @@ const CreatePost = () => {
   const [image, setImage] = useState(null);
   const [preview, setPreview] = useState(null);
 
-  // Handle Gambar Upload
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-        if (file.size > 2 * 1024 * 1024) { // Maks 2MB
+        if (file.size > 2 * 1024 * 1024) {
             return toast.error("Ukuran gambar maksimal 2MB!");
         }
         setImage(file);
@@ -30,7 +28,6 @@ const CreatePost = () => {
     }
   };
 
-  // Handle Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title || !content || !image) {
@@ -62,20 +59,16 @@ const CreatePost = () => {
   };
 
   return (
-    // FIX 1: Padding container dikurangi di mobile (p-4)
     <div className="p-4 md:p-6 bg-gray-50 min-h-screen flex justify-center pb-20">
       <div className="w-full max-w-4xl">
         
-        {/* Header */}
         <div className="flex items-center gap-3 md:gap-4 mb-5 md:mb-6">
             <button onClick={() => navigate(-1)} className="p-2 hover:bg-white rounded-full transition-colors bg-white md:bg-transparent shadow-sm md:shadow-none border border-gray-200 md:border-none"><ArrowLeft size={20}/></button>
             <h1 className="text-xl md:text-2xl font-black text-gray-800">Tulis Berita Baru</h1>
         </div>
 
-        {/* FIX 2: Padding Form dikurangi di mobile (p-5) */}
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 md:p-8 space-y-5 md:space-y-6">
             
-            {/* 1. Judul */}
             <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">Judul Artikel <span className="text-red-500">*</span></label>
                 <input 
@@ -88,7 +81,6 @@ const CreatePost = () => {
                 />
             </div>
 
-            {/* 2. Sub-Judul */}
             <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">Sub-Judul (Ringkasan Singkat)</label>
                 <input 
@@ -101,7 +93,6 @@ const CreatePost = () => {
                 />
             </div>
 
-            {/* 3. Cover Image */}
             <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">Gambar Sampul <span className="text-red-500">*</span></label>
                 <div className="border-2 border-dashed border-gray-300 rounded-xl p-2 flex flex-col items-center justify-center text-center hover:bg-gray-50 transition-colors relative overflow-hidden group min-h-[180px] md:min-h-[200px]">
@@ -131,15 +122,13 @@ const CreatePost = () => {
                 </div>
             </div>
 
-            {/* 4. Konten (Rich Text) */}
             <div className="h-auto pb-6 md:pb-12">
                 <label className="block text-sm font-bold text-gray-700 mb-2">Isi Berita <span className="text-red-500">*</span></label>
-                {/* FIX 3: Tinggi Editor fleksibel di mobile */}
                 <ReactQuill 
                     theme="snow" 
                     value={content} 
                     onChange={setContent} 
-                    className="h-64 md:h-72 mb-12 md:mb-0" // Tambah margin bottom di mobile agar toolbar tidak ketutup
+                    className="h-64 md:h-72 mb-12 md:mb-0"
                     modules={{
                         toolbar: [
                             [{ 'header': [1, 2, false] }],
@@ -151,8 +140,7 @@ const CreatePost = () => {
                 />
             </div>
 
-            {/* 5. Link Eksternal */}
-            <div className="pt-8 md:pt-0"> {/* Spacer extra untuk mobile karena editor */}
+            <div className="pt-8 md:pt-0">
                 <label className="block text-sm font-bold text-gray-700 mb-2">Link Eksternal (Opsional)</label>
                 <input 
                     type="url" 
@@ -164,7 +152,6 @@ const CreatePost = () => {
                 <p className="text-xs text-gray-400 mt-1">Gunakan untuk link pendaftaran Google Form atau info tambahan.</p>
             </div>
 
-            {/* Submit Button */}
             <div className="pt-6 border-t border-gray-100 flex flex-col md:flex-row justify-end gap-3">
                 <button 
                     type="button"
@@ -174,7 +161,6 @@ const CreatePost = () => {
                 >
                     Batal
                 </button>
-                {/* FIX 4: Tombol full width di mobile */}
                 <button 
                     type="submit" 
                     disabled={loading}

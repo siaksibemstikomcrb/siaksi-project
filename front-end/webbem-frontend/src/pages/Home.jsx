@@ -15,9 +15,6 @@ import content1 from '../assets/images/content-1.jpg';
 import content2 from '../assets/images/content-2.jpg'; 
 import content3 from '../assets/images/content-3.jpg'; 
 
-// ==========================================
-// 1. ANIMATION CONFIG
-// ==========================================
 const CINEMATIC_EASE = [0.25, 1, 0.5, 1];
 
 const fadeInUp = {
@@ -75,9 +72,6 @@ const SectionTitle = ({ title, subtitle, centered = true, dark = false }) => (
   </motion.div>
 );
 
-// ==========================================
-// 3. MAIN COMPONENT
-// ==========================================
 const Home = () => {
   const navigate = useNavigate();
 
@@ -85,12 +79,8 @@ const Home = () => {
     <div className="w-full min-h-screen bg-white font-sans selection:bg-blue-600 selection:text-white">
       <Navbar isTransparent={true} />
 
-      {/* ========================================== */}
-      {/* HERO SECTION (UPDATED FOR MOBILE)          */}
-      {/* ========================================== */}
       <section className="relative pt-40 pb-20 lg:pt-52 lg:pb-32 overflow-hidden bg-[#020617] isolate">
         
-        {/* BACKGROUND */}
         <div className="absolute inset-0 z-0">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-blue-600/20 rounded-[100%] blur-[120px] mix-blend-screen opacity-50 pointer-events-none" />
           <div className="absolute inset-0 w-full h-full">
@@ -107,7 +97,6 @@ const Home = () => {
           </div>
         </div>
 
-        {/* KONTEN HERO */}
         <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 flex flex-col items-center text-center pointer-events-none">
           
           <motion.div 
@@ -121,7 +110,6 @@ const Home = () => {
             </motion.div>
             
             <motion.div variants={fadeInUp}>
-              {/* Responsive Font Size */}
               <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-medium text-white leading-[1.15] tracking-tight mb-6 md:mb-8">
                 Satu Sistem untuk <br className="hidden sm:block" />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-blue-500 to-indigo-500">
@@ -146,7 +134,6 @@ const Home = () => {
             </motion.div>
           </motion.div>
 
-          {/* DASHBOARD PREVIEW IMAGE */}
           <motion.div 
             initial={{ opacity: 0, y: 100, rotateX: 20 }}
             animate={{ opacity: 1, y: 0, rotateX: 0 }}
@@ -158,7 +145,6 @@ const Home = () => {
                 <img src={content1} alt="Dashboard UI" className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-700" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-transparent opacity-50" />
                 
-                {/* Floating Badge (Desktop Only) */}
                 <motion.div 
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
@@ -180,7 +166,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* FEATURES SECTION (Z-PATTERN) */}
       <section id='features' className="py-20 lg:py-32 px-4 bg-white overflow-hidden">
         <div className="max-w-7xl mx-auto">
           <SectionTitle 
@@ -189,7 +174,6 @@ const Home = () => {
           />
 
           <div className="space-y-20 md:space-y-24">
-            {/* Feature 1 */}
             <div className="grid md:grid-cols-2 gap-10 lg:gap-20 items-center">
               <motion.div 
                 initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp}
@@ -221,7 +205,6 @@ const Home = () => {
               </motion.div>
             </div>
 
-            {/* Feature 2 (Reversed) */}
             <div className="grid md:grid-cols-2 gap-10 lg:gap-20 items-center">
               <motion.div 
                 initial="hidden" whileInView="visible" viewport={{ once: true }} variants={containerStagger}
@@ -255,7 +238,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* BENTO GRID (GLASS CARDS) */}
       <section className="py-20 bg-slate-50 px-4">
         <div className="max-w-7xl mx-auto">
           <SectionTitle 
@@ -264,7 +246,6 @@ const Home = () => {
           />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-auto md:auto-rows-[320px]">
-            {/* Main Feature Card */}
             <motion.div 
               initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp}
               whileHover="hover"
@@ -282,7 +263,6 @@ const Home = () => {
               <div className="absolute right-0 bottom-0 w-64 h-64 bg-gradient-to-tl from-blue-600/30 to-transparent rounded-tl-full opacity-50 group-hover:scale-110 transition-transform duration-700" />
             </motion.div>
 
-            {/* Side Card 1 */}
             <motion.div 
               initial="hidden" whileInView="visible" viewport={{ once: true }} variants={{ ...fadeInUp, ...hoverCard }}
               className="bg-white rounded-3xl p-8 border border-slate-200 flex flex-col justify-center group min-h-[200px]"
@@ -294,7 +274,6 @@ const Home = () => {
               <p className="text-slate-500 font-normal text-sm">Anda akan lebih mudah mengatur jadwal pertemuan dan kegiatan</p>
             </motion.div>
 
-             {/* Side Card 2 */}
              <motion.div 
               initial="hidden" whileInView="visible" viewport={{ once: true }} variants={{ ...fadeInUp, ...hoverCard }}
               className="bg-white rounded-3xl p-8 border border-slate-200 flex flex-col justify-center group min-h-[200px]"
@@ -306,7 +285,6 @@ const Home = () => {
               <p className="text-slate-500 font-normal text-sm">Generate laporan kegiatan (LPJ) otomatis dalam format PDF.</p>
             </motion.div>
 
-            {/* Wide Bottom Card */}
             <motion.div 
               initial="hidden" whileInView="visible" viewport={{ once: true }} variants={{ ...fadeInUp, ...hoverCard }}
               className="md:col-span-2 bg-white rounded-3xl p-8 md:p-10 border border-slate-200 relative overflow-hidden group flex flex-col justify-center min-h-[200px]"
@@ -326,7 +304,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* TIMELINE SECTION */}
       <section className="py-20 bg-[#020617] text-white border-y border-white/5 px-4">
         <div className="max-w-7xl mx-auto">
           <SectionTitle 
@@ -367,7 +344,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* CTA SECTION */}
       <section className="py-24 px-4 overflow-hidden">
         <div className="max-w-6xl mx-auto">
           <motion.div 
@@ -396,7 +372,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* FOOTER (RESTORED) */}
       <footer className="bg-[#020617] pt-20 pb-32 md:pb-10 px-4 border-t border-slate-800/50">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-12 mb-16">
           <div className="md:col-span-5">

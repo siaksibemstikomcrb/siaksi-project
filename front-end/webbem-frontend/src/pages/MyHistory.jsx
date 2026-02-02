@@ -42,15 +42,12 @@ const MyHistory = () => {
     return (
         <div className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-20">
             
-            {/* --- 1. PAGE HEADER (FIXED/STICKY) --- */}
-            {/* PERBAIKAN: z-20 (biar ga nutupin sidebar yg biasanya z-30/z-40) */}
             <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-slate-200 px-6 py-5 shadow-sm">
                 <div className="max-w-5xl mx-auto flex justify-between items-center">
                     <div>
                         <h1 className="text-xl font-bold text-slate-900 tracking-tight">Riwayat Presensi</h1>
                         <p className="text-xs text-slate-500 font-medium mt-0.5">Total Aktivitas: {history.length}</p>
                     </div>
-                    {/* Legend Desktop Only */}
                     <div className="hidden md:flex gap-3">
                         <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 rounded-full border border-emerald-100">
                             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
@@ -60,13 +57,10 @@ const MyHistory = () => {
                 </div>
             </div>
 
-            {/* --- 2. CONTENT AREA --- */}
             <div className="max-w-5xl mx-auto p-4 md:p-8 space-y-6">
                 
                 {history.length > 0 ? (
                     <>
-                        {/* === TAMPILAN MOBILE (ACCORDION) === */}
-                        {/* md:hidden artinya hanya muncul di layar kecil (HP) */}
                         <div className="flex flex-col gap-3 md:hidden">
                             {history.map((item, index) => {
                                 const isExpanded = expandedId === index;
@@ -80,7 +74,6 @@ const MyHistory = () => {
                                             ${isExpanded ? 'border-blue-400 shadow-md ring-1 ring-blue-100' : 'border-gray-200 shadow-sm'}
                                         `}
                                     >
-                                        {/* Header Kartu Mobile */}
                                         <div className="p-4 flex items-center justify-between">
                                             <div className="flex items-center gap-3 overflow-hidden">
                                                 <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 border ${statusStyle.border} ${statusStyle.bg} ${statusStyle.text}`}>
@@ -102,7 +95,6 @@ const MyHistory = () => {
                                             </div>
                                         </div>
 
-                                        {/* Detail Dropdown */}
                                         <div className={`bg-slate-50 border-t border-slate-100 transition-all duration-300 ease-in-out px-4 overflow-hidden ${isExpanded ? 'max-h-64 py-4 opacity-100' : 'max-h-0 py-0 opacity-0'}`}>
                                             <div className="grid grid-cols-2 gap-y-4 gap-x-2 text-sm text-slate-600">
                                                 <div className="col-span-1">
@@ -130,11 +122,8 @@ const MyHistory = () => {
                             })}
                         </div>
 
-                        {/* === TAMPILAN DESKTOP (TABLE PROFESIONAL) === */}
-                        {/* hidden md:block artinya hanya muncul di layar besar (Desktop) */}
                         <div className="hidden md:block bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                             <table className="w-full text-left border-collapse">
-                                {/* Header Tabel Sticky (z-10 cukup, top-20 agar dibawah header utama) */}
                                 <thead className="bg-slate-50/95 backdrop-blur border-b border-slate-200 sticky top-[88px] z-10">
                                     <tr>
                                         <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Nama Kegiatan</th>
@@ -190,7 +179,6 @@ const MyHistory = () => {
     );
 };
 
-// Helper Styling
 const getStatusStyle = (status) => {
     switch (status) {
         case 'Hadir': return { bg: 'bg-emerald-50', badgeBg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', icon: CheckCircle };

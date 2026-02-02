@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-// --- LEAFLET MAPS ---
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -27,7 +26,6 @@ let DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// --- MAP COMPONENTS ---
 const MapController = ({ centerCoords }) => {
     const map = useMap();
     useEffect(() => {
@@ -47,14 +45,12 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const role = localStorage.getItem('role');
   
-  // STATE
   const [chartData, setChartData] = useState([]); 
   const [recentSchedules, setRecentSchedules] = useState([]);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [viewMode, setViewMode] = useState('dashboard'); // 'dashboard' | 'create'
+  const [viewMode, setViewMode] = useState('dashboard');
   const [submitting, setSubmitting] = useState(false);
 
-  // MAP & FORM
   const [isOnline, setIsOnline] = useState(false);
   const [useRadius, setUseRadius] = useState(false);
   const [mapPosition, setMapPosition] = useState(null); 
@@ -68,7 +64,6 @@ const Dashboard = () => {
     latitude: '', longitude: '', radius_meters: 50, meeting_link: ''
   });
 
-  // --- LOGIC ---
   useEffect(() => {
     if (mapPosition) setFormData(prev => ({ ...prev, latitude: mapPosition.lat, longitude: mapPosition.lng }));
   }, [mapPosition]);
@@ -100,7 +95,6 @@ const Dashboard = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // FETCH DATA SIMPLE
   useEffect(() => {
     const fetchData = async () => {
         try {
@@ -111,16 +105,14 @@ const Dashboard = () => {
                     events: parseInt(ukm.total_events || 0)
                 })));
             } else if (role === 'admin') {
-                // Ambil 5 jadwal terakhir saja untuk list ringkas
                 const res = await api.get('/schedules'); 
                 setRecentSchedules(res.data.slice(0, 5));
             }
         } catch (err) { console.error("Error fetching data:", err); }
     };
     fetchData();
-  }, [role, viewMode]); // Refresh saat mode berubah
+  }, [role, viewMode]);
 
-  // HANDLERS
   const handleMyLocation = () => {
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition((position) => {
@@ -158,7 +150,6 @@ const Dashboard = () => {
       await api.post('/schedules', payload);
       toast.success('Agenda Diterbitkan');
       
-      // Reset Form
       setFormData({
         event_name: '', description: '', location: '', event_date: '',
         start_time: '', end_time: '', attendance_open_time: '',
@@ -183,7 +174,6 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-white font-sans text-slate-800 pb-20">
         
-        {/* --- HEADER: CLEAN & SIMPLE --- */}
         <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-slate-100 px-6 py-4">
             <div className="max-w-5xl mx-auto flex justify-between items-center">
                 <div className="flex items-center gap-3">
@@ -202,7 +192,6 @@ const Dashboard = () => {
                     </div>
                 </div>
                 
-                {/* Actions Header */}
                 {viewMode === 'dashboard' && role === 'admin' && (
                     <button 
                         onClick={() => setViewMode('create')}
@@ -216,7 +205,6 @@ const Dashboard = () => {
 
         <div className="max-w-5xl mx-auto px-6 py-8">
         
-        {/* --- VIEW: SUPER ADMIN --- */}
         {role === 'super_admin' && (
             <div className="space-y-8 animate-in fade-in duration-500">
                 <div className="bg-slate-50 rounded-3xl p-6 border border-slate-100">
@@ -237,7 +225,6 @@ const Dashboard = () => {
             </div>
         )}
 
-        {/* --- VIEW: ADMIN DASHBOARD (SIMPLE LIST) --- */}
         {role === 'admin' && viewMode === 'dashboard' && (
             <div className="animate-in fade-in duration-500">
                 {recentSchedules.length > 0 ? (
@@ -249,7 +236,6 @@ const Dashboard = () => {
                             </button>
                         </div>
                         
-                        {/* LIST JADWAL HALUS */}
                         <div className="grid gap-3">
                             {recentSchedules.map((item, idx) => (
                                 <div key={idx} className="group bg-white border border-slate-100 hover:border-blue-200 p-4 rounded-2xl shadow-sm hover:shadow-md transition-all flex justify-between items-center cursor-pointer">
@@ -274,7 +260,6 @@ const Dashboard = () => {
                         </div>
                     </div>
                 ) : (
-                    /* EMPTY STATE */
                     <div className="text-center py-20 px-6">
                         <div className="bg-slate-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
                             <CalendarDays size={32} className="text-slate-300" />
@@ -294,11 +279,9 @@ const Dashboard = () => {
             </div>
         )}
 
-        {/* --- VIEW: CREATE FORM (SOFT UI) --- */}
         {viewMode === 'create' && (
             <form onSubmit={handleSubmit} className="space-y-8 animate-in slide-in-from-right-8 duration-500">
                 
-                {/* 1. DETAIL */}
                 <section className="space-y-4">
                     <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Detail Kegiatan</h3>
                     <div className="grid gap-4">
@@ -316,7 +299,6 @@ const Dashboard = () => {
                     </div>
                 </section>
 
-                {/* 2. WAKTU */}
                 <section className="space-y-4">
                     <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Waktu & Presensi</h3>
                     <div className="bg-slate-50 p-6 rounded-3xl space-y-6">
@@ -355,7 +337,6 @@ const Dashboard = () => {
                     </div>
                 </section>
 
-                {/* 3. LOKASI */}
                 <section className="space-y-4">
                     <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Lokasi</h3>
                     
@@ -417,7 +398,6 @@ const Dashboard = () => {
   );
 };
 
-// --- SOFT UI COMPONENTS ---
 const SoftInput = ({ type = "text", placeholder, value, onChange, bg = "bg-slate-50", ...props }) => (
     <input 
         type={type} 

@@ -12,7 +12,7 @@ const UserComplaint = () => {
   const handleFileChange = (e) => {
     const selected = e.target.files[0];
     if (selected) {
-      if (selected.size > 2 * 1024 * 1024) { // Validasi 2MB
+      if (selected.size > 2 * 1024 * 1024) {
         return toast.error("Ukuran file maksimal 2MB!");
       }
       setFile(selected);
@@ -56,10 +56,8 @@ const UserComplaint = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-3 md:p-8 pb-24 md:pb-8 flex justify-center items-start md:items-center">
       
-      {/* Container Utama */}
       <div className="w-full max-w-2xl bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
         
-        {/* Header Section */}
         <div className="bg-blue-50 p-6 md:p-8 text-center border-b border-blue-100">
           <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
             <MessageSquareWarning size={32} className="text-blue-600" />
@@ -71,10 +69,8 @@ const UserComplaint = () => {
           </p>
         </div>
 
-        {/* Form Section */}
         <form onSubmit={handleSubmit} className="p-5 md:p-8 space-y-5 md:space-y-6">
           
-          {/* Subject */}
           <div>
             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2 ml-1">Perihal / Judul</label>
             <input 
@@ -86,7 +82,6 @@ const UserComplaint = () => {
             />
           </div>
 
-          {/* Message */}
           <div>
             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2 ml-1">Deskripsi & Detail</label>
             <textarea 
@@ -98,7 +93,6 @@ const UserComplaint = () => {
             ></textarea>
           </div>
 
-          {/* Screenshot Upload (Area Diperbesar) */}
           <div>
             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2 ml-1">Bukti Screenshot (Opsional)</label>
             
@@ -131,7 +125,6 @@ const UserComplaint = () => {
                 >
                   <X size={18} />
                 </button>
-                {/* Input file overlay untuk ganti gambar */}
                 <input 
                   type="file" 
                   accept="image/*"
@@ -142,7 +135,6 @@ const UserComplaint = () => {
             )}
           </div>
 
-          {/* Info Box */}
           <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-100 flex gap-3 items-start">
             <AlertCircle size={20} className="text-yellow-600 shrink-0 mt-0.5" />
             <p className="text-xs text-yellow-700 leading-relaxed">
@@ -150,7 +142,6 @@ const UserComplaint = () => {
             </p>
           </div>
 
-          {/* Submit Button */}
           <button 
             disabled={loading}
             className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:bg-gray-300 disabled:shadow-none disabled:cursor-not-allowed"

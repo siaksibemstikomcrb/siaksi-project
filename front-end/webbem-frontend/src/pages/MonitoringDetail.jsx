@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 
 const MonitoringDetail = () => {
-    const { id } = useParams(); // Ambil ID Jadwal dari URL
+    const { id } = useParams();
     const navigate = useNavigate();
     const [detail, setDetail] = useState(null);
     const [attendees, setAttendees] = useState([]);
@@ -17,16 +17,12 @@ const MonitoringDetail = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // 1. Ambil Detail Jadwal
                 const scheduleRes = await api.get(`/schedules/${id}`);
                 setDetail(scheduleRes.data);
 
-                // 2. Ambil Daftar Hadir (Kita butuh endpoint ini di backend)
-                // Note: Pastikan backend punya endpoint: GET /api/attendance/schedule/:id
                 const attendRes = await api.get(`/attendance/schedule/${id}`);
                 setAttendees(attendRes.data);
 
-                // Hitung Statistik
                 const s = { hadir: 0, izin: 0, telat: 0, total: attendRes.data.length };
                 attendRes.data.forEach(a => {
                     if (a.status === 'Hadir') s.hadir++;
@@ -37,7 +33,6 @@ const MonitoringDetail = () => {
 
             } catch (err) {
                 console.error("Gagal ambil data:", err);
-                // alert("Gagal memuat data detail."); 
             } finally {
                 setLoading(false);
             }
@@ -45,18 +40,15 @@ const MonitoringDetail = () => {
         fetchData();
     }, [id]);
 
-    // --- FUNGSI DOWNLOAD EXCEL ---
     const handleDownloadExcel = async () => {
         try {
             const response = await api.get(`/admin/export/${id}`, {
-                responseType: 'blob', // PENTING: Agar dianggap file
+                responseType: 'blob',
             });
 
-            // Buat link download virtual
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            // Nama file saat didownload
             link.setAttribute('download', `Laporan_${detail?.event_name || 'Kegiatan'}.xlsx`); 
             document.body.appendChild(link);
             link.click();
@@ -72,7 +64,6 @@ const MonitoringDetail = () => {
     return (
         <div className="max-w-6xl mx-auto p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             
-            {/* HEADER & NAVIGASI */}
             <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-gray-500 hover:text-blue-600 font-bold mb-6 transition-colors">
                 <ArrowLeft size={20} /> Kembali ke Monitoring
             </button>
@@ -87,7 +78,6 @@ const MonitoringDetail = () => {
                     </div>
                 </div>
 
-                {/* TOMBOL DOWNLOAD UTAMA */}
                 <button 
                     onClick={handleDownloadExcel}
                     className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-green-100 transition-all active:scale-95"
@@ -96,7 +86,6 @@ const MonitoringDetail = () => {
                 </button>
             </div>
 
-            {/* STATISTIK CARDS */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 <StatCard label="Total Peserta" value={stats.total} color="blue" icon={<User size={20}/>} />
                 <StatCard label="Hadir Tepat Waktu" value={stats.hadir} color="green" icon={<CheckCircle2 size={20}/>} />
@@ -104,7 +93,6 @@ const MonitoringDetail = () => {
                 <StatCard label="Izin / Sakit" value={stats.izin} color="purple" icon={<FileSpreadsheet size={20}/>} />
             </div>
 
-            {/* TABEL DATA */}
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
@@ -158,7 +146,6 @@ const MonitoringDetail = () => {
     );
 };
 
-// Sub-components Kecil
 const StatCard = ({ label, value, color, icon }) => (
     <div className={`bg-${color}-50 p-4 rounded-2xl border border-${color}-100`}>
         <div className={`text-${color}-600 mb-2`}>{icon}</div>

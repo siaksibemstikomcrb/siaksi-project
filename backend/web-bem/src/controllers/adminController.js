@@ -2,17 +2,16 @@ const db = require('../config/db');
 const bcrypt = require('bcryptjs');
 const { sendNotification } = require('../utils/notificationHelper');
 const ExcelJS = require('exceljs');
-// 1. Fungsi untuk mengambil laporan absensi (Admin & Superadmin)
 const getAttendanceReport = async (req, res) => {
     const { schedule_id } = req.params;
-    const ukm_id = req.user.ukm_id; // Ambil dari token auth
+    const ukm_id = req.user.ukm_id;
 
     try {
         const report = await db.query(
             `SELECT 
-                u.id as user_id, u.name, u.nia,
-                COALESCE(a.status, 'Alpa') as status, 
-                a.attendance_time, a.reason
+             u.id as user_id, u.name, u.nia,
+             COALESCE(a.status, 'Alpa') as status, 
+             a.attendance_time, a.reason
              FROM Users u
              LEFT JOIN Attendances a ON u.id = a.user_id AND a.schedule_id = $1
              WHERE u.ukm_id = $2 AND u.role_id = 3
@@ -25,23 +24,18 @@ const getAttendanceReport = async (req, res) => {
         res.status(500).send('Server Error Laporan');
     }
 };
-// 2. Fungsi untuk mendaftarkan user baru (SUDAH FIX NIA)
 const registerUser = async (req, res) => {
-    // TAMBAHKAN 'nia' di sini agar ditangkap dari frontend
     const { name, username, nia, password, role_id, ukm_id } = req.body;
 
     try {
-        // Cek apakah username sudah dipakai
         const userExist = await db.query('SELECT * FROM Users WHERE username = $1', [username]);
         if (userExist.rows.length > 0) {
             return res.status(400).json({ msg: 'Username sudah terdaftar.' });
         }
 
-        // Hash Password
         const salt = await bcrypt.genSalt(10);
         const password_hash = await bcrypt.hash(password, salt);
 
-        // Simpan ke Database (PASTIKAN kolom nia dimasukkan ke INSERT)
         const newUser = await db.query(
             `INSERT INTO Users (name, username, nia, password_hash, role_id, ukm_id) 
              VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, name, username, nia, role_id`,
@@ -55,7 +49,6 @@ const registerUser = async (req, res) => {
     }
 };
 
-// 3. Fungsi Laporan UKM
 const getUKMReport = async (req, res) => {
     const { ukm_id } = req.params;
     try {
@@ -81,7 +74,6 @@ const getUKMReport = async (req, res) => {
 const broadcastMessage = async (req, res) => {
     const { title, message, target_ukm_id } = req.body;
     
-    // Validasi sederhana
     if (!title || !message) {
         return res.status(400).json({ msg: "Judul dan Pesan wajib diisi!" });
     }
@@ -90,8 +82,8 @@ const broadcastMessage = async (req, res) => {
         await sendNotification({
             title,
             message,
-            type: 'info', // Tipe Info untuk pengumuman
-            target_type: target_ukm_id ? 'ukm_only' : 'all', // Kalau ada ID UKM, berarti spesifik. Kalau null, berarti semua.
+            type: 'info',
+            target_type: target_ukm_id ? 'ukm_only' : 'all',
             target_ukm_id: target_ukm_id || null,
             sender_id: req.user.id
         });
@@ -107,12 +99,10 @@ const exportAttendance = async (req, res) => {
     const { schedule_id } = req.params;
 
     try {
-        // A. Ambil Data Jadwal
         const scheduleRes = await db.query("SELECT * FROM Schedules WHERE id = $1", [schedule_id]);
         if (scheduleRes.rows.length === 0) return res.status(404).json({ msg: "Kegiatan tidak ditemukan" });
         const schedule = scheduleRes.rows[0];
 
-        // B. Ambil Data Absensi (Join dengan Users)
         const attendanceRes = await db.query(`
             SELECT u.name, u.nia, a.status, a.attendance_time, a.reason, a.latitude, a.longitude
             FROM Attendances a
@@ -121,11 +111,9 @@ const exportAttendance = async (req, res) => {
             ORDER BY u.name ASC
         `, [schedule_id]);
 
-        // C. Buat Workbook Excel Baru
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Presensi');
 
-        // D. Styling Header Laporan
         worksheet.mergeCells('A1:E1');
         worksheet.getCell('A1').value = `LAPORAN PRESENSI: ${schedule.event_name}`;
         worksheet.getCell('A1').font = { size: 16, bold: true };
@@ -135,12 +123,10 @@ const exportAttendance = async (req, res) => {
         worksheet.getCell('A2').value = `Tanggal: ${new Date(schedule.event_date).toLocaleDateString('id-ID')} | Lokasi: ${schedule.location}`;
         worksheet.getCell('A2').alignment = { vertical: 'middle', horizontal: 'center' };
 
-        // E. Header Tabel
         worksheet.getRow(4).values = ['No', 'Nama Anggota', 'NIA', 'Waktu Hadir', 'Status', 'Keterangan'];
         worksheet.getRow(4).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-        worksheet.getRow(4).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563EB' } }; // Warna Biru
+        worksheet.getRow(4).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563EB' } };
 
-        // F. Isi Data
         attendanceRes.rows.forEach((row, index) => {
             const timeStr = row.attendance_time ? new Date(row.attendance_time).toLocaleTimeString('id-ID') : '-';
             worksheet.addRow([
@@ -153,17 +139,15 @@ const exportAttendance = async (req, res) => {
             ]);
         });
 
-        // G. Auto Width Columns
         worksheet.columns = [
-            { width: 5 },  // No
-            { width: 30 }, // Nama
-            { width: 15 }, // NIA
-            { width: 15 }, // Waktu
-            { width: 15 }, // Status
-            { width: 30 }  // Keterangan
+            { width: 5 },
+            { width: 30 },
+            { width: 15 },
+            { width: 15 },
+            { width: 15 },
+            { width: 30 }
         ];
 
-        // H. Kirim File ke Client
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', `attachment; filename=Laporan_${schedule.event_name.replace(/\s/g, '_')}.xlsx`);
 
@@ -176,7 +160,6 @@ const exportAttendance = async (req, res) => {
     }
 };
 
-// Export SEMUA fungsi agar tidak error di routes
 module.exports = { 
     getAttendanceReport, 
     registerUser,

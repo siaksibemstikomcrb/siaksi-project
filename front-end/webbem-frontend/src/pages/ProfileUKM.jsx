@@ -7,30 +7,24 @@ import api from '../api/axios';
 import { toast } from 'sonner';
 
 const ProfileUKM = () => {
-  // --- 1. STATE DECLARATIONS ---
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState({ ukm: null, stats: {}, recent_events: [], members: [] });
   
-  // State Edit Deskripsi
   const [isEditing, setIsEditing] = useState(false);
   const [editDesc, setEditDesc] = useState('');
   const [updating, setUpdating] = useState(false);
 
-  // State Edit Kontak
   const [isEditingContact, setIsEditingContact] = useState(false);
   const [contactForm, setContactForm] = useState({ email: '', phone: '' });
   const [updatingContact, setUpdatingContact] = useState(false);
 
-  // State Ganti Password (BARU)
   const [passData, setPassData] = useState({ current: '', new: '', confirm: '' });
-  const [showPass, setShowPass] = useState(false); // Toggle lihat password
+  const [showPass, setShowPass] = useState(false);
   const [updatingPass, setUpdatingPass] = useState(false);
 
-  // State Upload
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
 
-  // --- 2. FETCH DATA ---
   const fetchProfile = async () => {
     try {
       const res = await api.get('/ukms/my-profile');
@@ -50,9 +44,7 @@ const ProfileUKM = () => {
 
   useEffect(() => { fetchProfile(); }, []);
 
-  // --- 3. HANDLERS ---
 
-  // Upload Foto
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -75,7 +67,6 @@ const ProfileUKM = () => {
     }
   };
 
-  // Simpan Deskripsi
   const handleSaveDescription = async () => {
     setUpdating(true);
     try {
@@ -90,7 +81,6 @@ const ProfileUKM = () => {
     }
   };
 
-  // Simpan Kontak
   const handleSaveContact = async () => {
     setUpdatingContact(true);
     try {
@@ -111,7 +101,6 @@ const ProfileUKM = () => {
     }
   };
 
-  // Ganti Password (BARU)
   const handleChangePassword = async (e) => {
     e.preventDefault();
     if (passData.new !== passData.confirm) return toast.error("Konfirmasi password tidak cocok!");
@@ -119,7 +108,6 @@ const ProfileUKM = () => {
 
     setUpdatingPass(true);
     try {
-      // Menggunakan endpoint User karena Admin adalah User
       await api.put('/users/password', {
         currentPassword: passData.current,
         newPassword: passData.new
@@ -142,7 +130,6 @@ const ProfileUKM = () => {
   return (
     <div className="min-h-screen bg-gray-50 pb-20 font-sans">
       
-      {/* BANNER HEADER */}
       <div className="bg-white border-b border-gray-200">
         <div className="h-48 bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-800 relative overflow-hidden">
             <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
@@ -177,13 +164,10 @@ const ProfileUKM = () => {
         </div>
       </div>
 
-      {/* CONTENT GRID */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* KOLOM KIRI (DESKRIPSI & KEGIATAN) */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Deskripsi */}
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2"><Globe size={20} className="text-blue-600"/> Tentang Kami</h2>
@@ -202,7 +186,6 @@ const ProfileUKM = () => {
               )}
             </div>
 
-            {/* Kegiatan Terbaru */}
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
                <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-6"><Calendar size={20} className="text-purple-600"/> Kegiatan Terbaru</h2>
                {recent_events && recent_events.length > 0 ? (
@@ -224,10 +207,8 @@ const ProfileUKM = () => {
             </div>
           </div>
 
-          {/* KOLOM KANAN (KONTAK, ANGGOTA, PASSWORD) */}
           <div className="space-y-8">
             
-            {/* Kontak */}
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
                <div className="flex justify-between items-center mb-4">
                   <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Informasi Kontak</h3>
@@ -250,7 +231,6 @@ const ProfileUKM = () => {
                )}
             </div>
 
-            {/* Anggota */}
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
                <div className="flex justify-between items-center mb-4">
                   <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Anggota</h3>
@@ -266,7 +246,6 @@ const ProfileUKM = () => {
                </div>
             </div>
 
-            {/* --- FITUR BARU: GANTI PASSWORD (ADMIN) --- */}
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 border-t-4 border-t-orange-500">
                 <div className="flex justify-between items-center mb-4">
                    <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2"><Lock size={16} className="text-orange-500"/> Ganti Password</h3>

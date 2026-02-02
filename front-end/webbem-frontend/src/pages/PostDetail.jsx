@@ -4,14 +4,13 @@ import Navbar from '../components/Navbar';
 import { 
     Calendar, ArrowUp, Share2, Eye, ArrowLeft, 
     Link as LinkIcon, X, Clock, MapPin, Building, Mail, ChevronRight, AlertTriangle,
-    Shield // <--- INI SUDAH SAYA TAMBAHKAN
+    Shield
 } from 'lucide-react';
 import api from '../api/axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import 'react-quill-new/dist/quill.snow.css';
 
-// --- COMPONENT: SKELETON LOADER ---
 const DetailSkeleton = () => (
     <div className="max-w-7xl mx-auto px-4 pt-24 pb-12 grid grid-cols-1 lg:grid-cols-12 gap-12">
         <div className="lg:col-span-8 space-y-6">
@@ -26,7 +25,6 @@ const DetailSkeleton = () => (
     </div>
 );
 
-// --- COMPONENT: RELATED POSTS CARD ---
 const RelatedPostCard = ({ item, navigate }) => (
     <div 
         className="group cursor-pointer flex gap-4 items-start p-3 rounded-xl hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100" 
@@ -119,14 +117,12 @@ const PostDetail = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
                     
-                    {/* === KONTEN UTAMA (Fix: min-w-0 prevents grid blowout) === */}
                     <div className="lg:col-span-8 min-w-0 w-full overflow-hidden">
                         
                         <button onClick={() => navigate('/news')} className="flex items-center text-sm font-medium text-gray-500 mb-8 hover:text-blue-600 transition-colors group">
                             <ArrowLeft size={16} className="mr-2 group-hover:-translate-x-1 transition-transform"/> Kembali ke Berita
                         </button>
 
-                        {/* Judul & Meta */}
                         <header className="mb-8">
                             <div className="flex flex-wrap items-center gap-3 mb-6">
                                 <span className="text-blue-600 font-bold text-[10px] bg-blue-50 px-3 py-1 rounded-md uppercase tracking-widest border border-blue-100">
@@ -209,7 +205,6 @@ const PostDetail = () => {
 />
 </article>
 
-                        {/* MOBILE RELATED POSTS */}
                         <div className="lg:hidden mt-16 pt-10 border-t border-gray-100">
                             <h3 className="font-bold text-gray-900 mb-8 text-xl">Berita Terkait</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -220,7 +215,6 @@ const PostDetail = () => {
                         </div>
                     </div>
 
-                    {/* === SIDEBAR (DESKTOP) === */}
                     <aside className="hidden lg:block lg:col-span-4">
                         <div className="sticky top-28 space-y-8">
                             <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
@@ -250,7 +244,6 @@ const PostDetail = () => {
                 </div>
             </div>
 
-            {/* LIGHTBOX */}
             <AnimatePresence>
                 {isImageOpen && (
                     <motion.div 
@@ -272,7 +265,6 @@ const PostDetail = () => {
                 )}
             </AnimatePresence>
 
-            {/* BACK TO TOP */}
             <AnimatePresence>
                 {showScrollTop && (
                     <motion.button 
@@ -285,7 +277,6 @@ const PostDetail = () => {
                 )}
             </AnimatePresence>
 
-            {/* FOOTER */}
             <footer className="bg-[#020617] pt-20 pb-10 px-4 border-t border-slate-800/50 mt-20">
                 <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-12 mb-16">
                     <div className="md:col-span-5">

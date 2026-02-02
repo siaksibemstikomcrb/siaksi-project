@@ -11,7 +11,6 @@ import {
 const MemberAnalytics = () => {
   const [loading, setLoading] = useState(true);
   
-  // State Data
   const [stats, setStats] = useState({
     totalMembers: 0,
     totalAdmins: 0,
@@ -23,29 +22,22 @@ const MemberAnalytics = () => {
   const [roleData, setRoleData] = useState([]);       
   const [recentMembers, setRecentMembers] = useState([]); 
 
-  // Warna Grafik
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#6366F1'];
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      // 1. Ambil data User dari LocalStorage
       const userStr = localStorage.getItem('user');
       const currentUser = userStr ? JSON.parse(userStr) : {};
       
-      // 2. Fetch data
       const res = await api.get('/ukms/members'); 
-      const members = res.data.data || res.data || []; // Tambah fallback array kosong
+      const members = res.data.data || res.data || [];
 
-      // --- LOGIC PENGOLAHAN DATA ---
 
-      // A. Statistik Dasar (SAFE CHECK DITAMBAHKAN DI SINI)
       const total = members.length;
-      // PENTING: Pakai ?. untuk mencegah error jika role_name null
       const admins = members.filter(m => m.role_name?.toLowerCase().includes('admin')).length;
       const regular = total - admins;
       
-      // B. Grafik Sebaran Angkatan
       const angkatanGroups = members.reduce((acc, curr) => {
         const year = curr.nia ? curr.nia.substring(0, 4) : 'Lainnya';
         const label = !isNaN(year) ? `Angkatan ${year}` : 'Lainnya';
@@ -59,7 +51,6 @@ const MemberAnalytics = () => {
         jumlah: angkatanGroups[key]
       })).sort((a, b) => a.name.localeCompare(b.name));
 
-      // C. Grafik Role
       const processedRole = [
         { name: 'Anggota Biasa', value: regular },
         { name: 'Pengurus / Admin', value: admins }
@@ -98,7 +89,6 @@ const MemberAnalytics = () => {
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen bg-gray-50 pb-20">
       
-      {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">
@@ -114,7 +104,6 @@ const MemberAnalytics = () => {
         </button>
       </div>
 
-      {/* 1. STATISTIK KARTU */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
         <StatCard 
           label="Total Anggota" 
@@ -139,10 +128,8 @@ const MemberAnalytics = () => {
         />
       </div>
 
-      {/* 2. GRAFIK ANALISA */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
         
-        {/* CHART A: SEBARAN ANGKATAN */}
         <div className="lg:col-span-2 bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col">
           <h3 className="font-bold text-gray-800 text-lg mb-6 flex items-center gap-2">
             <CalendarClock size={20} className="text-gray-400"/> Regenerasi Angkatan (NIA)
@@ -166,7 +153,6 @@ const MemberAnalytics = () => {
           </div>
         </div>
 
-        {/* CHART B: PIE CHART */}
         <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col">
           <h3 className="font-bold text-gray-800 text-lg mb-6 flex items-center gap-2">
             <UserCheck size={20} className="text-gray-400"/> Rasio Pengurus
@@ -196,7 +182,6 @@ const MemberAnalytics = () => {
 
       </div>
 
-      {/* 3. TABEL TERBARU (BAGIAN YANG DIPERBAIKI) */}
       <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-gray-100 flex justify-between items-center">
           <h3 className="font-bold text-gray-800 text-lg">Anggota Terbaru Bergabung</h3>
@@ -230,7 +215,6 @@ const MemberAnalytics = () => {
                     {member.nia || '-'}
                   </td>
                   <td className="px-6 py-4">
-                    {/* --- PERBAIKAN DI SINI (SAFE CHECK) --- */}
                     <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase border ${
                       member.role_name?.toLowerCase().includes('admin') 
                         ? 'bg-purple-50 text-purple-600 border-purple-100' 
@@ -250,7 +234,6 @@ const MemberAnalytics = () => {
   );
 };
 
-// Komponen Kartu (Helper)
 const StatCard = ({ label, value, icon: Icon, color, sub }) => (
   <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all">
     <div className="flex items-center justify-between mb-4">

@@ -36,7 +36,6 @@ const UKMDetail = () => {
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       
-      {/* Header Section */}
       <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
             <div className="flex items-center gap-3 mb-2">
@@ -58,9 +57,7 @@ const UKMDetail = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Left Column: Info & Stats */}
         <div className="space-y-6">
-            {/* Admin Card */}
             <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
                 <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest mb-4 flex items-center gap-2">
                     <Shield size={16} className="text-blue-600" /> Admin Pengurus
@@ -80,7 +77,6 @@ const UKMDetail = () => {
                 </div>
             </div>
 
-            {/* Total Activities Stats */}
             <div className="bg-blue-600 p-8 rounded-3xl text-white shadow-lg shadow-blue-200">
                 <p className="text-blue-200 text-xs font-bold uppercase tracking-wider mb-2">Total Kegiatan</p>
                 <div className="flex items-end gap-2">
@@ -90,7 +86,6 @@ const UKMDetail = () => {
             </div>
         </div>
 
-        {/* Right Column: Members Table */}
         <div className="lg:col-span-2 bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
             <div className="p-6 border-b border-gray-100 flex justify-between items-center">
                 <h3 className="font-bold text-gray-900 text-lg">Daftar Anggota</h3>

@@ -2,12 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Search, Home, Cpu, Newspaper, LogIn, Search as SearchIcon, X 
+  Search, Home, Cpu, Newspaper, LogIn, Search as SearchIcon, X, GraduationCap 
 } from 'lucide-react';
 
 import Dock from './ui/Dock'; 
 
-// --- IMPORT LOGO ---
+
 import logoSiaksi from '../assets/images/logo/logo-4.png';
 import logoBem from '../assets/images/logo/logo-bem.png';
 import logoStikom from '../assets/images/logo/logo-stikom.png';
@@ -19,7 +19,7 @@ const Navbar = ({ isTransparent = false }) => {
   const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   
-  // State Search
+  
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -62,7 +62,7 @@ const Navbar = ({ isTransparent = false }) => {
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/news?search=${encodeURIComponent(searchQuery)}`);
+      navigate(`/learning?search=${encodeURIComponent(searchQuery)}`); 
       setShowSearch(false);
       setSearchQuery('');
     }
@@ -73,6 +73,7 @@ const Navbar = ({ isTransparent = false }) => {
     ? 'bg-transparent border-transparent py-6' 
     : 'bg-[#020617]/90 backdrop-blur-xl border-white/5 py-4 shadow-xl';
 
+  
   const dockItems = [
     { 
       icon: <Home size={20} />, 
@@ -83,6 +84,12 @@ const Navbar = ({ isTransparent = false }) => {
       icon: <Cpu size={20} />, 
       label: 'Fitur', 
       onClick: () => handleScrollToSection('features') 
+    },
+    { 
+      
+      icon: <GraduationCap size={20} />, 
+      label: 'Belajar', 
+      onClick: () => navigate('/learning') 
     },
     { 
       icon: <Newspaper size={20} />, 
@@ -103,7 +110,6 @@ const Navbar = ({ isTransparent = false }) => {
 
   return (
     <>
-      {/* --- TOP NAVBAR --- */}
       <motion.nav 
         initial={{ y: -100 }} 
         animate={{ y: 0 }} 
@@ -112,26 +118,18 @@ const Navbar = ({ isTransparent = false }) => {
       >
         <div className="max-w-7xl mx-auto px-4 flex justify-between items-center relative">
           
-          {/* === LOGO SECTION (DIPERBESAR & LENGKAP) === */}
           <div className="flex items-center gap-3 md:gap-4 cursor-pointer group z-50" onClick={() => navigate('/')}>
-              {/* Logo SIAKSI */}
               <img 
                 src={logoSiaksi} 
                 alt="SIAKSI" 
                 className="h-12 md:h-14 w-auto transition-transform group-hover:scale-105" 
               />
-              
-              {/* Divider Vertical */}
               <div className="h-8 w-[1px] bg-white/20 mx-1 hidden sm:block"></div>
-
-              {/* Logo STIKOM */}
               <img 
                 src={logoStikom} 
                 alt="STIKOM" 
                 className="h-8 md:h-8 w-auto opacity-90 transition-transform group-hover:scale-105" 
               />
-
-              {/* Logo BEM */}
               <img 
                 src={logoBem} 
                 alt="BEM" 
@@ -139,14 +137,13 @@ const Navbar = ({ isTransparent = false }) => {
               />
           </div>
 
-          {/* DESKTOP MENU */}
           <div className="hidden md:flex items-center gap-1 bg-white/5 p-1 rounded-full border border-white/5 absolute left-1/2 -translate-x-1/2">
               <button onClick={() => handleScrollToSection('top')} className="px-5 py-2 rounded-full text-sm text-white hover:bg-white/10 transition-all">Home</button>
               <button onClick={() => handleScrollToSection('features')} className="px-5 py-2 rounded-full text-sm text-slate-400 hover:text-white transition-all">Fitur</button>
               <Link to="/news" className="px-5 py-2 rounded-full text-sm text-slate-400 hover:text-white transition-all">Berita</Link>
+              <Link to="/learning" className="px-5 py-2 rounded-full text-sm text-slate-400 hover:text-white transition-all">Belajar</Link>             
           </div>
 
-          {/* DESKTOP ACTIONS */}
           <div className="hidden md:flex items-center gap-3" ref={searchContainerRef}>
               <div className="relative flex items-center">
                 <AnimatePresence>
@@ -162,7 +159,7 @@ const Navbar = ({ isTransparent = false }) => {
                             <input 
                                 autoFocus
                                 type="text" 
-                                placeholder="Cari..." 
+                                placeholder="Cari materi / berita..." 
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="w-full bg-white/10 border border-white/10 text-white text-sm px-4 py-2 rounded-full outline-none focus:border-blue-500/50"
@@ -186,7 +183,6 @@ const Navbar = ({ isTransparent = false }) => {
         </div>
       </motion.nav>
 
-      {/* --- MOBILE FLOATING SEARCH BAR (GLASS PILL STYLE) --- */}
       <AnimatePresence>
         {showSearch && (
             <motion.div 
@@ -208,7 +204,7 @@ const Navbar = ({ isTransparent = false }) => {
                         <input 
                             autoFocus
                             type="text" 
-                            placeholder="Cari..." 
+                            placeholder="Cari materi..." 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full bg-transparent text-white text-sm outline-none placeholder:text-white/50"
@@ -226,7 +222,6 @@ const Navbar = ({ isTransparent = false }) => {
         )}
       </AnimatePresence>
 
-      {/* --- MOBILE DOCK (Bottom Bar) --- */}
       <div className="md:hidden">
         <Dock 
           items={dockItems} 

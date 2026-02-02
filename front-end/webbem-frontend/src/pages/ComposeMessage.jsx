@@ -9,7 +9,6 @@ const ComposeMessage = () => {
     const [file, setFile] = useState(null);
     const [loading, setLoading] = useState(false);
     
-    // State untuk Custom Dropdown
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
 
@@ -24,7 +23,6 @@ const ComposeMessage = () => {
         };
         fetchUkms();
 
-        // Close dropdown saat klik di luar
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
                 setIsOpen(false);
@@ -71,7 +69,6 @@ const ComposeMessage = () => {
         }
     };
 
-    // Helper untuk mendapatkan Label yang sedang dipilih
     const getSelectedLabel = () => {
         if (!formData.target) return "Pilih Penerima...";
         if (formData.target === 'BROADCAST_ALL') return " Broadcast ke Semua User";
@@ -91,14 +88,12 @@ const ComposeMessage = () => {
             
             <form onSubmit={handleSubmit} className="space-y-6">
                 
-                {/* --- CUSTOM DROPDOWN (PROFESSIONAL LOOK) --- */}
                 <div className="bg-white p-4 md:p-6 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-all">
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
                         Tujuan Pengiriman
                     </label>
                     
                     <div className="relative" ref={dropdownRef}>
-                        {/* Trigger Button */}
                         <button
                             type="button"
                             onClick={() => setIsOpen(!isOpen)}
@@ -117,10 +112,8 @@ const ComposeMessage = () => {
                             <ChevronDown size={18} className={`text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}/>
                         </button>
 
-                        {/* Dropdown Menu */}
                         {isOpen && (
                             <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-xl max-h-80 overflow-y-auto animate-in fade-in slide-in-from-top-2 custom-scrollbar">
-                                {/* Option: Broadcast */}
                                 <div 
                                     onClick={() => { setFormData({...formData, target: 'BROADCAST_ALL'}); setIsOpen(false); }}
                                     className="p-4 border-b border-gray-100 hover:bg-orange-50 cursor-pointer group transition-colors"
@@ -136,7 +129,6 @@ const ComposeMessage = () => {
                                     </div>
                                 </div>
 
-                                {/* Option Group: UKM */}
                                 <div className="p-2 bg-gray-50 text-[10px] font-bold text-gray-400 uppercase tracking-wider px-4 py-2 sticky top-0">
                                     Pilih UKM Spesifik
                                 </div>
@@ -161,7 +153,6 @@ const ComposeMessage = () => {
                     </div>
                 </div>
 
-                {/* INPUT KONTEN */}
                 <div className="bg-white p-4 md:p-6 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-all space-y-5">
                     <div>
                         <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Judul Surat / Event</label>
@@ -188,7 +179,6 @@ const ComposeMessage = () => {
                     </div>
                 </div>
 
-                {/* UPLOAD FILE */}
                 <div className="bg-white p-4 md:p-6 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-all">
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Lampiran (Foto/Dokumen)</label>
                     <div className={`border-2 border-dashed rounded-xl p-6 md:p-8 text-center transition cursor-pointer relative group overflow-hidden ${file ? 'border-green-500 bg-green-50/50' : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50/50'}`}>
@@ -216,11 +206,10 @@ const ComposeMessage = () => {
                                 </>
                             )}
                         </div>
-                        {/* Tombol Hapus File (Jika ada file) */}
                         {file && (
                             <button 
                                 type="button"
-                                onClick={(e) => { e.stopPropagation(); setFile(null); }} // Stop propagation biar ga trigger input file lagi
+                                onClick={(e) => { e.stopPropagation(); setFile(null); }}
                                 className="absolute top-2 right-2 p-1.5 bg-white rounded-full text-red-500 shadow hover:bg-red-50 z-20"
                                 title="Hapus file"
                             >
@@ -230,7 +219,6 @@ const ComposeMessage = () => {
                     </div>
                 </div>
 
-                {/* TOMBOL KIRIM */}
                 <div className="pt-4">
                     <button 
                         disabled={loading} 

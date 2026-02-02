@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'; // Tambah useRef
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { Loader2, CheckCircle, XCircle, ExternalLink } from 'lucide-react';
@@ -10,13 +10,10 @@ const ConnectDiscord = () => {
     const [message, setMessage] = useState('Menghubungkan akun Discord...');
     const [inviteLink, setInviteLink] = useState(null);
     
-    // --- SOLUSI ERROR INVALID_GRANT ---
-    // Gunakan ref untuk mencegah useEffect jalan 2 kali (React Strict Mode)
     const hasFetched = useRef(false);
 
     useEffect(() => {
         const connect = async () => {
-            // 1. Cek apakah sudah pernah fetch?
             if (hasFetched.current) return;
             
             const code = searchParams.get('code');
@@ -26,19 +23,15 @@ const ConnectDiscord = () => {
                 return;
             }
 
-            // Tandai sudah fetch agar tidak double request
             hasFetched.current = true;
 
             try {
-                // 2. Kirim Code ke Backend
                 const res = await api.post('/discord/connect', { code });
                 
                 setStatus('success');
 
-                // 3. Cek apakah user perlu join manual?
                 if (res.data.sync_status?.need_join) {
                     setMessage(`Akun terhubung! Langkah terakhir: Masuk ke Server Kampus.`);
-                    // GANTI DENGAN LINK INVITE SERVER KAMU YANG ASLI
                     setInviteLink("https://discord.gg/NpTRhxzf"); 
                 } else {
                     setMessage(`Berhasil! Akun Discord ${res.data.discord_username} telah terhubung.`);
@@ -48,7 +41,6 @@ const ConnectDiscord = () => {
             } catch (err) {
                 console.error("Connect Error:", err);
                 setStatus('error');
-                // Tampilkan pesan error yang lebih ramah
                 const serverMsg = err.response?.data?.msg || err.message;
                 setMessage(serverMsg === 'Invalid "code" in request.' 
                     ? 'Kode kadaluarsa. Silakan coba klik tombol di Profil lagi.' 

@@ -1,9 +1,7 @@
 const db = require('../config/db');
 
-// MODIFIKASI: Support Upload BANYAK File
 const uploadDocument = async (req, res) => {
     try {
-        // req.files (ARRAY) bukan req.file (SINGLE)
         if (!req.files || req.files.length === 0) {
             return res.status(400).json({ msg: "Tidak ada file yang diupload!" });
         }
@@ -15,11 +13,10 @@ const uploadDocument = async (req, res) => {
 
         const uploadedFiles = [];
 
-        // Loop setiap file yang diupload
         for (const file of req.files) {
-            const file_path = file.path; // URL Cloudinary
+            const file_path = file.path;
             const file_type = file.originalname.split('.').pop().toLowerCase();
-            const title = file.originalname; // Pakai nama file asli sebagai judul default
+            const title = file.originalname;
 
             const result = await db.query(
                 `INSERT INTO documents (ukm_id, uploaded_by, title, folder_id, category, file_path, file_type)
@@ -39,25 +36,22 @@ const uploadDocument = async (req, res) => {
 
 const autoArchiveDocument = async (req, res) => {
     const { title, category } = req.body;
-    const ukm_id = req.user.ukm_id; // Dari Token JWT
+    const ukm_id = req.user.ukm_id;
     const uploadedBy = req.user.id;
-    const file = req.file; // Dari Multer/Cloudinary Middleware
+    const file = req.file;
 
     if (!file) return res.status(400).json({ msg: 'File PDF gagal digenerate.' });
 
     try {
         await db.query('BEGIN');
 
-        // 1. CEK APAKAH FOLDER TUJUAN SUDAH ADA?
         let folderQuery = `SELECT id FROM Folders WHERE ukm_id = $1 AND name ILIKE $2`;
         let folderRes = await db.query(folderQuery, [ukm_id, category]);
         let folderId;
 
         if (folderRes.rows.length > 0) {
-            // Folder sudah ada
             folderId = folderRes.rows[0].id;
         } else {
-            // Folder belum ada, BUAT BARU OTOMATIS
             const createFolderQuery = `
                 INSERT INTO Folders (name, ukm_id, created_at) 
                 VALUES ($1, $2, NOW()) 
@@ -67,8 +61,6 @@ const autoArchiveDocument = async (req, res) => {
             folderId = newFolder.rows[0].id;
         }
 
-        // 2. SIMPAN DOKUMEN KE DALAM FOLDER TERSEBUT
-        // Asumsi req.file.path adalah URL Cloudinary atau path lokal
         const docQuery = `
             INSERT INTO Documents (
                 ukm_id, uploaded_by, title, category, file_path, file_type, folder_id, created_at
@@ -80,9 +72,9 @@ const autoArchiveDocument = async (req, res) => {
             ukm_id, 
             uploadedBy, 
             title, 
-            'Auto-Generated', // Category internal
-            file.path, // URL dari Cloudinary
-            folderId   // Masuk ke folder otomatis
+            'Auto-Generated',
+            file.path,
+            folderId
         ]);
 
         await db.query('COMMIT');
@@ -95,7 +87,6 @@ const autoArchiveDocument = async (req, res) => {
     }
 };
 
-// HAPUS DOKUMEN (Sama seperti sebelumnya, cuma copas biar lengkap)
 const deleteDocument = async (req, res) => {
     const { id } = req.params;
     try {
@@ -104,4 +95,4 @@ const deleteDocument = async (req, res) => {
     } catch (err) { res.status(500).send("Err"); }
 };
 
-module.exports = { uploadDocument, deleteDocument, autoArchiveDocument }; // getDocuments tidak dipakai lagi diganti getFolderContent
+module.exports = { uploadDocument, deleteDocument, autoArchiveDocument };

@@ -1,6 +1,5 @@
 const db = require('../config/db');
 
-// Mengambil notifikasi milik user yang sedang login
 const getMyNotifications = async (req, res) => {
     try {
         const userId = req.user.id;
@@ -19,7 +18,6 @@ const getMyNotifications = async (req, res) => {
     }
 };
 
-// Menandai notifikasi sebagai sudah dibaca
 const markAsRead = async (req, res) => {
     try {
         const { id } = req.params;

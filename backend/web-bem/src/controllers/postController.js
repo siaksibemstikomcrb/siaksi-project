@@ -1,7 +1,6 @@
 const pool = require('../config/db');
 const { cloudinary } = require('../config/cloudinary');
 
-// 1. CREATE POST (Tetap sama)
 exports.createPost = async (req, res) => {
   try {
     const { title, content, subtitle, external_link } = req.body;
@@ -43,10 +42,8 @@ exports.createPost = async (req, res) => {
   }
 };
 
-// 2. GET PUBLIC POSTS (PERBAIKAN DI SINI)
 exports.getPublicPosts = async (req, res) => {
   try {
-    // SAYA MENGHAPUS 'u.logo as ukm_logo' DARI QUERY DI BAWAH INI
     const query = `
       SELECT p.*, u.ukm_name 
       FROM posts p
@@ -58,20 +55,17 @@ exports.getPublicPosts = async (req, res) => {
     const result = await pool.query(query);
     res.json(result.rows);
   } catch (err) {
-    console.error("Get Public Error:", err); // Log error biar kebaca di terminal
+    console.error("Get Public Error:", err);
     res.status(500).json({ message: "Gagal mengambil berita." });
   }
 };
 
-// 3. GET POST DETAIL (PERBAIKAN DI SINI)
 exports.getPostDetail = async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Update views async
     pool.query(`UPDATE posts SET views = views + 1 WHERE id = $1`, [id]).catch(err => {});
 
-    // SAYA MENGHAPUS 'u.logo as ukm_logo' DARI QUERY DI BAWAH INI JUGA
     const query = `
       SELECT p.*, u.ukm_name
       FROM posts p
@@ -89,7 +83,6 @@ exports.getPostDetail = async (req, res) => {
   }
 };
 
-// 4. APPROVE / REJECT (Tetap sama)
 exports.updatePostStatus = async (req, res) => {
   try {
     const { id } = req.params;
@@ -111,7 +104,6 @@ exports.updatePostStatus = async (req, res) => {
   }
 };
 
-// 5. PIN / UNPIN (Tetap sama)
 exports.togglePinPost = async (req, res) => {
   try {
     const { id } = req.params;
@@ -126,14 +118,12 @@ exports.togglePinPost = async (req, res) => {
   }
 };
 
-// 6. GET DASHBOARD POSTS (Tetap sama)
 exports.getDashboardPosts = async (req, res) => {
     try {
         const { role, ukm_id } = req.user;
         let query = '';
         let params = [];
 
-        // HAPUS 'u.logo' DARI QUERY JIKA ADA
         if (role === 'super_admin') {
             query = `
                 SELECT p.*, u.ukm_name 
@@ -160,7 +150,6 @@ exports.getDashboardPosts = async (req, res) => {
     }
 };
 
-// 7. DELETE POST (Tetap sama)
 exports.deletePost = async (req, res) => {
     try {
         const { id } = req.params;
@@ -183,13 +172,11 @@ exports.updatePost = async (req, res) => {
     const { id } = req.params;
     const { title, subtitle, content, external_link } = req.body;
     
-    // Logic Gambar Baru (Jika ada upload baru, hapus yang lama)
     let imageQuery = "";
     let params = [title, subtitle, content, external_link, id];
     let paramIndex = 6; 
 
     if (req.file) {
-        // Hapus gambar lama dulu
         const oldPost = await pool.query("SELECT image_public_id FROM posts WHERE id = $1", [id]);
         if (oldPost.rows[0]?.image_public_id) {
             await cloudinary.uploader.destroy(oldPost.rows[0].image_public_id);

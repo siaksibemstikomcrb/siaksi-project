@@ -7,14 +7,12 @@ const Absen = () => {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // State Modal & Expand
   const [showModal, setShowModal] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
   const [reason, setReason] = useState("");
   const [processing, setProcessing] = useState(false);
-  const [expandedId, setExpandedId] = useState(null); // ID kartu yang sedang dibuka
+  const [expandedId, setExpandedId] = useState(null);
 
-  // Real-time Clock
   const [time, setTime] = useState(new Date());
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
@@ -37,7 +35,6 @@ const Absen = () => {
 
   useEffect(() => { fetchSchedules(); }, []);
 
-  // Handler Buka/Tutup Kartu
   const toggleExpand = (id) => {
       setExpandedId(expandedId === id ? null : id);
   };
@@ -87,7 +84,6 @@ const Absen = () => {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 font-sans p-4 md:p-6 pb-24">
       
-      {/* --- 1. HERO SECTION (STYLE ASLI YANG ABANG SUKA) --- */}
       <div className="bg-white rounded-3xl p-6 md:p-8 border border-gray-100 shadow-lg relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full -mr-20 -mt-20 blur-3xl opacity-50"></div>
         
@@ -106,7 +102,6 @@ const Absen = () => {
             </p>
           </div>
 
-          {/* Clock Card */}
           <div className="bg-white px-5 py-4 rounded-2xl border border-gray-200 text-center min-w-[160px] shadow-sm w-full md:w-auto">
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Server Clock</p>
             <p className="text-3xl font-black text-gray-900 tabular-nums tracking-tight leading-none mb-1">
@@ -119,7 +114,6 @@ const Absen = () => {
         </div>
       </div>
 
-      {/* --- 2. LIST JADWAL (STYLE LAMA TAPI EXPANDABLE) --- */}
       <div>
         <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-4 px-1">
             <Calendar size={20} className="text-blue-600" /> Jadwal Aktif
@@ -145,20 +139,17 @@ const Absen = () => {
                         ${hasAttended ? 'border-green-200 bg-green-50/20' : isExpanded ? 'border-blue-300 ring-2 ring-blue-50 shadow-md' : 'border-gray-100'}
                     `}
                   >
-                    {/* HEAD (TAMPILAN LUAR - RINGKAS) */}
                     <div 
                         onClick={() => toggleExpand(item.id)}
                         className="p-5 flex items-center justify-between cursor-pointer active:bg-gray-50 transition-colors"
                     >
                         <div className="flex items-center gap-4 overflow-hidden">
-                            {/* Icon */}
                             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm
                                 ${hasAttended ? 'bg-green-100 text-green-600' : 'bg-blue-600 text-white'}
                             `}>
                                 {hasAttended ? <CheckCircle2 size={24} /> : <Calendar size={24} />}
                             </div>
 
-                            {/* Info Dasar */}
                             <div className="min-w-0">
                                 <h3 className={`font-bold text-lg truncate ${hasAttended ? 'text-green-800' : 'text-gray-900'}`}>
                                     {item.event_name}
@@ -179,18 +170,15 @@ const Absen = () => {
                         <ChevronDown size={20} className={`text-gray-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
                     </div>
 
-                    {/* BODY (DETAILS - MUNCUL KALO DIKLIK) */}
                     <div className={`transition-all duration-300 ease-in-out px-5 overflow-hidden ${isExpanded ? 'max-h-[500px] pb-5 opacity-100' : 'max-h-0 opacity-0'}`}>
                         <div className="pt-4 border-t border-gray-100 space-y-4">
                             
-                            {/* Deskripsi */}
                             {item.description && (
                                 <div className="bg-gray-50 p-3 rounded-xl text-xs text-gray-600 italic border border-gray-100">
                                     "{item.description}"
                                 </div>
                             )}
 
-                            {/* Info Detail */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                                 <div className="flex items-start gap-3">
                                     <Clock size={16} className="text-blue-500 mt-0.5"/>
@@ -216,7 +204,6 @@ const Absen = () => {
                                 </div>
                             </div>
 
-                            {/* Tombol Aksi */}
                             {!hasAttended ? (
                                 <div className="flex gap-3 pt-2">
                                     <button 
@@ -248,7 +235,6 @@ const Absen = () => {
         )}
       </div>
 
-      {/* MODAL IZIN (STYLE MENYESUAIKAN) */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={() => setShowModal(false)}></div>

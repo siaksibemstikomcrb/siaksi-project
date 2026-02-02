@@ -1,6 +1,5 @@
 const db = require('../config/db');
 
-// --- HELPER: HAVERSINE FORMULA (Hitung Jarak GPS) ---
 const getDistanceInMeters = (lat1, lon1, lat2, lon2) => {
     const R = 6371e3; 
     const toRad = (val) => val * Math.PI / 180;
@@ -16,14 +15,12 @@ const getDistanceInMeters = (lat1, lon1, lat2, lon2) => {
     return R * c; 
 };
 
-// --- HELPER 1: TIMEZONE SAFE DATE (YYYY-MM-DD) ---
 const toLocalDateString = (date) => {
     return new Date(date).toLocaleDateString('en-CA', { 
         timeZone: 'Asia/Jakarta' 
     });
 };
 
-// --- HELPER 2: TIMEZONE SAFE TIME (HH:MM:SS) ---
 const getJakartaTime = () => {
     return new Date().toLocaleTimeString('en-GB', { 
         hour12: false, 
@@ -31,29 +28,25 @@ const getJakartaTime = () => {
     });
 };
 
-// --- 1. SUBMIT ATTENDANCE (FIXED TIMEZONE) ---
 const submitAttendance = async (req, res) => {
     const { schedule_id, reason, latitude, longitude } = req.body;
     const user_id = req.user.id; 
 
     try {
-        // A. Cek duplikasi absen
         const check = await db.query('SELECT id FROM Attendances WHERE user_id = $1 AND schedule_id = $2', [user_id, schedule_id]);
         if (check.rows.length > 0) {
             return res.status(400).json({ msg: 'Anda sudah melakukan absensi untuk kegiatan ini.' });
         }
 
-        // B. Ambil Data Jadwal
         const scheduleRes = await db.query('SELECT * FROM Schedules WHERE id = $1', [schedule_id]);
         if (scheduleRes.rows.length === 0) return res.status(404).json({ msg: 'Jadwal tidak ditemukan' });
         
         const schedule = scheduleRes.rows[0];
         const now = new Date();
 
-        // === PERBAIKAN ZONA WAKTU DI SINI ===
-        const currentDateStr = toLocalDateString(now); // Contoh: "2026-01-22" (WIB)
-        const eventDateStr = toLocalDateString(schedule.event_date); // Mengambil tanggal event (WIB)
-        const currentTime = getJakartaTime(); // Contoh: "14:50:00" (WIB)
+        const currentDateStr = toLocalDateString(now);
+        const eventDateStr = toLocalDateString(schedule.event_date);
+        const currentTime = getJakartaTime();
 
         const isIzin = reason && reason.length > 3;
         let status = 'Hadir';
@@ -61,26 +54,21 @@ const submitAttendance = async (req, res) => {
 
         if (isIzin) {
             status = 'Izin';
-            // Validasi Izin: Tidak boleh untuk masa lalu (bandingkan string tanggal)
             if (currentDateStr > eventDateStr) {
                  return res.status(400).json({ msg: 'Kegiatan sudah selesai, tidak bisa mengajukan izin.' });
             }
         } else {
-            // === VALIDASI HADIR ===
             
-            // 1. Validasi Tanggal (Hari H)
             if (currentDateStr !== eventDateStr) {
                 return res.status(400).json({ 
                     msg: `Gagal. Kegiatan dijadwalkan tanggal ${new Date(schedule.event_date).toLocaleDateString('id-ID', {timeZone: 'Asia/Jakarta'})}, sedangkan hari ini tanggal ${new Date().toLocaleDateString('id-ID', {timeZone: 'Asia/Jakarta'})}` 
                 });
             }
 
-            // 2. Validasi Waktu Buka
             if (currentTime < schedule.attendance_open_time) {
                 return res.status(400).json({ msg: `Presensi belum dibuka. Buka jam: ${schedule.attendance_open_time} WIB` });
             }
 
-            // 3. Validasi Lokasi (GPS)
             if (schedule.latitude && schedule.longitude) {
                 if (!latitude || !longitude) {
                     return res.status(400).json({ msg: 'Lokasi GPS wajib diaktifkan untuk Absensi Hadir.' });
@@ -97,7 +85,6 @@ const submitAttendance = async (req, res) => {
             }
         }
 
-        // D. Simpan ke Database
         const result = await db.query(
             `INSERT INTO Attendances (user_id, schedule_id, status, attendance_time, reason, latitude, longitude)
              VALUES ($1, $2, $3, CURRENT_TIMESTAMP, $4, $5, $6) RETURNING *`,
@@ -116,12 +103,10 @@ const submitAttendance = async (req, res) => {
     }
 };
 
-// --- 2. GET HISTORY PER MEMBER ---
 const getMemberHistory = async (req, res) => {
     try {
         const targetUserId = req.params.userId || req.user.id; 
 
-        // Cek User
         const userRes = await db.query('SELECT id, name, nia, ukm_id FROM Users WHERE id = $1', [targetUserId]);
         if (userRes.rows.length === 0) {
             return res.status(404).json({ msg: 'User tidak ditemukan' });
@@ -163,7 +148,6 @@ const getMemberHistory = async (req, res) => {
     }
 };
 
-// --- 3. GET ATTENDANCE LIST BY SCHEDULE ---
 const getAttendanceBySchedule = async (req, res) => {
     const { schedule_id } = req.params;
     try {

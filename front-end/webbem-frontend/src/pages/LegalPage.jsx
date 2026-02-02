@@ -8,12 +8,10 @@ const LegalPage = () => {
   const navigate = useNavigate();
   const isPrivacy = pathname === '/privacy';
   
-  // Scroll ke atas saat halaman berubah
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);
 
-  // --- CONTENT DATA (Biar Rapi & Mudah Diedit) ---
   const privacyContent = [
     {
       id: 'collection',
@@ -119,13 +117,11 @@ const LegalPage = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-blue-100 selection:text-blue-900">
-      {/* Navbar Non-Transparent */}
       <Navbar isTransparent={false} />
 
       <main className="pt-32 pb-24 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
           
-          {/* --- HEADER SECTION --- */}
           <div className="mb-16 text-center max-w-3xl mx-auto">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-500 text-xs font-medium mb-6">
               <Calendar size={12} />
@@ -141,7 +137,6 @@ const LegalPage = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
             
-            {/* --- SIDEBAR NAV (STICKY) --- */}
             <aside className="hidden lg:block lg:col-span-4 xl:col-span-3">
               <div className="sticky top-32 p-6 rounded-2xl bg-white border border-slate-200 shadow-sm">
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Daftar Isi</h4>
@@ -168,10 +163,8 @@ const LegalPage = () => {
               </div>
             </aside>
 
-            {/* --- MAIN CONTENT --- */}
             <div className="lg:col-span-8 xl:col-span-9">
               <div className="bg-white rounded-3xl p-8 md:p-12 shadow-xl shadow-slate-200/50 border border-slate-100">
-                {/* Intro Icon */}
                 <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-10 ${isPrivacy ? 'bg-blue-50 text-blue-600' : 'bg-orange-50 text-orange-600'}`}>
                    {isPrivacy ? <Shield size={32} /> : <FileText size={32} />}
                 </div>
@@ -189,7 +182,6 @@ const LegalPage = () => {
                   ))}
                 </div>
 
-                {/* Footer Contact Box */}
                 <div className="mt-16 p-6 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col sm:flex-row gap-6 items-start sm:items-center">
                   <div className="p-3 bg-white rounded-full shadow-sm text-slate-400">
                     <Mail size={24} />
@@ -210,7 +202,6 @@ const LegalPage = () => {
         </div>
       </main>
 
-      {/* Simple Footer */}
 <footer className="py-8 pb-32 md:pb-8 bg-slate-900 text-center text-slate-500 text-sm">
         <div className="flex justify-center gap-6 mb-4">
             <span className="flex items-center gap-2"><MapPin size={14}/> Cirebon, Indonesia</span>

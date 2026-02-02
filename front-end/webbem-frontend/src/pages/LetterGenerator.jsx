@@ -4,7 +4,6 @@ import { FileText, Printer, Plus, Trash2, Settings, X, Type, Layout, Bold, Itali
 import api from '../api/axios';
 import { toast } from 'sonner';
 
-// --- IMPORT GAMBAR LOGO ---
 import logoBEM from '../assets/images/logo-ukm-org/logo-bem.png';
 import logoDPM from '../assets/images/logo-ukm-org/dpm.png';
 import logoArt from '../assets/images/logo-ukm-org/art.png';
@@ -16,9 +15,7 @@ import logoSrtv from '../assets/images/logo-ukm-org/srtv.png';
 import logoMataAlam from '../assets/images/logo-ukm-org/matalam.png'; 
 import logoStikom from '../assets/images/logo-ukm-org/logo-stikom.png';
 
-// --- DATABASE PRESET ---
 const UKM_PRESETS = [
-  // 1. BEM (TUKAR POSISI: Kampus Kiri, Org Kanan)
   { 
     id: 9, 
     name: 'BADAN EKSEKUTIF MAHASISWA (BEM)', 
@@ -26,9 +23,8 @@ const UKM_PRESETS = [
     address: 'Jl. Pusri No. 01 Kedawung, Cirebon, Jawa Barat, 45153', 
     logo: logoBEM, 
     showCampusLogo: true,
-    swapLogos: true // <--- FITUR BARU: Tukar posisi logo
+    swapLogos: true
   },
-  // 2. DPM (TUKAR POSISI: Kampus Kiri, Org Kanan)
   { 
     id: 15, 
     name: 'DEWAN PERWAKILAN MAHASISWA (DPM)', 
@@ -36,9 +32,8 @@ const UKM_PRESETS = [
     address: 'Jl. Pusri No. 01 Kedawung, Cirebon, Jawa Barat, 45153', 
     logo: logoDPM, 
     showCampusLogo: true,
-    swapLogos: true // <--- FITUR BARU: Tukar posisi logo
+    swapLogos: true
   },
-  // 3. MATA ALAM (Hanya Logo Org di Kiri)
   { 
     id: 14, 
     parentOrg: 'MAHASISWA PECINTA ALAM', 
@@ -46,20 +41,18 @@ const UKM_PRESETS = [
     campus: 'STIKOM POLTEK CIREBON', 
     address: 'Sekretariat Kampus I Jln. Pusri No. 01 ByPass Kedawung, Cirebon Jawa Barat 45153. Telp (0231) 486475 Ext 82/83', 
     logo: logoMataAlam, 
-    showCampusLogo: false, // Tidak pakai logo kampus
+    showCampusLogo: false,
     swapLogos: false
   },
-  // 4. SCC (Hanya Logo Org di Kiri)
   { 
     id: 5, 
     name: 'STIKOM CIREBON CHOIR (SCC)', 
     campus: 'STIKOM POLTEK CIREBON', 
     address: 'Jln. Brigjend Darsono No. 33 Cirebon. Phone (0231) 486475', 
     logo: logoChoir, 
-    showCampusLogo: false, // Tidak pakai logo kampus
+    showCampusLogo: false,
     swapLogos: false
   },
-  // UKM LAINNYA (Default)
   { id: 6, name: 'ART MEDIA CREW', campus: 'STIKOM POLTEK CIREBON', address: 'Jl. Pusri No.01, Kedawung Cirebon Jawa Barat phone (0231) 486475', logo: logoArt, showCampusLogo: false },
   { id: 7, name: 'HIMAKOM (Himpunan Mahasiswa Komputer)', campus: 'STIKOM POLTEK CIREBON', address: 'Jl. Pusri No 31 Kedawung phone (0231) 48647', logo: logoHimakom, showCampusLogo: false },
   { id: 11, name: 'UKM OLAHRAGA', campus: 'STIKOM POLTEK CIREBON', address: 'Jln. Brigjend Darsono No. 33 Cirebon Telp (0231) 486475', logo: logoOlahraga, showCampusLogo: false },
@@ -67,7 +60,6 @@ const UKM_PRESETS = [
   { id: 8, name: 'STIKOM RADIO TELEVISION (SRTV)', campus: 'STIKOM POLTEK CIREBON', address: 'Jl. Pusri No. 01 Kedawung, Cirebon, Jawa Barat, 45153', logo: logoSrtv, showCampusLogo: false }
 ];
 
-// --- CUSTOM EDITOR ---
 const RichTextEditor = ({ label, value, onChange, rows = 3 }) => {
   const handleFormat = (command) => document.execCommand(command, false, null);
   return (
@@ -87,18 +79,15 @@ const RichTextEditor = ({ label, value, onChange, rows = 3 }) => {
 
 const LetterGenerator = () => {
   const navigate = useNavigate();
-  // State Security
   const [isVerified, setIsVerified] = useState(false);
   const [authInput, setAuthInput] = useState(''); 
   const [passwordInput, setPasswordInput] = useState('');
   const [loadingVerify, setLoadingVerify] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // State Logic & User
   const [userRole, setUserRole] = useState(null);
   const [lockedUkmId, setLockedUkmId] = useState(null);
 
-  // State Surat
   const [headerData, setHeaderData] = useState({
     parentOrg: '', orgName: '', campus: '', address: '', logoUrl: '', showCampusLogo: false, swapLogos: false
   });
@@ -117,7 +106,6 @@ const LetterGenerator = () => {
   });
   const [showSettings, setShowSettings] = useState(false);
 
-  // --- 1. CEK USER & PREFILL DATA SAAT MOUNT ---
   useEffect(() => {
     const role = localStorage.getItem('role');
     const ukmId = parseInt(localStorage.getItem('ukm_id'));
@@ -146,34 +134,28 @@ const LetterGenerator = () => {
         address: preset.address,
         logoUrl: preset.logo,
         showCampusLogo: preset.showCampusLogo,
-        swapLogos: preset.swapLogos || false // Default false
+        swapLogos: preset.swapLogos || false
     });
   };
 
-  // --- 2. FUNGSI VERIFIKASI LOGIN ULANG ---
 const handleVerify = async (e) => {
     e.preventDefault();
     setLoadingVerify(true);
     
-    // PERBAIKAN: Langsung kirim sebagai 'username'.
-    // Tidak perlu cek authInput.includes('@') lagi.
     const payload = { 
         username: authInput, 
         password: passwordInput 
     }; 
 
     try {
-        // Panggil login (karena token ada di cookie, kita cuma butuh konfirmasi sukses/gagal)
         const res = await api.post('/auth/login', payload);
         
-        // Jika tidak error, berarti login sukses
         if (res.status === 200) {
             setIsVerified(true);
             toast.success("Akses Diberikan!");
         }
     } catch (err) {
         console.error(err);
-        // Tampilkan pesan error spesifik dari backend (misal: "Password salah")
         const errorMsg = err.response?.data?.msg || "Gagal Verifikasi!";
         toast.error(errorMsg);
     } finally {
@@ -181,7 +163,6 @@ const handleVerify = async (e) => {
     }
   };
 
-  // HANDLERS LAIN
   const handleUkmChange = (e) => {
     const ukmId = parseInt(e.target.value);
     const selected = UKM_PRESETS.find(u => u.id === ukmId);
@@ -196,7 +177,6 @@ const handleVerify = async (e) => {
   const handlePrint = () => window.print();
   const paperDimensions = { 'A4': { width: '210mm', height: '297mm' }, 'F4': { width: '215mm', height: '330mm' } };
 
-  // --- TAMPILAN SECURITY GATE ---
   if (!isVerified) {
     return (
         <div className="fixed inset-0 z-50 bg-gray-100 flex items-center justify-center p-4">
@@ -254,11 +234,9 @@ const handleVerify = async (e) => {
     );
   }
 
-  // --- TAMPILAN UTAMA ---
   return (
     <div className="flex flex-col lg:flex-row h-screen bg-gray-100 font-sans text-gray-900 overflow-hidden">
       
-      {/* PANEL KIRI (INPUT) */}
       <div className="w-full lg:w-[420px] bg-white border-r border-gray-300 flex flex-col h-1/2 lg:h-full print:hidden shadow-xl z-20 order-2 lg:order-1">
         <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50 sticky top-0 z-10">
             <h2 className="text-lg font-black text-gray-800 flex items-center gap-2"><FileText className="text-blue-600" size={20}/> Generator</h2>
@@ -285,7 +263,6 @@ const handleVerify = async (e) => {
                 </div>
             )}
 
-            {/* --- KOP SURAT (AUTO-LOCKED) --- */}
             <div className="space-y-4 pb-4 border-b border-gray-100">
                 <div className="flex items-center gap-2 mb-2">
                     <Building2 size={16} className="text-blue-600"/>
@@ -293,7 +270,6 @@ const handleVerify = async (e) => {
                 </div>
                 
                 {lockedUkmId ? (
-                    // TERKUNCI (ADMIN UKM)
                     <div className="bg-green-50 p-4 rounded-xl border border-green-200 flex items-center gap-3">
                         <div className="p-2 bg-white rounded-lg border border-green-100 shadow-sm">
                             <img src={headerData.logoUrl} className="w-8 h-8 object-contain" alt="Logo" />
@@ -304,7 +280,6 @@ const handleVerify = async (e) => {
                         </div>
                     </div>
                 ) : (
-                    // BEBAS (SUPER ADMIN)
                     <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
                         <label className="lbl text-blue-800 mb-2">Pilih Organisasi (Super Admin Mode)</label>
                         <select value={headerData.orgName === UKM_PRESETS.find(u => u.name === headerData.orgName)?.name ? UKM_PRESETS.find(u => u.name === headerData.orgName)?.id : undefined} onChange={handleUkmChange} className="w-full p-2.5 rounded-lg border border-blue-200 text-sm font-bold text-gray-800 focus:ring-2 focus:ring-blue-500 outline-none bg-white cursor-pointer shadow-sm">
@@ -319,7 +294,6 @@ const handleVerify = async (e) => {
                 </div>
             </div>
 
-            {/* FORM SURAT */}
             <div className="space-y-5 pb-10">
                 <div className="space-y-2"><Label>Detail Surat</Label><input name="nomor" placeholder="Nomor Surat" className="input-field" onChange={handleChange} /><input name="perihal" placeholder="Perihal" className="input-field" onChange={handleChange} /><div className="grid grid-cols-2 gap-2"><input name="lampiran" value={form.lampiran} placeholder="Lampiran" className="input-field" onChange={handleChange} /><input name="date" value={form.date} placeholder="Tanggal" className="input-field" onChange={handleChange} /></div></div>
                 <div className="space-y-2"><Label>Penerima</Label><input name="tujuan" placeholder="Kepada Yth..." className="input-field" onChange={handleChange} /><input name="tempat" value={form.tempat} placeholder="Di Tempat" className="input-field" onChange={handleChange} /></div>
@@ -338,31 +312,24 @@ const handleVerify = async (e) => {
         </div>
       </div>
 
-      {/* PANEL KANAN (PREVIEW) */}
       <div className="flex-1 bg-gray-200 lg:p-8 p-4 overflow-auto flex justify-center items-start print:p-0 print:bg-white print:block print:overflow-visible order-1 lg:order-2 h-1/2 lg:h-full border-b lg:border-b-0 border-gray-300">
         <div id="printable-content" className="bg-white shadow-2xl print:shadow-none relative transition-all duration-300 transform origin-top" style={{ width: paperDimensions[settings.paperSize].width, minHeight: paperDimensions[settings.paperSize].height, paddingTop: `${settings.marginTop}mm`, paddingBottom: `${settings.marginBottom}mm`, paddingLeft: '25mm', paddingRight: '25mm', fontSize: `${settings.fontSize}pt`, lineHeight: settings.lineHeight, fontFamily: settings.fontFamily, color: 'black' }}>
             
-            {/* BACKGROUND LOGO / WATERMARK */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
                 <img src={headerData.logoUrl} alt="Watermark" className="w-96 h-96 object-contain opacity-10 grayscale" />
             </div>
             
             <div className="relative z-10">
-                {/* HEADER KOP SURAT (MODIFIED) */}
                 <div className="flex items-center justify-center border-b-4 border-double border-black pb-4 mb-6 gap-4 px-4 h-28">
                     
-                    {/* BAGIAN KIRI (Logo Kampus jika swapLogos, atau Logo Org jika normal) */}
                     <div className="w-24 h-24 flex items-center justify-center shrink-0">
                         {headerData.swapLogos ? (
-                            // JIKA SWAP: Logo Kampus di Kiri
                             <img src={logoStikom} alt="Logo Kampus" className="max-w-full max-h-full object-contain grayscale-0" />
                         ) : (
-                            // NORMAL: Logo Org di Kiri
                             headerData.logoUrl ? <img src={headerData.logoUrl} alt="Logo UKM" className="max-w-full max-h-full object-contain" /> : <div className="w-full h-full border border-dashed border-gray-300 flex items-center justify-center text-[8px] text-gray-400">NO LOGO</div>
                         )}
                     </div>
                     
-                    {/* TEKS TENGAH */}
                     <div className="text-center flex-1">
                         {headerData.parentOrg && <h3 className="font-bold text-sm uppercase tracking-wider">{headerData.parentOrg}</h3>}
                         <h1 className="font-black text-2xl uppercase tracking-wide leading-none my-1 scale-y-110">{headerData.orgName}</h1>
@@ -370,13 +337,10 @@ const handleVerify = async (e) => {
                         <p className="text-[10px] italic mt-1 leading-tight">{headerData.address}</p>
                     </div>
 
-                    {/* BAGIAN KANAN (Logo Org jika swapLogos, atau Logo Kampus jika normal, atau Kosong) */}
                     <div className="w-24 h-24 flex items-center justify-center shrink-0">
                         {headerData.swapLogos ? (
-                             // JIKA SWAP: Logo Org di Kanan
                              headerData.logoUrl ? <img src={headerData.logoUrl} alt="Logo UKM" className="max-w-full max-h-full object-contain" /> : null
                         ) : (
-                            // NORMAL: Logo Kampus di Kanan (Jika ShowCampusLogo True)
                             headerData.showCampusLogo ? (
                                 <img src={logoStikom} alt="Logo Kampus" className="max-w-full max-h-full object-contain grayscale-0" />
                             ) : null
@@ -400,7 +364,6 @@ const handleVerify = async (e) => {
   );
 };
 
-// CSS
 const css = `
   @media print { @page { margin: 0; } body { visibility: hidden; } #printable-content { visibility: visible; position: fixed; left: 0; top: 0; width: 100%; height: 100%; z-index: 9999; background: white; margin: 0; padding: 0; overflow: visible; } #printable-content * { visibility: visible; } .print\\:hidden { display: none !important; } }
   .lbl { font-size: 0.75rem; font-weight: 800; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; display: block; }

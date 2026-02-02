@@ -11,7 +11,6 @@ const FinanceTools = () => {
   const [activeTab, setActiveTab] = useState('finance'); 
   const [loading, setLoading] = useState(false);
 
-  // --- STATE KEUANGAN ---
   const [financeTitle, setFinanceTitle] = useState(`Laporan Keuangan - ${new Date().toLocaleDateString('id-ID')}`);
   const [rows, setRows] = useState([
     { date: '', desc: '', income: '', expense: '' }
@@ -43,11 +42,9 @@ const FinanceTools = () => {
     setRows(newRows);
   };
 
-  // --- STATE SEKRETARIS ---
   const [noteTitle, setNoteTitle] = useState('');
   const [noteContent, setNoteContent] = useState('');
 
-  // --- LOGIKA SIMPAN & ARSIPKAN ---
   const handleSaveToArchive = async (type) => {
     setLoading(true);
     const toastId = toast.loading("Sedang membuat dokumen PDF...");
@@ -106,8 +103,6 @@ const FinanceTools = () => {
         folderName = "Pencatatan Umum";
       }
 
-      // === BAGIAN KRUSIAL (PENENTU WORK ATAU TIDAK) ===
-      // 1. Membersihkan nama file dan memastikan ada ekstensi .pdf
       const safeFilename = rawFilename.toLowerCase().endsWith('.pdf') 
         ? rawFilename 
         : `${rawFilename}.pdf`;
@@ -116,8 +111,6 @@ const FinanceTools = () => {
       formData.append('title', safeFilename);
       formData.append('category', folderName); 
       
-      // 2. Mendaftarkan Blob sebagai File Fisik (Sama seperti DocumentArchive lakukan)
-      // Argumen ke-3 (safeFilename) adalah identitas file agar tidak jadi octet-stream
       formData.append('file', blob, safeFilename);
 
       await api.post('/documents/auto-archive', formData, {
@@ -145,7 +138,6 @@ const FinanceTools = () => {
           <p className="text-gray-500 text-sm md:text-base italic">Konversi data otomatis ke PDF dan sinkronisasi ke Cloud Drive.</p>
         </div>
 
-        {/* NAVIGATION */}
         <div className="flex gap-2 mb-6 bg-white p-1.5 rounded-xl w-full md:w-fit border border-gray-200 shadow-sm mx-auto md:mx-0">
           <button 
             onClick={() => setActiveTab('finance')}
@@ -162,7 +154,6 @@ const FinanceTools = () => {
         </div>
 
         {activeTab === 'finance' ? (
-          /* --- VIEW BENDAHARA --- */
           <div className="space-y-4 animate-in fade-in duration-500">
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex flex-col md:flex-row justify-between gap-4 items-center">
               <div className="w-full md:w-1/2">
@@ -182,7 +173,6 @@ const FinanceTools = () => {
               </button>
             </div>
 
-            {/* TABEL DESKTOP */}
             <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
               <table className="w-full text-left">
                 <thead>
@@ -214,7 +204,6 @@ const FinanceTools = () => {
               </table>
             </div>
 
-            {/* CARD MOBILE */}
             <div className="md:hidden space-y-4">
               {calculateDataWithBalance().map((row, index) => (
                 <div key={index} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm space-y-3 relative">
@@ -247,7 +236,6 @@ const FinanceTools = () => {
             </button>
           </div>
         ) : (
-          /* --- VIEW SEKRETARIS --- */
           <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-6 md:p-8 space-y-6 animate-in slide-in-from-bottom-4 duration-500">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 border-b pb-6">
               <div>

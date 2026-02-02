@@ -8,23 +8,18 @@
   height: auto;
 }
 
-/* --- NEWS PORTAL TYPOGRAPHY OPTIMIZATION --- */
-
-/* Menangani Baris Kosong (Enter) yang sering hilang di Tailwind */
 .ql-editor p {
-  margin-bottom: 1.75rem !important; /* Jarak antar paragraf yang lega */
+  margin-bottom: 1.75rem !important;
   line-height: 1.85;
   color: #222222;
 }
 
-/* Memastikan baris kosong murni (<p><br></p>) tetap memiliki tinggi */
 .ql-editor p br {
   content: "";
   display: block;
   margin-bottom: 1rem;
 }
 
-/* Style untuk kutipan (Blockquote) ala Kompas */
 .ql-editor blockquote {
   border-left: 4px solid #2563eb;
   padding-left: 20px;
@@ -34,21 +29,18 @@
   margin: 30px 0;
 }
 
-/* Menangani perataan teks dari Quill */
 .ql-align-justify { text-align: justify; }
 .ql-align-center { text-align: center; }
 .ql-align-right { text-align: right; }
 
-/* Link di dalam artikel */
 .ql-editor a {
   color: #2563eb;
   text-decoration: underline;
   font-weight: 600;
 }
 
-/* Styling untuk card yang batal */
 .status-batal {
-  border-left: 5px solid #ff4d4d; /* Merah */
+  border-left: 5px solid #ff4d4d;
   background-color: #fff5f5;
   text-decoration: none;
 }

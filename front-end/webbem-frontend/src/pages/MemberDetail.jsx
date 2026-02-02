@@ -41,10 +41,8 @@ const MemberDetail = () => {
         <ArrowLeft size={16} /> Kembali ke Daftar
       </button>
 
-      {/* SECTION 1: PROFILE & STATS */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Profile Card */}
         <div className="lg:col-span-1 bg-white p-8 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden">
             <div className="relative z-10 text-center">
                 <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-sm text-blue-600">
@@ -68,7 +66,6 @@ const MemberDetail = () => {
             </div>
         </div>
 
-        {/* Stats Grid */}
         <div className="lg:col-span-2 space-y-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <StatBox label="Hadir" value={stats.hadir} color="text-green-600" bg="bg-green-50" icon={<CheckCircle2 size={20}/>} />
@@ -89,7 +86,6 @@ const MemberDetail = () => {
         </div>
       </div>
 
-      {/* SECTION 2: HISTORY TABLE */}
       <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-gray-100">
             <h3 className="font-bold text-gray-900 text-lg">Riwayat Presensi Lengkap</h3>
@@ -130,7 +126,6 @@ const MemberDetail = () => {
   );
 };
 
-// Sub Components
 const StatBox = ({ label, value, color, bg, icon }) => (
   <div className="bg-white border border-gray-100 p-6 rounded-2xl shadow-sm flex flex-col items-center justify-center hover:shadow-md transition-all">
     <div className={`p-3 ${bg} ${color} rounded-full mb-3`}>{icon}</div>

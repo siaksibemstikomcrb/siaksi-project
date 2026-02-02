@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import api from '../api/axios'; // Sesuaikan path api
+import api from '../api/axios';
 import { 
   Calendar, Clock, Save, ArrowLeft, MapPin, Globe, Search, 
   Crosshair, Link, Loader2, Map as MapIcon, CheckCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-// --- IMPORT LEAFLET MAPS ---
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -15,7 +14,6 @@ import L from 'leaflet';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 
-// Koordinat Default Kampus STIKOM Poltek Cirebon
 const KAMPUS_COORDS = { lat: -6.7126309, lng: 108.531254 };
 
 let DefaultIcon = L.icon({
@@ -26,7 +24,6 @@ let DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// --- HELPER COMPONENTS FOR MAP ---
 const MapController = ({ centerCoords }) => {
     const map = useMap();
     useEffect(() => {
@@ -53,7 +50,6 @@ const EditSchedule = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  // --- MAP & RADIUS STATE ---
   const [isOnline, setIsOnline] = useState(false);
   const [useRadius, setUseRadius] = useState(false);
   const [mapPosition, setMapPosition] = useState(null); 
@@ -61,7 +57,6 @@ const EditSchedule = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
 
-  // FORM DATA STATE
   const [formData, setFormData] = useState({
     event_name: '', description: '', location: '', event_date: '',
     start_time: '', end_time: '', attendance_open_time: '',
@@ -70,19 +65,16 @@ const EditSchedule = () => {
     meeting_link: ''
   });
 
-  // --- 1. FETCH EXISTING DATA ---
   useEffect(() => {
     const fetchEvent = async () => {
         try {
             const res = await api.get(`/schedules/${id}`);
             const data = res.data;
 
-            // Logic Deteksi Online/Offline
             const isOnlineEvent = !data.latitude && !data.longitude;
             setIsOnline(isOnlineEvent);
-            setUseRadius(!isOnlineEvent && !!data.radius_meters); // Aktifkan radius jika offline dan ada datanya
+            setUseRadius(!isOnlineEvent && !!data.radius_meters);
 
-            // Format Tanggal
             let formattedDate = '';
             if (data.event_date) {
                 formattedDate = new Date(data.event_date).toISOString().split('T')[0];
@@ -105,7 +97,6 @@ const EditSchedule = () => {
                 meeting_link: data.meeting_link || ''
             });
 
-            // Set Posisi Peta Awal
             if (!isOnlineEvent && data.latitude && data.longitude) {
                 const pos = { lat: parseFloat(data.latitude), lng: parseFloat(data.longitude) };
                 setMapPosition(pos);
@@ -122,7 +113,6 @@ const EditSchedule = () => {
     fetchEvent();
   }, [id, navigate]);
 
-  // Effect: Sinkronisasi Marker Map ke Form Latitude/Longitude
   useEffect(() => {
     if (mapPosition) {
         setFormData(prev => ({
@@ -133,12 +123,9 @@ const EditSchedule = () => {
     }
   }, [mapPosition]);
 
-  // Effect: Logika Toggle Radius (Hanya trigger jika user klik toggle, bukan saat load data awal)
-  // Kita tambahkan pengecekan !loading agar tidak mereset data saat fetch
   useEffect(() => {
     if (!loading) {
         if (useRadius && !isOnline) {
-            // Jika belum ada posisi, pakai default kampus
             if (!mapPosition) {
                 setMapPosition(KAMPUS_COORDS);
                 setMapCenter([KAMPUS_COORDS.lat, KAMPUS_COORDS.lng]);
@@ -150,13 +137,10 @@ const EditSchedule = () => {
                 toast.info("Lokasi diatur ke default Kampus");
             }
         } else if (!useRadius && !isOnline) {
-            // Opsional: Jika radius dimatikan, apakah mau hapus koordinat? 
-            // Biasanya dibiarkan saja, tapi radius dianggap tidak berlaku di backend logika
         }
     }
   }, [useRadius, isOnline, loading]);
 
-  // Effect: Reset Koordinat/Link jika toggle Online berubah
   useEffect(() => {
     if (!loading) {
         if (isOnline) {
@@ -164,7 +148,7 @@ const EditSchedule = () => {
             setFormData(prev => ({ 
                 ...prev, 
                 latitude: '', longitude: '', 
-                location: prev.location.includes('Gedung') ? '' : prev.location // Reset lokasi fisik jika ada
+                location: prev.location.includes('Gedung') ? '' : prev.location
             }));
             setMapPosition(null);
         } else {
@@ -221,11 +205,9 @@ const EditSchedule = () => {
     try {
       const payload = {
           ...formData,
-          // Logic: Jika Online ATAU Radius mati (dan tidak ada mapPosition), set null
           latitude: (isOnline) ? null : formData.latitude,
           longitude: (isOnline) ? null : formData.longitude,
           meeting_link: isOnline ? formData.meeting_link : null,
-          // Pastikan nama lokasi terisi
           location: formData.location || (isOnline ? 'Online Meeting' : 'Lokasi Kampus')
       };
 
@@ -245,14 +227,12 @@ const EditSchedule = () => {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 font-sans p-4 md:p-6 pb-24">
         
-        {/* HEADER SECTION (Back Button) */}
         <button onClick={() => navigate('/admin/events')} className="mb-6 flex items-center text-gray-500 hover:text-blue-600 transition-colors font-bold text-sm group">
             <ArrowLeft size={18} className="mr-2 group-hover:-translate-x-1 transition-transform"/> Kembali ke Daftar
         </button>
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
             
-            {/* LEFT COLUMN: MAIN FORM */}
             <div className="lg:col-span-2 bg-white p-5 md:p-8 rounded-3xl border border-gray-100 shadow-lg">
                 <div className="flex items-center gap-4 mb-6 md:mb-8 pb-4 md:pb-6 border-b border-gray-100">
                     <div className="bg-blue-600 p-3 rounded-xl text-white shadow-md"><Calendar size={24} /></div>
@@ -265,7 +245,6 @@ const EditSchedule = () => {
                 <div className="space-y-4 md:space-y-6">
                     <InputGroup label="Nama Kegiatan" value={formData.event_name} onChange={(v) => setFormData({...formData, event_name: v})} placeholder="Contoh: Rapat Koordinasi" />
                     
-                    {/* TOGGLE ONLINE / OFFLINE */}
                     <div className="bg-gray-50 p-4 md:p-5 rounded-2xl border border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-4">
                             <div className={`p-3 rounded-xl ${isOnline ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>
@@ -282,7 +261,6 @@ const EditSchedule = () => {
                         </label>
                     </div>
 
-                    {/* INPUT LINK MEETING (ONLINE) */}
                     {isOnline && (
                          <div className="bg-green-50 p-4 md:p-5 rounded-2xl border border-green-200 animate-in fade-in slide-in-from-top-2 space-y-3">
                              <div className="flex items-center gap-2">
@@ -293,7 +271,6 @@ const EditSchedule = () => {
                          </div>
                     )}
 
-                    {/* TOGGLE RADIUS (OFFLINE ONLY) */}
                     {!isOnline && (
                         <div className="bg-blue-50/50 p-4 md:p-5 rounded-2xl border border-blue-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div className="flex items-center gap-4">
@@ -312,7 +289,6 @@ const EditSchedule = () => {
                         </div>
                     )}
 
-                    {/* MAP SECTION (IF OFFLINE & RADIUS ON) */}
                     {!isOnline && useRadius && (
                         <div className="bg-white p-4 md:p-6 rounded-3xl border border-blue-100 space-y-5 animate-in fade-in zoom-in duration-300 shadow-inner bg-blue-50/30">
                             <div className="flex flex-col sm:flex-row gap-3">
@@ -355,7 +331,6 @@ const EditSchedule = () => {
                 </div>
             </div>
 
-            {/* RIGHT COLUMN: SIDEBAR TIME SETTINGS */}
             <div className="bg-white p-5 md:p-8 rounded-3xl border border-gray-100 shadow-lg h-fit lg:sticky lg:top-6 space-y-4 md:space-y-6">
                 <h3 className="text-xs font-extrabold text-gray-400 uppercase tracking-widest flex items-center gap-2">
                     <Clock size={18} className="text-blue-500" /> Pengaturan Waktu
@@ -386,7 +361,6 @@ const EditSchedule = () => {
   );
 };
 
-// --- SMALL COMPONENTS ---
 const InputGroup = ({ label, value, onChange, placeholder, isTextArea, isSelect, options, type="text" }) => (
     <div className="flex flex-col gap-2">
         <label className="text-sm font-bold text-gray-800 uppercase tracking-wide ml-1">{label}</label>

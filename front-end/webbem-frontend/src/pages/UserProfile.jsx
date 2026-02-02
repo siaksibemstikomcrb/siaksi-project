@@ -11,7 +11,7 @@ const UserProfile = () => {
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState({ attendance: 0 });
   const [uploading, setUploading] = useState(false);
-  const [activeTab, setActiveTab] = useState('overview'); // overview, security
+  const [activeTab, setActiveTab] = useState('overview');
   const [passData, setPassData] = useState({ current: '', new: '', confirm: '' });
   const [updatingPass, setUpdatingPass] = useState(false);
   const fileInputRef = useRef(null);
@@ -65,21 +65,17 @@ const UserProfile = () => {
   return (
     <div className="min-h-screen bg-gray-50 pb-20 font-sans text-slate-800"> 
       
-      {/* --- 1. BANNER & HEADER SECTION --- */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         
-        {/* Banner Background Responsive */}
         <div className="h-40 md:h-56 bg-gradient-to-r from-slate-800 to-blue-900 relative overflow-hidden">
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
             <div className="absolute bottom-0 left-0 w-full h-20 bg-gradient-to-t from-black/30 to-transparent"></div>
         </div>
 
-        {/* Profile Content Wrapper */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative pb-6">
             
             <div className="flex flex-col md:flex-row items-center md:items-end -mt-16 md:-mt-20 gap-6">            
                 
-                {/* Avatar Profile */}
                 <div className="relative group shrink-0">
                     <div className="w-32 h-32 md:w-44 md:h-44 rounded-full border-[6px] border-white shadow-2xl overflow-hidden bg-white">
                         <img 
@@ -88,7 +84,6 @@ const UserProfile = () => {
                             className="w-full h-full object-cover"
                         />
                         
-                        {/* Overlay Upload */}
                         <div 
                             onClick={() => fileInputRef.current.click()}
                             className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all cursor-pointer backdrop-blur-[2px]"
@@ -99,7 +94,6 @@ const UserProfile = () => {
                         <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoChange} />
                     </div>
                     
-                    {/* Tombol Kamera Mobile (Biar user HP tau bisa ganti foto) */}
                     <button 
                         onClick={() => fileInputRef.current.click()}
                         className="md:hidden absolute bottom-1 right-1 bg-white text-gray-700 p-2 rounded-full shadow-lg border border-gray-200"
@@ -108,7 +102,6 @@ const UserProfile = () => {
                     </button>
                 </div>
 
-                {/* Info Utama (Nama & Role) */}
                 <div className="flex-1 text-center md:text-left w-full md:mb-4">
                     <h1 className="text-2xl md:text-4xl font-black text-gray-900 capitalize tracking-tight leading-tight">
                         {user?.name || user?.username || "Nama Pengguna"}
@@ -127,7 +120,6 @@ const UserProfile = () => {
                     </div>
                 </div>
 
-                {/* Tabs Navigation (Responsive Grid di HP) */}
                 <div className="w-full md:w-auto grid grid-cols-2 gap-2 bg-gray-100 p-1.5 rounded-xl">
                     <button 
                         onClick={() => setActiveTab('overview')}
@@ -150,17 +142,13 @@ const UserProfile = () => {
         </div>
       </div>
 
-      {/* --- 2. CONTENT SECTION --- */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 md:mt-8">     
         
-        {/* === TAB 1: OVERVIEW === */}
         {activeTab === 'overview' && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">      
                 
-                {/* KOLOM KIRI: STATS */}
                 <div className="space-y-4 md:space-y-6">
                     
-                    {/* Attendance Card */}
                     <div className="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between relative overflow-hidden group">
                          <div className="absolute right-0 top-0 w-24 h-24 bg-emerald-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
                          <div className="relative z-10">
@@ -172,7 +160,6 @@ const UserProfile = () => {
                          </div>
                     </div>
 
-                     {/* Status Card */}
                      <div className="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-gray-100">
                         <div className="flex items-center gap-4 mb-4">
                             <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center">
@@ -190,7 +177,6 @@ const UserProfile = () => {
                     </div>
                 </div>
 
-                {/* KOLOM KANAN: DETAIL INFO */}
                 <div className="lg:col-span-2">
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                         <div className="px-5 py-4 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
@@ -200,8 +186,6 @@ const UserProfile = () => {
                         
                         <div className="divide-y divide-gray-50">
                             
-                            {/* Layout Grid: Mobile (1 Col) -> Desktop (3 Col) */}
-                            {/* Item: Nama Lengkap */}
                             <div className="px-5 py-4 grid grid-cols-1 md:grid-cols-3 gap-1 md:gap-4 hover:bg-gray-50/50 transition">
                                 <div className="text-xs md:text-sm font-medium text-gray-500 uppercase md:normal-case">Nama Lengkap</div>
                                 <div className="md:col-span-2 text-sm md:text-base font-medium text-gray-900">
@@ -209,7 +193,6 @@ const UserProfile = () => {
                                 </div>
                             </div>
 
-                            {/* Item: Email */}
                             <div className="px-5 py-4 grid grid-cols-1 md:grid-cols-3 gap-1 md:gap-4 hover:bg-gray-50/50 transition">
                                 <div className="text-xs md:text-sm font-medium text-gray-500 uppercase md:normal-case">Alamat Email</div>
                                 <div className="md:col-span-2 text-sm md:text-base font-medium text-gray-900 break-all">
@@ -217,7 +200,6 @@ const UserProfile = () => {
                                 </div>
                             </div>
 
-                            {/* Item: NIA */}
                             <div className="px-5 py-4 grid grid-cols-1 md:grid-cols-3 gap-1 md:gap-4 hover:bg-gray-50/50 transition">
                                 <div className="text-xs md:text-sm font-medium text-gray-500 uppercase md:normal-case">Nomor Induk (NIA)</div>
                                 <div className="md:col-span-2">
@@ -227,7 +209,6 @@ const UserProfile = () => {
                                 </div>
                             </div>
 
-                            {/* Item: Role */}
                             <div className="px-5 py-4 grid grid-cols-1 md:grid-cols-3 gap-1 md:gap-4 hover:bg-gray-50/50 transition">
                                 <div className="text-xs md:text-sm font-medium text-gray-500 uppercase md:normal-case">Hak Akses</div>
                                 <div className="md:col-span-2 text-sm font-medium text-gray-900 capitalize">
@@ -235,7 +216,6 @@ const UserProfile = () => {
                                 </div>
                             </div>
 
-                            {/* Item: Join Date */}
                             <div className="px-5 py-4 grid grid-cols-1 md:grid-cols-3 gap-1 md:gap-4 hover:bg-gray-50/50 transition">
                                 <div className="text-xs md:text-sm font-medium text-gray-500 uppercase md:normal-case">Terdaftar Sejak</div>
                                 <div className="md:col-span-2 text-sm text-gray-700 flex items-center gap-2">
@@ -250,7 +230,6 @@ const UserProfile = () => {
             </div>
         )}
 
-        {/* === TAB 2: SECURITY === */}
         {activeTab === 'security' && (
             <div className="max-w-2xl mx-auto">
                 <div className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm">

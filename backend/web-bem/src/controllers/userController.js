@@ -1,12 +1,10 @@
 const db = require('../config/db');
 const bcrypt = require('bcryptjs');
 
-// 1. GET MY PROFILE
 const getMyProfile = async (req, res) => {
     const userId = req.user.id;
 
     try {
-        // Ambil data user
         const userQuery = await db.query(`
             SELECT u.id, u.username, u.profile_pic, r.role_name, k.ukm_name
             FROM Users u
@@ -17,7 +15,6 @@ const getMyProfile = async (req, res) => {
 
         if (userQuery.rows.length === 0) return res.status(404).json({ msg: 'User tidak ditemukan' });
 
-        // Hitung Statistik Absen (Fallback aman jika tabel belum siap)
         let attendanceCount = 0;
         try {
             const attResult = await db.query(
@@ -39,7 +36,6 @@ const getMyProfile = async (req, res) => {
     }
 };
 
-// 2. UPDATE FOTO PROFIL
 const updatePhoto = async (req, res) => {
     const userId = req.user.id;
     const file = req.file;
@@ -56,27 +52,22 @@ const updatePhoto = async (req, res) => {
     }
 };
 
-// 3. GANTI PASSWORD
 const changePassword = async (req, res) => {
     const { currentPassword, newPassword } = req.body;
     const userId = req.user.id;
 
     try {
-        // A. Ambil password_hash dari DB
         const userCheck = await db.query('SELECT password_hash FROM Users WHERE id = $1', [userId]);
         
         if (userCheck.rows.length === 0) return res.status(404).json({ msg: 'User tidak ditemukan' });
 
-        // B. Bandingkan password lama user dengan hash di DB
         const validPassword = await bcrypt.compare(currentPassword, userCheck.rows[0].password_hash);
 
         if (!validPassword) return res.status(400).json({ msg: 'Password lama salah!' });
 
-        // C. Hash password baru
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-        // D. Update kolom password_hash
         await db.query('UPDATE Users SET password_hash = $1 WHERE id = $2', [hashedPassword, userId]);
         
         res.json({ msg: 'Password berhasil diubah!' });
@@ -86,10 +77,9 @@ const changePassword = async (req, res) => {
     }
 };
 
-// 4. GET ALL USERS (Manajemen Anggota)
 const getUsers = async (req, res) => {
     try {
-        const { ukm_id, role } = req.user; // Dari Token JWT
+        const { ukm_id, role } = req.user;
 
         let query = `
             SELECT u.id, u.name, u.nia, u.email, u.profile_pic, r.role_name, u.created_at
@@ -98,9 +88,6 @@ const getUsers = async (req, res) => {
         `;
         let params = [];
 
-        // LOGIC FILTER:
-        // Jika Super Admin: Lihat semua.
-        // Jika selain Super Admin (misal Admin UKM): Hanya lihat anggota UKM-nya sendiri.
         if (role !== 'super_admin') {
             query += ` WHERE u.ukm_id = $1`;
             params.push(ukm_id);
@@ -117,16 +104,13 @@ const getUsers = async (req, res) => {
     }
 };
 
-// 5. DELETE USER (Tendang Anggota)
 const deleteUser = async (req, res) => {
     try {
-        const { id } = req.params; // ID user yang mau dihapus
+        const { id } = req.params;
         
-        // Cek dulu user ini ada gak?
         const check = await db.query("SELECT * FROM Users WHERE id = $1", [id]);
         if (check.rows.length === 0) return res.status(404).json({ msg: "User tidak ditemukan" });
 
-        // EKSEKUSI HAPUS
         await db.query("DELETE FROM Users WHERE id = $1", [id]);
 
         res.json({ msg: "User berhasil dihapus dari organisasi." });
@@ -145,11 +129,9 @@ const resetUserPassword = async (req, res) => {
             return res.status(400).json({ msg: "Password minimal 6 karakter." });
         }
 
-        // Hash Password Baru
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-        // Update ke DB
         await db.query("UPDATE Users SET password_hash = $1 WHERE id = $2", [hashedPassword, id]);
 
         res.json({ msg: "Password berhasil direset." });
@@ -160,16 +142,12 @@ const resetUserPassword = async (req, res) => {
 };
 
 const createUser = async (req, res) => {
-    // Gunakan 'let' agar bisa diubah nilainya
     let { username, name, password, role_id, ukm_id, nia, email } = req.body;
 
     console.log("📥 [Create User] Data Masuk:", req.body);
 
     try {
-        // 1. VALIDASI & FIX DATA KOSONG
         
-        // Fix UKM_ID: Jika kosong/string, set default ke 9 (BEM)
-        // Karena di database ukm_id WAJIB ISI (NOT NULL)
         let parsedUkmId = parseInt(ukm_id);
         if (isNaN(parsedUkmId) || parsedUkmId === 0) {
             console.log("⚠️ UKM ID kosong. Default set ke 9 (BEM).");
@@ -178,24 +156,20 @@ const createUser = async (req, res) => {
             ukm_id = parsedUkmId;
         }
 
-        // Fix ROLE_ID: Pastikan integer
         let parsedRoleId = parseInt(role_id);
         if (isNaN(parsedRoleId)) {
             return res.status(400).json({ msg: "Role Wajib Dipilih!" });
         }
         role_id = parsedRoleId;
 
-        // 2. CEK USERNAME
         const userExist = await db.query('SELECT * FROM users WHERE username = $1', [username]);
         if (userExist.rows.length > 0) {
             return res.status(400).json({ msg: 'Username sudah digunakan!' });
         }
 
-        // 3. HASH PASSWORD
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // 4. INSERT KE DATABASE
         const newUser = await db.query(
             `INSERT INTO users (username, name, password_hash, role_id, ukm_id, nia, email, is_active) 
              VALUES ($1, $2, $3, $4, $5, $6, $7, true) RETURNING *`,
@@ -210,7 +184,6 @@ const createUser = async (req, res) => {
     }
 };
 
-// Eksport SEMUA fungsi (termasuk yang baru)
 module.exports = { 
     getMyProfile, 
     updatePhoto, 

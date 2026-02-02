@@ -1,10 +1,9 @@
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable'; // Import fungsinya secara eksplisit
+import autoTable from 'jspdf-autotable';
 
 export const downloadPDF = (ukmData) => {
   const doc = new jsPDF();
 
-  // 1. Header
   doc.setFontSize(18);
   doc.text(`LAPORAN KEHADIRAN: ${ukmData.ukm_name.toUpperCase()}`, 14, 20);
   
@@ -13,7 +12,6 @@ export const downloadPDF = (ukmData) => {
   doc.text(`Ketua Umum: ${ukmData.leader_name}`, 14, 30);
   doc.text(`Tanggal Cetak: ${new Date().toLocaleDateString('id-ID')}`, 14, 35);
 
-  // 2. Data Tabel
   const tableColumn = ["Nama Anggota", "NIA", "Hadir", "Telat", "Izin", "Alpa"];
   const tableRows = ukmData.members.map(member => [
     member.name,
@@ -24,17 +22,14 @@ export const downloadPDF = (ukmData) => {
     `${member.alpa}x`,
   ]);
 
-  // 3. CARA BARU: Panggil autoTable sebagai fungsi, masukkan 'doc' sebagai parameter pertama
-  // Ini menghindari error "doc.autoTable is not a function"
   autoTable(doc, {
     head: [tableColumn],
     body: tableRows,
     startY: 45,
     theme: 'grid',
-    headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255] }, // Warna Slate-800
+    headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255] },
     styles: { fontSize: 9 },
   });
 
-  // 4. Save
   doc.save(`Laporan_${ukmData.ukm_name}.pdf`);
 };

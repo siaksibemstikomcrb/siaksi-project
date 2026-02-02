@@ -16,7 +16,6 @@ const sendNotification = async ({ title, message, type, target_type, target_ukm_
 
     const users = await db.query(userQuery, params);
 
-    // 3. Masukkan ke inbox (user_notifications) untuk setiap user
     if (users.rows.length > 0) {
         const insertValues = users.rows.map(u => `(${notificationId}, ${u.id})`).join(',');
         await db.query(`INSERT INTO user_notifications (notification_id, user_id) VALUES ${insertValues}`);

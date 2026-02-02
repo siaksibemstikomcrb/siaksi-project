@@ -7,9 +7,7 @@ import bgLogin from '../assets/images/bg-1.jpg';
 import bgLoginMobile from '../assets/images/bg-2.jpg'; 
 import { toast } from 'sonner';
 
-// --- VARIANTS BARU (ANIMASI LEBIH HALUS) ---
 
-// 1. Desktop Animation
 const fadeInRight = {
   hidden: { opacity: 0, x: 60 },
   visible: { opacity: 1, x: 0, transition: { duration: 0.8, ease: "easeOut" } }
@@ -25,27 +23,23 @@ const fadeInUp = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
 };
 
-// 2. Mobile Animation - "Luxury Slide Up"
-// Container Putih (Background Form)
 const mobileContainerVariant = {
   hidden: { 
-    y: "100%", // Mulai dari bawah layar banget
+    y: "100%",
     opacity: 0 
   },
   visible: { 
     y: 0, 
     opacity: 1, 
     transition: { 
-      // Menggunakan kurva Bezier 'easeOutQuint' untuk gerakan naik cepat lalu melambat sangat halus di akhir
       ease: [0.23, 1, 0.32, 1], 
-      duration: 1.2, // Durasi diperpanjang agar terasa smooth
-      when: "beforeChildren", // Gerakkan container dulu
-      staggerChildren: 0.15 // Lalu munculkan isi form satu per satu dengan jeda 0.15 detik
+      duration: 1.2,
+      when: "beforeChildren",
+      staggerChildren: 0.15
     } 
   }
 };
 
-// Item di dalam Form Mobile (Judul, Input, Tombol)
 const mobileItemVariant = {
   hidden: { y: 20, opacity: 0 },
   visible: { 
@@ -120,7 +114,6 @@ const Login = () => {
   return (
     <div className="min-h-screen w-full flex bg-gray-50 lg:bg-[#0B1120] font-sans overflow-hidden relative">
       
-      {/* 1. KHUSUS MOBILE: Header Image & Text */}
       <div className="absolute top-0 left-0 w-full h-[50vh] lg:hidden z-0 overflow-hidden">
          <motion.img 
             initial={{ scale: 1.2, opacity: 0 }}
@@ -163,7 +156,6 @@ const Login = () => {
          </div>
       </div>
 
-      {/* 2. KHUSUS DESKTOP: Left Side */}
       <motion.div variants={fadeInLeft} initial="hidden" animate="visible" className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gray-900">
         <motion.img initial={{ scale: 1.1 }} animate={{ scale: 1 }} transition={{ duration: 2, ease: "easeOut" }} src={bgLogin} alt="Login Visual" className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-overlay" />
         <div className="absolute inset-0 bg-gradient-to-tr from-blue-900/80 to-purple-900/60 mix-blend-multiply"></div>
@@ -189,10 +181,8 @@ const Login = () => {
         </div>
       </motion.div>
 
-      {/* 3. FORM AREA */}
       <div className="w-full lg:w-1/2 flex flex-col relative z-10">
         
-        {/* Tombol Home */}
         <Link to="/" className="absolute top-6 right-6 lg:right-8 flex items-center gap-2 text-white/80 lg:text-gray-400 hover:text-white transition-colors group z-20">
             <div className="w-10 h-10 rounded-full bg-white/10 lg:bg-white/5 border border-white/20 lg:border-white/10 flex items-center justify-center group-hover:bg-blue-600 group-hover:border-blue-500 transition-all">
                 <Home size={18} />
@@ -200,9 +190,7 @@ const Login = () => {
             <span className="text-sm font-medium hidden sm:block">Back to Home</span>
         </Link>
 
-        {/* CONTAINER FORM */}
         <motion.div 
-            // LOGIC KUNCI: Mobile pakai 'mobileContainerVariant', Desktop pakai 'fadeInRight'
             variants={isMobile ? mobileContainerVariant : fadeInRight}
             initial="hidden" 
             animate="visible" 
@@ -215,8 +203,6 @@ const Login = () => {
         >
             <div className="w-full max-w-md space-y-8">
                 
-                {/* HEADLINE */}
-                {/* Tambahkan motion.div agar ikut animasi stagger di mobile */}
                 <motion.div variants={isMobile ? mobileItemVariant : {}} className="text-center lg:text-left pt-2 lg:pt-0">
                     <h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-gray-900 lg:text-white">
                         Sign In
@@ -228,7 +214,6 @@ const Login = () => {
 
                 <form onSubmit={handleLogin} className="space-y-6 mt-8">
                     
-                    {/* INPUT USERNAME */}
                     <motion.div variants={isMobile ? mobileItemVariant : {}} className="space-y-2">
                         <label className="text-[11px] font-medium uppercase tracking-widest ml-1 text-gray-500 lg:text-gray-400">
                             Identity (NIA/User)
@@ -251,7 +236,6 @@ const Login = () => {
                         </div>
                     </motion.div>
 
-                    {/* INPUT PASSWORD */}
                     <motion.div variants={isMobile ? mobileItemVariant : {}} className="space-y-2">
                         <label className="text-[11px] font-medium uppercase tracking-widest ml-1 text-gray-500 lg:text-gray-400">
                             Passphrase
@@ -274,7 +258,6 @@ const Login = () => {
                         </div>
                     </motion.div>
 
-                    {/* SUBMIT BUTTON */}
                     <motion.div variants={isMobile ? mobileItemVariant : {}} className="pt-2">
                         <button 
                             type="submit" 

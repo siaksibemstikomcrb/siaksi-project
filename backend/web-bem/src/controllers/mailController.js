@@ -1,12 +1,9 @@
 const db = require('../config/db');
-const { client } = require('../discord/bot'); // <--- 1. Import Bot Discord
-const { EmbedBuilder } = require('discord.js'); // Untuk tampilan pesan cantik
+const { client } = require('../discord/bot');
+const { EmbedBuilder } = require('discord.js');
 
-// --- HELPER: FUNGSI POST KE DISCORD ---
 const postToDiscord = async (mailData) => {
     try {
-        // Cari channel bernama 'pengumuman' atau 'announcements'
-        // Pastikan Anda sudah buat channel ini di Discord Server Anda!
         const channel = client.channels.cache.find(c => 
             c.name === 'pengumuman' || c.name === 'announcements' || c.name === 'news'
         );
@@ -16,17 +13,15 @@ const postToDiscord = async (mailData) => {
             return;
         }
 
-        // Buat Tampilan Pesan (Embed)
         const embed = new EmbedBuilder()
-            .setColor(0x0099FF) // Warna Biru
+            .setColor(0x0099FF)
             .setTitle(`?? ${mailData.title}`)
             .setDescription(mailData.description)
             .setFooter({ text: `Dikirim oleh: ${mailData.sender_name || 'Admin UKM'}` })
             .setTimestamp();
 
-        // Jika ada gambar/file attachment
         if (mailData.file_path) {
-            embed.setImage(mailData.file_path); // Tampilkan gambar full
+            embed.setImage(mailData.file_path);
         }
 
         await channel.send({ embeds: [embed] });
@@ -37,49 +32,37 @@ const postToDiscord = async (mailData) => {
     }
 };
 
-// ==========================================
-// A. KIRIM PESAN / SURAT
-// ==========================================
 const sendMail = async (req, res) => {
     try {
         const { title, description, target_ukm_ids } = req.body;
         const sender_ukm_id = req.user.ukm_id;
         
-        // Cek File
         if (!req.file) return res.status(400).json({ msg: "Wajib lampirkan file/foto!" });
         const file_path = req.file.path;
         const file_type = req.file.originalname.split('.').pop().toLowerCase();
 
-        // 1. TENTUKAN STATUS & SCOPE
         let status = 'approved'; 
         let targetScope = 'specific';
 
-        // Jika Broadcast
         if (target_ukm_ids === 'BROADCAST_ALL') {
             targetScope = 'broadcast';
-            // Jika bukan Super Admin, status jadi Pending
             if (req.user.role !== 'super_admin') {
                 status = 'pending';
             }
         }
 
-        // 2. SIMPAN KE TABLE MAILS
         const mailResult = await db.query(
             `INSERT INTO mails (sender_ukm_id, title, description, file_path, file_type, target_scope, status)
              VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
             [sender_ukm_id, title, description, file_path, file_type, targetScope, status]
         );
 
-        // 3. LOGIC NOTIFIKASI
         const newMail = mailResult.rows[0];
 
-        // Jika Broadcast & Status Approved (Super Admin yg kirim) -> POST KE DISCORD
         if (targetScope === 'broadcast' && status === 'approved') {
-            // Ambil nama pengirim untuk footer discord
             const senderInfo = await db.query("SELECT ukm_name FROM ukms WHERE id = $1", [sender_ukm_id]);
             const senderName = senderInfo.rows[0]?.ukm_name || 'Super Admin';
             
-            // Panggil Helper Discord
             postToDiscord({ 
                 title, 
                 description, 
@@ -88,15 +71,13 @@ const sendMail = async (req, res) => {
             });
         }
 
-        // Logic Notifikasi ke Inbox User (Database)
         if (status === 'approved') {
             let targetUsersQuery = '';
             let params = [];
 
             if (targetScope === 'broadcast') {
-               targetUsersQuery = "SELECT id FROM users"; // Semua Member
+               targetUsersQuery = "SELECT id FROM users";
             } else {
-                // Target Spesifik UKM
                 const ukmIds = target_ukm_ids.split(',').map(id => parseInt(id));
                 targetUsersQuery = "SELECT id FROM users WHERE ukm_id = ANY($1::int[]) AND role_id = 3";
                 params = [ukmIds];
@@ -118,9 +99,6 @@ const sendMail = async (req, res) => {
     }
 };
 
-// ==========================================
-// B. GET INBOX (Pesan Masuk User)
-// ==========================================
 const getInbox = async (req, res) => {
     const userId = req.user.id;
     try {
@@ -139,9 +117,6 @@ const getInbox = async (req, res) => {
     }
 };
 
-// ==========================================
-// C. GET PENDING BROADCASTS (Super Admin)
-// ==========================================
 const getPendingBroadcasts = async (req, res) => {
     try {
         const result = await db.query(`
@@ -158,15 +133,11 @@ const getPendingBroadcasts = async (req, res) => {
     }
 };
 
-// ==========================================
-// D. APPROVE / REJECT BROADCAST
-// ==========================================
 const approveBroadcast = async (req, res) => {
     const { mailId, action } = req.body; 
     const newStatus = action === 'approve' ? 'approved' : 'rejected';
     
     try {
-        // 1. Update Status di DB
         const result = await db.query(
             "UPDATE mails SET status = $1 WHERE id = $2 RETURNING *", 
             [newStatus, mailId]
@@ -174,10 +145,8 @@ const approveBroadcast = async (req, res) => {
         
         const updatedMail = result.rows[0];
 
-        // 2. Jika DISETUJUI -> Post ke Discord & Kirim ke Inbox User
         if (newStatus === 'approved') {
             
-            // A. Post ke Discord
             const senderInfo = await db.query("SELECT ukm_name FROM ukms WHERE id = $1", [updatedMail.sender_ukm_id]);
             const senderName = senderInfo.rows[0]?.ukm_name;
 
@@ -188,7 +157,6 @@ const approveBroadcast = async (req, res) => {
                 sender_name: senderName
             });
 
-            // B. Masukkan ke Inbox Semua User (Broadcast)
                 const allUsers = await db.query("SELECT id FROM users");
             if (allUsers.rows.length > 0) {
                 const values = allUsers.rows.map(u => `(${updatedMail.id}, ${u.id})`).join(',');
@@ -204,9 +172,6 @@ const approveBroadcast = async (req, res) => {
     }
 };
 
-// ==========================================
-// E. GET UKM LIST
-// ==========================================
 const getUkmList = async (req, res) => {
     try {
         const result = await db.query(

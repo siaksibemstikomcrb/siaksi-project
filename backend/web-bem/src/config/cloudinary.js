@@ -11,14 +11,11 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (req, file) => {
-    // --- DEBUGGING LOG (Cek Terminal Backend Anda) ---
     console.log(`[UPLOAD] Memproses file: ${file.originalname} (${file.mimetype})`);
-
     const fileExt = path.extname(file.originalname).toLowerCase(); 
     const fileName = path.basename(file.originalname, fileExt).replace(/[^a-z0-9]/gi, '_');
     const timestamp = Date.now();
     
-    // Deteksi Gambar vs Dokumen
     const isImage = file.mimetype.startsWith('image/');
 
     if (isImage) {
@@ -30,16 +27,15 @@ const storage = new CloudinaryStorage({
         transformation: [{ width: 1000, crop: "limit" }]
       };
     } else {
-      // DOKUMEN (RAW)
       const finalPublicId = `${fileName}-${timestamp}${fileExt}`;
       console.log(`[UPLOAD] Tipe: RAW/DOKUMEN -> Public ID: ${finalPublicId}`);
       
       return {
         folder: 'siaksi_documents',
         resource_type: 'raw',       
-        public_id: finalPublicId, // Pastikan ini ada ekstensinya di log console
-        use_filename: false,      // Jangan biarkan Cloudinary rename otomatis
-        unique_filename: false    // Kita sudah bikin unik pakai timestamp
+        public_id: finalPublicId,
+        use_filename: false,
+        unique_filename: false
       };
     }
   },

@@ -12,7 +12,6 @@ const EditPost = () => {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   
-  // State Form
   const [title, setTitle] = useState('');
   const [subtitle, setSubtitle] = useState('');
   const [content, setContent] = useState('');
@@ -20,7 +19,6 @@ const EditPost = () => {
   const [image, setImage] = useState(null);
   const [preview, setPreview] = useState(null);
 
-  // FETCH DATA LAMA
   useEffect(() => {
     const fetchPost = async () => {
         setFetching(true);
@@ -31,7 +29,7 @@ const EditPost = () => {
             setSubtitle(data.subtitle || '');
             setContent(data.content);
             setExternalLink(data.external_link || '');
-            setPreview(data.image_url); // Gunakan URL gambar dari database untuk preview awal
+            setPreview(data.image_url);
         } catch (err) {
             console.error(err);
             toast.error("Gagal mengambil data berita");
@@ -43,7 +41,6 @@ const EditPost = () => {
     if (id) fetchPost();
   }, [id, navigate]);
 
-  // Handle Gambar Upload
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -55,7 +52,6 @@ const EditPost = () => {
     }
   };
 
-  // Handle Submit Update
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title || !content) {
@@ -69,7 +65,6 @@ const EditPost = () => {
     formData.append('content', content);
     formData.append('external_link', externalLink);
     
-    // Hanya kirim gambar jika user memilih file baru
     if (image) {
         formData.append('image', image);
     }
@@ -102,7 +97,6 @@ const EditPost = () => {
     <div className="p-4 md:p-8 bg-gray-50 min-h-screen flex justify-center">
       <div className="w-full max-w-5xl">
         
-        {/* Header Navigation */}
         <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-4">
                 <button 
@@ -123,10 +117,8 @@ const EditPost = () => {
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
-            {/* KOLOM KIRI: EDITOR UTAMA */}
             <div className="lg:col-span-2 space-y-6">
                 <div className="bg-white rounded-3xl border border-gray-200 p-6 md:p-8 shadow-sm space-y-8">
-                    {/* Input Judul Utama */}
                     <div>
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 block">Judul Berita Utama <span className="text-red-500">*</span></label>
                         <textarea 
@@ -139,7 +131,6 @@ const EditPost = () => {
                         />
                     </div>
 
-                    {/* Editor Konten */}
                     <div className="space-y-3">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1 block">Narasi Berita <span className="text-red-500">*</span></label>
                         <div className="rounded-2xl border border-gray-200 overflow-hidden bg-gray-50 text-slate-900">
@@ -163,9 +154,7 @@ const EditPost = () => {
                 </div>
             </div>
 
-            {/* KOLOM KANAN: PENGATURAN TAMBAHAN */}
             <div className="space-y-6">
-                {/* Upload Gambar */}
                 <div className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 block">Gambar Sampul</label>
                     <div className="relative aspect-video rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-center hover:bg-blue-50/30 hover:border-blue-300 transition-all overflow-hidden group">
@@ -193,7 +182,6 @@ const EditPost = () => {
                     <p className="text-[9px] text-slate-400 mt-2 italic text-center">Kosongkan jika tidak ingin mengubah gambar.</p>
                 </div>
 
-                {/* Ringkasan & Link */}
                 <div className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm space-y-6">
                     <div>
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 block">Sub-Judul (Opsional)</label>

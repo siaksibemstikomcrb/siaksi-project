@@ -33,7 +33,6 @@ const GlobalMonitoring = () => {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       
-      {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-end gap-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Monitoring UKM</h1>
@@ -48,7 +47,6 @@ const GlobalMonitoring = () => {
         )}
       </div>
 
-      {/* Search & Filter Bar */}
       {role === 'super_admin' && (
         <div className="relative group">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -68,7 +66,6 @@ const GlobalMonitoring = () => {
         </div>
       )}
 
-      {/* UKM Grid Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredData.map((ukm) => (
           <motion.div 

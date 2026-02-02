@@ -1,28 +1,24 @@
 const db = require('../config/db');
 const bcrypt = require('bcrypt');
 
-// Tambah UKM Baru
 const createUKM = async (req, res) => {
     const { ukm_name, leader_name, description } = req.body;
     try {
-        console.log("Data masuk ke Backend:", req.body); // Tambahkan log ini
+        console.log("Data masuk ke Backend:", req.body);
         await db.query(
             'INSERT INTO UKMs (ukm_name, leader_name, description) VALUES ($1, $2, $3)',
             [ukm_name, leader_name, description]
         );
         res.json({ msg: 'Organisasi berhasil ditambahkan!' });
     } catch (err) {
-        // Log ini bakal muncul di terminal VS Code/CMD lo
         console.error("SQL ERROR DETAIL:", err.message); 
         res.status(500).json({ msg: 'Server Error', error: err.message });
     }
 };
 
-// Ambil Statistik Keseluruhan (Untuk Superadmin)
 const getGlobalStats = async (req, res) => {
     try {
         const ukmCount = await db.query('SELECT COUNT(*) FROM UKMs');
-        // Hanya hitung Role ID 3 (Member)
         const userCount = await db.query('SELECT COUNT(*) FROM Users WHERE role_id = 3');
         
         res.json({
@@ -32,7 +28,7 @@ const getGlobalStats = async (req, res) => {
     } catch (err) {
         res.status(500).send('Server Error');
     }
-};// Update Info UKM
+};
 const updateUKM = async (req, res) => {
     const { id } = req.params;
     const { ukm_name, leader_name, description } = req.body;
@@ -47,19 +43,14 @@ const updateUKM = async (req, res) => {
     }
 };
 
-// Hapus UKM Permanen
 const deleteUKM = async (req, res) => {
     const { id } = req.params;
 
     try {
-        // 1. HAPUS SEMUA USER DI UKM INI DULU (PENTING!)
-        // Kita hapus manual biar yakin bersih
         await db.query("DELETE FROM users WHERE ukm_id = $1", [id]);
 
-        // 2. (Opsional) Hapus Jadwal/Event UKM biar bersih
         await db.query("DELETE FROM schedules WHERE ukm_id = $1", [id]);
 
-        // 3. BARU HAPUS UKM-NYA
         const result = await db.query("DELETE FROM ukms WHERE id = $1 RETURNING *", [id]);
 
         if (result.rows.length === 0) {
@@ -70,7 +61,6 @@ const deleteUKM = async (req, res) => {
 
     } catch (err) {
         console.error("Error Delete UKM:", err.message);
-        // Cek error foreign key lain jika ada
         if (err.code === '23503') {
             return res.status(400).json({ msg: "Gagal hapus: Masih ada data terkait (Dokumen/Postingan) yang harus dibersihkan dulu." });
         }
@@ -78,23 +68,18 @@ const deleteUKM = async (req, res) => {
     }
 };
 
-// 1. GET MY PROFILE (UKM + STATS + EVENTS + MEMBERS)
 const getMyProfile = async (req, res) => {
     const ukm_id = req.user.ukm_id;
 
     if (!ukm_id) return res.status(404).json({ msg: 'User tidak memiliki UKM.' });
 
     try {
-        // A. Ambil Data UKM
         const ukmQuery = await db.query('SELECT * FROM Ukms WHERE id = $1', [ukm_id]);
         if (ukmQuery.rows.length === 0) return res.status(404).json({ msg: 'UKM tidak ditemukan' });
 
-        // B. Hitung Statistik
         const memberCount = await db.query('SELECT COUNT(*) FROM Users WHERE ukm_id = $1 AND role_id = 3', [ukm_id]);
         const eventCount = await db.query('SELECT COUNT(*) FROM Schedules WHERE ukm_id = $1', [ukm_id]);
 
-        // C. Ambil 3 Event Terakhir
-        // PENTING: Pakai 'AS title' agar frontend bisa membacanya sebagai evt.title
         const recentEvents = await db.query(`
             SELECT id, event_name AS title, start_time, description 
             FROM Schedules 
@@ -103,8 +88,6 @@ const getMyProfile = async (req, res) => {
             LIMIT 3
         `, [ukm_id]);
 
-        // D. Ambil 5 Anggota
-        // PERBAIKAN: Koma setelah 'username' SUDAH DIHAPUS
         const members = await db.query(`
             SELECT id, username 
             FROM Users 
@@ -128,7 +111,6 @@ const getMyProfile = async (req, res) => {
     }
 };
 
-// 2. UPDATE DESKRIPSI
 const updateDescription = async (req, res) => {
     const { description } = req.body;
     const ukm_id = req.user.ukm_id;
@@ -142,19 +124,15 @@ const updateDescription = async (req, res) => {
     }
 };
 
-// 3. UPLOAD LOGO UKM
 const updateLogo = async (req, res) => {
     const ukm_id = req.user.ukm_id;
-    const file = req.file; // Dari Multer
+    const file = req.file;
 
     if (!file) return res.status(400).json({ msg: 'No file uploaded' });
 
     try {
-        // Update URL di Database (Asumsi kolom namanya 'logo_url' atau 'image_url')
-        // Jika kolom di tabel Ukms belum ada, ALTER TABLE dulu: 
-        // ALTER TABLE Ukms ADD COLUMN logo_url TEXT;
         
-        const logoUrl = file.path; // URL dari Cloudinary
+        const logoUrl = file.path;
 
         await db.query('UPDATE Ukms SET logo_url = $1 WHERE id = $2', [logoUrl, ukm_id]);
         
@@ -165,7 +143,6 @@ const updateLogo = async (req, res) => {
     }
 };
 
-// Ambil Semua Daftar UKM (Untuk Dropdown & List)
 const getAllUKMs = async (req, res) => {
     try {
         const result = await db.query('SELECT * FROM UKMs ORDER BY ukm_name ASC');
@@ -196,8 +173,6 @@ const getUkmMembers = async (req, res) => {
     const ukm_id = req.user.ukm_id;
 
     try {
-        // PERBAIKAN: 
-        // 1. Ganti 'full_name' menjadi 'name' (sesuai CSV)
         const query = `
             SELECT id, nia, username, name, email, created_at
             FROM Users 
@@ -217,8 +192,6 @@ const getUkmMembers = async (req, res) => {
     }
 };
 
-// B. Reset Password Member ke Default (123456)
-// B. Reset Password Member ke Default (123456)
 const resetMemberPassword = async (req, res) => {
     const { userId } = req.params; 
     const ukm_id = req.user.ukm_id; 
@@ -228,8 +201,6 @@ const resetMemberPassword = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(defaultPass, salt);
 
-        // PERBAIKAN:
-        // 1. Ganti 'password' menjadi 'password_hash' (sesuai CSV)
         const query = `
             UPDATE Users 
             SET password_hash = $1 
@@ -256,5 +227,4 @@ const resetMemberPassword = async (req, res) => {
 
 
 
-// JANGAN LUPA: Masukkan getAllUKMs ke module.exports
 module.exports = { createUKM, getGlobalStats, updateUKM, deleteUKM, getAllUKMs, getMyProfile, updateDescription, updateLogo, updateContact, getUkmMembers, resetMemberPassword };

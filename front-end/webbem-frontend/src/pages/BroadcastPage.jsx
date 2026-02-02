@@ -7,7 +7,7 @@ const BroadcastPage = () => {
     const [formData, setFormData] = useState({
         title: '',
         message: '',
-        target_ukm_id: '' // Kosong = Semua User
+        target_ukm_id: ''
     });
     const [loading, setLoading] = useState(false);
 
@@ -59,7 +59,6 @@ const BroadcastPage = () => {
             <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
                 <form onSubmit={handleSubmit} className="space-y-6">
                     
-                    {/* Pilihan Target */}
                     <div>
                         <label className="block text-sm font-bold text-gray-900 mb-2">Target Penerima</label>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -85,36 +84,31 @@ const BroadcastPage = () => {
                                         <span className="font-bold text-gray-800">Spesifik UKM</span>
                                     </div>
                                     
-                                    {/* --- DROPDOWN FIX START --- */}
                                     <select 
                                         name="target_ukm_id"
                                         value={formData.target_ukm_id}
                                         onChange={handleChange}
-                                        // PERBAIKAN 1: Tambahkan padding besar (p-3/p-4) agar tidak gepeng
                                         className="w-full text-sm p-3 rounded-lg border border-gray-300 bg-gray-50 text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         onClick={(e) => e.stopPropagation()} 
                                     >
-                                        {/* PERBAIKAN 2: Pakai style={{ color: 'black' }} untuk memaksa warna hitam */}
                                         <option value="" disabled style={{ color: 'gray' }}>Pilih UKM...</option>
                                         
                                         {ukms.map(ukm => (
                                             <option 
                                                 key={ukm.id} 
                                                 value={ukm.id} 
-                                                style={{ color: 'black', backgroundColor: 'white' }} // Force Style
+                                                style={{ color: 'black', backgroundColor: 'white' }}
                                             >
-                                                {ukm.ukm_name} {/* Pastikan fieldnya ukm_name atau name sesuai API */}
+                                                {ukm.ukm_name}
                                             </option>
                                         ))}
                                     </select>
-                                    {/* --- DROPDOWN FIX END --- */}
 
                                 </div>
                             </label>
                         </div>
                     </div>
 
-                    {/* Input Judul */}
                     <div>
                         <label className="block text-sm font-bold text-gray-900 mb-2">Judul Pengumuman</label>
                         <input 
@@ -128,7 +122,6 @@ const BroadcastPage = () => {
                         />
                     </div>
 
-                    {/* Input Pesan */}
                     <div>
                         <label className="block text-sm font-bold text-gray-900 mb-2">Isi Pesan</label>
                         <textarea 

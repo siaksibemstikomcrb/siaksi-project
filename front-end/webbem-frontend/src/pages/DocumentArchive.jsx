@@ -10,26 +10,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
 const DocumentArchive = () => {
-    // --- STATE UTAMA ---
     const [content, setContent] = useState({ folders: [], files: [] });
     const [currentFolder, setCurrentFolder] = useState(null);
     const [loading, setLoading] = useState(false);
     
-    // --- STATE SELEKSI & DRAG DROP ---
     const [selectedItems, setSelectedItems] = useState([]); 
     const [isDragging, setIsDragging] = useState(false);
     const [dragTarget, setDragTarget] = useState(null);
 
-    // --- STATE UPLOAD & DOWNLOAD ---
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0); 
-    const [downloading, setDownloading] = useState(false); // State untuk loading download
+    const [downloading, setDownloading] = useState(false);
 
-    // --- STATE MODAL ---
     const [showFolderModal, setShowFolderModal] = useState(false);
     const [newFolderName, setNewFolderName] = useState("");
     
-    // --- STATE MODAL PINDAH (MOVE TO) ---
     const [showMoveModal, setShowMoveModal] = useState(false);
     const [modalFolders, setModalFolders] = useState([]); 
     const [modalCurrentFolder, setModalCurrentFolder] = useState(null); 
@@ -37,7 +32,6 @@ const DocumentArchive = () => {
 
     const fileInputRef = useRef(null);
 
-    // --- 1. FETCH DATA UTAMA ---
     const fetchContent = async (folderId = null) => {
         setLoading(true);
         try {
@@ -54,7 +48,6 @@ const DocumentArchive = () => {
 
     useEffect(() => { fetchContent(null); }, []);
 
-    // --- 2. LOGIKA SELEKSI ---
     const toggleSelection = (type, id) => {
         const itemKey = `${type}-${id}`;
         if (selectedItems.includes(itemKey)) {
@@ -64,17 +57,13 @@ const DocumentArchive = () => {
         }
     };
     
-    // FITUR BARU: PILIH SEMUA FILE
     const selectAllFiles = () => {
         const allFileKeys = content.files.map(f => `file-${f.id}`);
-        // Jika semua sudah terpilih, batalkan pilihan. Jika belum, pilih semua.
         const allSelected = allFileKeys.every(k => selectedItems.includes(k));
         
         if (allSelected) {
-            // Hapus file dari seleksi (sisakan folder jika ada)
             setSelectedItems(selectedItems.filter(i => !i.startsWith('file-')));
         } else {
-            // Gabungkan seleksi folder yg sudah ada dengan semua file
             const foldersOnly = selectedItems.filter(i => i.startsWith('folder-'));
             setSelectedItems([...foldersOnly, ...allFileKeys]);
             toast.success(`${allFileKeys.length} file dipilih`);
@@ -83,7 +72,6 @@ const DocumentArchive = () => {
 
     const isSelected = (type, id) => selectedItems.includes(`${type}-${id}`);
 
-    // --- 3. DRAG & DROP ---
     const handleDragStart = (e, type, id) => {
         if (!isSelected(type, id)) setSelectedItems([`${type}-${id}`]);
         e.dataTransfer.effectAllowed = "move";
@@ -96,7 +84,6 @@ const DocumentArchive = () => {
         await executeMove(targetFolderId);
     };
 
-    // --- 4. EKSEKUSI PINDAH ---
     const executeMove = async (targetFolderId) => {
         const itemsToMove = selectedItems.map(item => {
             const [type, id] = item.split('-');
@@ -121,7 +108,6 @@ const DocumentArchive = () => {
         }
     };
 
-    // --- 5. LOGIKA MODAL PINDAH ---
     const fetchModalContent = async (folderId = null) => {
         try {
             const res = await api.get(`/documents/content`, { params: { folderId } });
@@ -136,7 +122,6 @@ const DocumentArchive = () => {
         setShowMoveModal(true);
     };
 
-    // --- 6. UPLOAD & FILES ---
     const handleFileUpload = async (e) => {
         const files = e.target.files;
         if (!files || files.length === 0) return;
@@ -191,9 +176,6 @@ const DocumentArchive = () => {
         } catch (err) { toast.error("Gagal menghapus."); }
     };
 
-    // =========================================================
-    // FITUR URL & DOWNLOAD
-    // =========================================================
     const getDownloadUrl = (file) => {
         if (!file || !file.file_path) return '#';
         let url = file.file_path;
@@ -209,10 +191,7 @@ const DocumentArchive = () => {
         return url;
     };
 
-    // --- FITUR BARU: DOWNLOAD BANYAK SEKALIGUS ---
-   // --- FITUR BARU: DOWNLOAD BANYAK SEKALIGUS (DENGAN PERBAIKAN EKSTENSI) ---
     const handleBulkDownload = async () => {
-        // Filter hanya ambil yang tipe-nya FILE
         const filesToDownload = selectedItems
             .filter(item => item.startsWith('file-'))
             .map(item => {
@@ -228,46 +207,35 @@ const DocumentArchive = () => {
         setDownloading(true);
         toast.info(`Memulai download ${filesToDownload.length} file...`);
 
-        // Loop download satu per satu
         for (let i = 0; i < filesToDownload.length; i++) {
             const file = filesToDownload[i];
             
             try {
-                // 1. Tentukan Nama File yang Benar (Paksa pakai ekstensi)
-                // Kalau judulnya 'Laporan', dan tipenya 'pdf', jadikan 'Laporan.pdf'
                 let fileName = file.title;
                 if (!fileName.toLowerCase().endsWith(`.${file.file_type}`)) {
                     fileName = `${fileName}.${file.file_type}`;
                 }
 
-                // 2. Ambil URL (Gunakan URL asli, jangan yang dimodifikasi 'fl_attachment' dulu)
-                // Kita akan fetch manual, jadi butuh URL mentah
                 const fileUrl = file.file_path; 
 
-                // 3. FETCH DATA SEBAGAI BLOB (PENTING!)
-                // Ini membypass masalah nama file dari Cloudinary
                 const response = await fetch(fileUrl);
                 const blob = await response.blob();
                 
-                // 4. Buat Link Palsu di Memory Browser
                 const blobUrl = window.URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.href = blobUrl;
-                link.setAttribute('download', fileName); // Browser PASTI nurut nama ini
+                link.setAttribute('download', fileName);
                 document.body.appendChild(link);
                 
-                // 5. Klik & Bersihkan
                 link.click();
                 document.body.removeChild(link);
                 window.URL.revokeObjectURL(blobUrl);
 
             } catch (error) {
                 console.error(`Gagal download ${file.title}`, error);
-                // Fallback: Kalau fetch gagal (kena CORS), coba buka tab baru aja
                 window.open(getDownloadUrl(file), '_blank');
             }
 
-            // Delay kecil biar browser ga nge-hang kalau download banyak
             await new Promise(resolve => setTimeout(resolve, 800));
         }
 
@@ -275,7 +243,6 @@ const DocumentArchive = () => {
         toast.success("Proses download selesai!");
     };
 
-    // --- ICON HELPER ---
     const getFileIcon = (type) => {
         if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(type)) return <ImageIcon size={32} className="text-purple-500" />;
         if (type === 'pdf') return <FileText size={32} className="text-red-500" />;
@@ -289,7 +256,6 @@ const DocumentArchive = () => {
     return (
         <div className="p-3 md:p-6 h-[calc(100vh-80px)] flex flex-col bg-gray-50/50 relative">
             
-            {/* HEADER RESPONSIVE */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 md:mb-6 gap-3">
                 <div className="w-full md:w-auto">
                     <h1 className="text-lg md:text-2xl font-bold text-gray-800 flex items-center gap-2 truncate">
@@ -307,7 +273,6 @@ const DocumentArchive = () => {
                     </h1>
                     <p className="text-gray-500 text-xs md:text-sm mt-1 ml-1 flex items-center gap-2">
                         {currentFolder ? "Folder Penyimpanan" : "Root Directory"}
-                        {/* Tombol Pilih Semua (Khusus Mobile) */}
                         {content.files.length > 0 && (
                             <button onClick={selectAllFiles} className="md:hidden text-blue-600 font-bold text-xs bg-blue-50 px-2 py-1 rounded ml-2">
                                 {selectedItems.length === content.files.length ? "Batal Pilih" : "Pilih Semua"}
@@ -327,9 +292,7 @@ const DocumentArchive = () => {
                 </div>
             </div>
 
-            {/* CONTENT AREA */}
             <div className="flex-1 overflow-y-auto pb-32 px-1" onClick={() => setSelectedItems([])}>
-                {/* Empty State */}
                 {!loading && content.folders.length === 0 && content.files.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-64 text-gray-400 border-2 border-dashed border-gray-200 rounded-2xl mx-4 mt-8">
                         <FolderPlus size={48} className="mb-2 opacity-20" />
@@ -337,7 +300,6 @@ const DocumentArchive = () => {
                     </div>
                 )}
 
-                {/* Folders Grid */}
                 {content.folders.length > 0 && (
                     <div className="mb-6">
                         <h3 className="text-xs font-bold text-gray-400 uppercase mb-3 ml-1">Folders</h3>
@@ -368,12 +330,10 @@ const DocumentArchive = () => {
                     </div>
                 )}
 
-                {/* Files Grid */}
                 {content.files.length > 0 && (
                     <div>
                         <div className="flex justify-between items-center mb-3 ml-1">
                             <h3 className="text-xs font-bold text-gray-400 uppercase">Files</h3>
-                            {/* Tombol Select All Desktop */}
                             <button onClick={selectAllFiles} className="hidden md:flex items-center gap-1 text-xs font-bold text-blue-600 hover:bg-blue-50 px-2 py-1 rounded transition">
                                 <CheckCircle2 size={14} /> Pilih Semua
                             </button>
@@ -408,7 +368,6 @@ const DocumentArchive = () => {
                 )}
             </div>
 
-            {/* --- FLOATING ACTION BAR (OPTIMAL UNTUK MOBILE) --- */}
             <AnimatePresence>
                 {selectedItems.length > 0 && (
                     <motion.div 
@@ -421,7 +380,6 @@ const DocumentArchive = () => {
                         </div>
 
                         <div className="flex items-center gap-1 md:gap-2">
-                            {/* TOMBOL BULK DOWNLOAD BARU */}
                             <button 
                                 onClick={handleBulkDownload} 
                                 disabled={downloading}
@@ -451,7 +409,6 @@ const DocumentArchive = () => {
                 )}
             </AnimatePresence>
 
-            {/* --- MODAL PINDAH KE (MOVE TO) --- */}
             {showMoveModal && (
                 <div className="fixed inset-0 bg-black/50 z-[70] flex items-center justify-center p-4">
                     <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
@@ -513,7 +470,6 @@ const DocumentArchive = () => {
                 </div>
             )}
 
-            {/* PROGRESS OVERLAY & CREATE FOLDER MODAL */}
             <AnimatePresence>
                 {uploading && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">

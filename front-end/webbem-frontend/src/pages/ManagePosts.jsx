@@ -9,9 +9,8 @@ const ManagePosts = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all'); // all, pending, approved
+  const [filterStatus, setFilterStatus] = useState('all');
 
-  // Cek Role & Ambil Data
   useEffect(() => {
     const userRole = localStorage.getItem('role');
     setRole(userRole);
@@ -21,9 +20,6 @@ const ManagePosts = () => {
   const fetchPosts = async () => {
     setLoading(true);
     try {
-      // Endpoint ini harus dibuat di backend agar:
-      // - Super Admin dapat semua data
-      // - UKM cuma dapat data dia sendiri
       const res = await api.get('/posts/dashboard'); 
       setPosts(res.data);
     } catch (err) {
@@ -33,18 +29,16 @@ const ManagePosts = () => {
     }
   };
 
-  // Logic Approve/Reject (Super Admin)
   const handleStatusChange = async (id, newStatus) => {
     try {
       await api.put(`/posts/${id}/status`, { status: newStatus });
       toast.success(`Berita berhasil di-${newStatus}`);
-      fetchPosts(); // Refresh data
+      fetchPosts();
     } catch (err) {
       toast.error("Gagal update status");
     }
   };
 
-  // Logic Pin/Unpin (Super Admin)
   const handlePin = async (id, currentPinStatus) => {
     try {
       await api.put(`/posts/${id}/pin`, { is_pinned: !currentPinStatus });
@@ -55,7 +49,6 @@ const ManagePosts = () => {
     }
   };
 
-  // Logic Hapus
   const handleDelete = async (id) => {
     if (!window.confirm("Yakin ingin menghapus berita ini?")) return;
     try {
@@ -67,13 +60,11 @@ const ManagePosts = () => {
     }
   };
 
-  // Filter Frontend
   const filteredPosts = posts.filter(p => filterStatus === 'all' ? true : p.status === filterStatus);
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       
-      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h1 className="text-2xl font-black text-gray-800">Kelola Berita & Kegiatan</h1>
@@ -87,7 +78,6 @@ const ManagePosts = () => {
         </button>
       </div>
 
-      {/* Stats Cards (Optional) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
             <span className="text-gray-400 text-xs font-bold uppercase">Total Post</span>
@@ -107,7 +97,6 @@ const ManagePosts = () => {
         </div>
       </div>
 
-      {/* Filter Tabs */}
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
         {['all', 'pending', 'approved', 'rejected'].map(status => (
             <button
@@ -120,7 +109,6 @@ const ManagePosts = () => {
         ))}
       </div>
 
-      {/* Table Content */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
@@ -166,7 +154,6 @@ const ManagePosts = () => {
                <td className="p-4 text-right">
                   <div className="flex items-center justify-end gap-2">
                       
-                      {/* 1. TOMBOL PREVIEW (Lihat Detail) - Untuk Semua */}
                       <button 
                           onClick={() => window.open(`/news/${post.id}`, '_blank')} 
                           className="p-2 hover:bg-gray-100 text-gray-500 rounded-lg transition-colors" 
@@ -175,8 +162,6 @@ const ManagePosts = () => {
                           <Eye size={18}/>
                       </button>
 
-                      {/* 2. TOMBOL EDIT - Untuk Super Admin ATAU Pemilik Postingan */}
-                      {/* Kita asumsikan UKM yang login hanya melihat postingannya sendiri, jadi aman */}
                       <button 
                           onClick={() => navigate(`/admin/posts/edit/${post.id}`)} 
                           className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors" 
@@ -185,7 +170,6 @@ const ManagePosts = () => {
                           <Edit size={18}/>
                       </button>
 
-                      {/* 3. TOMBOL APPROVE/REJECT (Khusus Super Admin & Status Pending) */}
                       {role === 'super_admin' && (
                           <>
                               {post.status === 'pending' && (
@@ -200,7 +184,6 @@ const ManagePosts = () => {
                           </>
                       )}
                       
-                      {/* 4. TOMBOL HAPUS - Untuk Semua */}
                       <button onClick={() => handleDelete(post.id)} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition-colors"><Trash2 size={18}/></button>
                   </div>
               </td>

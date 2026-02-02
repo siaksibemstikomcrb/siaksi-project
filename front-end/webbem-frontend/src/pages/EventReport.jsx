@@ -9,7 +9,6 @@ const EventReport = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // State untuk melacak kartu mana yang sedang dibuka di mobile
   const [expandedId, setExpandedId] = useState(null);
 
   useEffect(() => {
@@ -31,7 +30,6 @@ const EventReport = () => {
     fetchReport();
   }, [scheduleId]);
 
-  // Handler untuk buka/tutup accordion mobile
   const toggleExpand = (index) => {
       setExpandedId(expandedId === index ? null : index);
   };
@@ -48,7 +46,6 @@ const EventReport = () => {
   return (
     <div className="min-h-screen bg-gray-50 pb-20 font-sans text-slate-800">
       
-      {/* 1. HEADER (FULL WIDTH SOLID) - Tidak ngambang lagi */}
       <div className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-5xl mx-auto px-4 py-4 md:px-8 flex items-center gap-4">
             <button onClick={() => navigate(-1)} className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors text-slate-600">
@@ -63,7 +60,6 @@ const EventReport = () => {
 
       <div className="max-w-5xl mx-auto p-4 md:p-8">
         
-        {/* 2. TAMPILAN MOBILE (ACCORDION / DROPDOWN) */}
         <div className="flex flex-col gap-3 md:hidden">
             {data.map((row, i) => {
                 const isExpanded = expandedId === i;
@@ -75,14 +71,11 @@ const EventReport = () => {
                             ${isExpanded ? 'border-blue-300 shadow-md ring-1 ring-blue-100' : 'border-gray-200 shadow-sm'}
                         `}
                     >
-                        {/* Header Kartu (Selalu Muncul) */}
                         <div className="p-4 flex items-center gap-4">
-                            {/* Avatar */}
                             <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-sm shrink-0 border border-slate-200">
                                 {row.name.charAt(0)}
                             </div>
 
-                            {/* Nama & Status */}
                             <div className="flex-1 min-w-0">
                                 <div className="flex justify-between items-center mb-1">
                                     <h3 className="font-bold text-slate-900 text-sm truncate pr-2">{row.name}</h3>
@@ -95,7 +88,6 @@ const EventReport = () => {
                             </div>
                         </div>
 
-                        {/* Detail Dropdown (Muncul saat diklik) */}
                         <div 
                             className={`bg-slate-50 border-t border-slate-100 transition-all duration-300 ease-in-out px-4 overflow-hidden
                                 ${isExpanded ? 'max-h-40 py-3 opacity-100' : 'max-h-0 py-0 opacity-0'}
@@ -110,7 +102,6 @@ const EventReport = () => {
                                     </div>
                                 </div>
                                 
-                                {/* Hanya tampilkan catatan jika ada isinya */}
                                 {row.reason && (
                                     <div className="flex items-start gap-3">
                                         <div className="min-w-[20px] pt-0.5"><FileText size={14} className="text-orange-500"/></div>
@@ -131,7 +122,6 @@ const EventReport = () => {
             })}
         </div>
 
-        {/* 3. TAMPILAN DESKTOP (TABLE STANDARD) */}
         <div className="hidden md:block bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
             <table className="w-full text-left border-collapse">
                 <thead>
@@ -171,7 +161,6 @@ const EventReport = () => {
             </table>
         </div>
 
-        {/* Empty State */}
         {data.length === 0 && (
             <div className="flex flex-col items-center justify-center py-20 text-center">
                 <div className="bg-slate-100 p-4 rounded-full mb-4">
@@ -186,7 +175,6 @@ const EventReport = () => {
   );
 };
 
-// --- BADGE COMPONENT ---
 const StatusBadge = ({ status, time }) => {
   let displayStatus = status;
   let styleKey = status;

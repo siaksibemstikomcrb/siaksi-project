@@ -17,7 +17,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     const [unreadCount, setUnreadCount] = useState(0); 
     const [openMenus, setOpenMenus] = useState({}); 
 
-    // --- 1. KONFIGURASI MENU ---
+    
     const MENU_ITEMS = [
         {
             title: "Main Menu",
@@ -45,15 +45,15 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                 { 
                     label: "Data Master", 
                     icon: Building,
-                    roles: ['super_admin', 'admin'], // ✅ UPDATE: Admin bisa lihat menu ini
+                    roles: ['super_admin', 'admin'], 
                     children: [
-                        // Kelola UKM tetap KHUSUS Super Admin
+                        
                         { label: "Kelola UKM", path: "/superadmin/manage-ukm", roles: ['super_admin'] }, 
                         
-                        // Kelola Users (Input Manual) -> BISA Admin & Super Admin
+                        
                         { label: "Kelola Users", path: "/superadmin/manage-users", roles: ['super_admin', 'admin'] },
                         
-                        // Import Excel -> BISA Admin & Super Admin
+                        
                         { label: "Import Anggota (Excel)", path: "/superadmin/import-members", roles: ['super_admin', 'admin'] }, 
                     ]
                 }
@@ -105,7 +105,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         }
     ];
 
-    // --- 2. LOGIC ---
+    
     useEffect(() => {
         if (role) {
             const getNotif = async () => {
@@ -135,7 +135,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         setOpenMenus(prev => ({ ...prev, [label]: !prev[label] }));
     };
 
-    // Auto open dropdown jika anaknya aktif
+    
     useEffect(() => {
         MENU_ITEMS.forEach(group => {
             if(group.items) {
@@ -158,22 +158,19 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
     if (!role) return null;
 
-    // --- 3. RENDER ---
+    
     return (
         <>
-            {/* Mobile Overlay */}
             {isOpen && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px] z-30 md:hidden transition-opacity" onClick={() => setIsOpen(false)} />
             )}
 
-            {/* Sidebar Container */}
             <aside className={`
                 fixed md:static inset-y-0 left-0 z-40 w-72 bg-white border-r border-gray-200 
                 transform transition-transform duration-300 ease-in-out flex flex-col shadow-2xl md:shadow-none
                 ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
             `}>
                 
-                {/* Header */}
                 <div className="h-16 flex items-center justify-between px-6 border-b border-gray-100 bg-white sticky top-0 z-10">
                     <div className="flex items-center gap-3">
                         <div className="bg-slate-900 w-8 h-8 rounded-lg flex items-center justify-center text-white">
@@ -186,7 +183,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                     </button>
                 </div>
 
-                {/* Menu List */}
                 <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6 custom-scrollbar">
                     {MENU_ITEMS.map((group, idx) => {
                         if (!hasRole(group.roles)) return null;
@@ -202,7 +198,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                                     {group.items.map((item, itemIdx) => {
                                         if (!hasRole(item.roles)) return null;
 
-                                        // 1. Menu dengan Dropdown
+                                        
                                         if (item.children) {
                                             const isOpen = openMenus[item.label];
                                             const isChildActive = item.children.some(c => isActive(c.path));
@@ -246,7 +242,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                                             );
                                         }
 
-                                        // 2. Menu Biasa
+                                        
                                         const active = isActive(item.path);
                                         return (
                                             <Link 
@@ -278,7 +274,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                     })}
                 </div>
 
-                {/* Footer Profile */}
                 <div className="p-4 border-t border-gray-100 bg-slate-50/50">
                     <div className="flex items-center gap-3 p-2 rounded-xl border border-slate-200 bg-white shadow-sm mb-3">
                         <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm">

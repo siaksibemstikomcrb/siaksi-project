@@ -20,7 +20,7 @@ const UserAspiration = () => {
 
   const processFile = (selected) => {
     if (selected) {
-      if (selected.size > 5 * 1024 * 1024) { // Validasi 5MB
+      if (selected.size > 5 * 1024 * 1024) {
         toast.warning("Ukuran file maksimal 5MB");
         return;
       }
@@ -65,7 +65,6 @@ const UserAspiration = () => {
     }
   };
 
-  // Drag & Drop Handlers
   const onDragOver = (e) => { e.preventDefault(); setIsDragging(true); };
   const onDragLeave = (e) => { e.preventDefault(); setIsDragging(false); };
   const onDrop = (e) => {
@@ -78,7 +77,6 @@ const UserAspiration = () => {
     <div className="min-h-screen bg-slate-50 py-6 md:py-12 px-3 md:px-6 font-sans pb-24">
       <div className="max-w-4xl mx-auto">
         
-        {/* Header Section */}
         <div className="text-center mb-6 md:mb-10">
            <div className="inline-flex items-center gap-2 bg-white px-4 py-1.5 rounded-full shadow-sm mb-3 border border-purple-100">
               <Sparkles size={16} className="text-purple-600" />
@@ -94,7 +92,6 @@ const UserAspiration = () => {
 
         <div className="bg-white rounded-2xl md:rounded-3xl shadow-xl overflow-hidden border border-slate-100">
           
-          {/* Info Banner */}
           <div className="bg-gradient-to-r from-purple-50 to-indigo-50 px-5 md:px-8 py-4 border-b border-purple-100 flex items-start gap-3 md:gap-4">
             <div className="p-2 bg-white rounded-full shadow-sm text-purple-600 mt-0.5 shrink-0">
               <Info size={18} />
@@ -109,13 +106,10 @@ const UserAspiration = () => {
 
           <form onSubmit={handleSubmit} className="p-4 md:p-8 space-y-6 md:space-y-8">
             
-            {/* Target Selection Cards */}
             <div className="space-y-3">
                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Tujuan Pengiriman</label>
-               {/* Grid 2 kolom di HP biar hemat tempat */}
                <div className="grid grid-cols-2 gap-3 md:gap-4">
                  
-                 {/* Option: UKM */}
                  <div 
                    onClick={() => setFormData({...formData, target: 'ukm'})}
                    className={`cursor-pointer group relative flex flex-col md:flex-row items-center md:items-start text-center md:text-left p-3 md:p-4 rounded-xl md:rounded-2xl border-2 transition-all duration-300 ${
@@ -134,7 +128,6 @@ const UserAspiration = () => {
                    {formData.target === 'ukm' && <div className="absolute top-2 right-2 md:top-4 md:right-4 text-purple-600"><div className="w-2 h-2 bg-purple-600 rounded-full animate-pulse"></div></div>}
                  </div>
 
-                 {/* Option: BEM */}
                  <div 
                    onClick={() => setFormData({...formData, target: 'bem'})}
                    className={`cursor-pointer group relative flex flex-col md:flex-row items-center md:items-start text-center md:text-left p-3 md:p-4 rounded-xl md:rounded-2xl border-2 transition-all duration-300 ${
@@ -157,10 +150,8 @@ const UserAspiration = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
-              {/* Left Column: Inputs */}
               <div className="lg:col-span-2 space-y-5">
                 
-                {/* Subject Input */}
                 <div className="group">
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Topik Aspirasi</label>
                   <input 
@@ -172,7 +163,6 @@ const UserAspiration = () => {
                   />
                 </div>
 
-                {/* Message Input */}
                 <div className="group">
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Detail Pesan</label>
                   <textarea 
@@ -185,7 +175,6 @@ const UserAspiration = () => {
                 </div>
               </div>
 
-              {/* Right Column: File Upload */}
               <div className="lg:col-span-1">
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Bukti Foto (Opsional)</label>
                 
@@ -231,7 +220,6 @@ const UserAspiration = () => {
 
             <hr className="border-slate-100 my-6" />
 
-            {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                <p className="text-[10px] md:text-xs text-slate-400 italic flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-100 w-full sm:w-auto">
                  <ShieldCheck size={14} />

@@ -12,7 +12,6 @@ const ImportMembers = () => {
 
     const role = localStorage.getItem('role');
 
-    // --- 1. AMBIL DATA UKM ---
     useEffect(() => {
         const fetchUkms = async () => {
             try {
@@ -33,7 +32,6 @@ const ImportMembers = () => {
         }
     }, [role]);
 
-    // --- 2. LOGIC KODE UKM ---
     const getUkmCode = (ukmName) => {
         if (!ukmName) return "MHS"; 
         const name = ukmName.toLowerCase();
@@ -88,11 +86,10 @@ const ImportMembers = () => {
                 headers: { "Content-Type": "multipart/form-data" }
             });
 
-            // Tampilkan Pesan Sukses
             if(response.data.total_data === 0) {
-                toast.warning(response.data.msg); // Kuning jika 0 data
+                toast.warning(response.data.msg);
             } else {
-                toast.success(response.data.msg); // Hijau jika sukses
+                toast.success(response.data.msg);
             }
 
             setFile(null);
@@ -114,7 +111,6 @@ const ImportMembers = () => {
                     Import Anggota
                 </h2>
                 
-                {/* TOMBOL DOWNLOAD TEMPLATE (Link ke file di folder public) */}
                 <a 
                     href="/template_anggota.xlsx" 
                     download="Format_Import_Anggota.xlsx"
@@ -125,7 +121,6 @@ const ImportMembers = () => {
                 </a>
             </div>
 
-            {/* INFO FORMAT EXCEL */}
             <div className="bg-slate-50 p-5 rounded-xl mb-8 border border-slate-200 shadow-sm">
                 <h4 className="font-bold text-slate-800 mb-3 flex items-center gap-2 border-b border-slate-200 pb-2">
                     <AlertCircle size={18} className="text-orange-500" /> 
@@ -134,7 +129,6 @@ const ImportMembers = () => {
                 <div className="text-sm text-slate-600 space-y-2">
                     <p>Pastikan file Excel Anda memiliki struktur kolom seperti ini:</p>
                     
-                    {/* Visualisasi Tabel Mini */}
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse border border-slate-300 bg-white rounded-lg text-xs">
                             <thead>
@@ -169,7 +163,6 @@ const ImportMembers = () => {
 
             <form onSubmit={handleUpload} className="space-y-6">
                 
-                {/* PILIH UKM (Hanya Super Admin) */}
                 {role === 'super_admin' && (
                     <div>
                         <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
@@ -195,7 +188,6 @@ const ImportMembers = () => {
                     </div>
                 )}
 
-                {/* AREA UPLOAD */}
                 <div className="border-2 border-dashed border-slate-300 rounded-xl p-10 text-center hover:bg-slate-50 transition cursor-pointer relative group">
                     <input 
                         id="fileInput"
@@ -215,7 +207,6 @@ const ImportMembers = () => {
                     </div>
                 </div>
 
-                {/* TOMBOL PROSES */}
                 <button 
                     type="submit" 
                     disabled={loading || (role === 'super_admin' && !selectedUkmId)}

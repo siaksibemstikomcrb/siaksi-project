@@ -1,18 +1,15 @@
 @import "tailwindcss";
 
 @theme {
-  /* Warna Background & Card khas Zenith */
   --color-dark-bg: #0b0e14;
   --color-dark-card: #161b22;
   --color-dark-border: #30363d;
   --color-dark-text: #8b949e;
 
-  /* Accent Colors */
   --color-zenith-blue: #3b82f6;
   --color-zenith-purple: #8b5cf6;
   --color-zenith-emerald: #10b981;
 
-  /* Border Radius khas Bento Grid */
   --radius-bento: 2.5rem;
 }
 
@@ -21,11 +18,10 @@
     scroll-behavior: smooth;
   }
   body {
-  /* Ganti text-slate-300 yang dulu abu-abu pudar */
   @apply bg-white text-[#222222] antialiased;
   font-family: 'Poppins', sans-serif;
   letter-spacing: -0.01em;
   word-break: normal;
-    hyphens: none; /* Membuat teks terlihat lebih rapat dan elegan */
+    hyphens: none;
 }
 }

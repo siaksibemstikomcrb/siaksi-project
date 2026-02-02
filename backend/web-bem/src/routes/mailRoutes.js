@@ -16,7 +16,6 @@ const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: async (req, file) => {
         const ext = file.originalname.split('.').pop().toLowerCase();
-        // Dokumen = RAW, Gambar = IMAGE (auto)
         const type = ['pdf','doc','docx','xls','xlsx','zip'].includes(ext) ? 'raw' : 'auto';
         return {
             folder: 'siaksi-info',
@@ -27,12 +26,10 @@ const storage = new CloudinaryStorage({
 });
 const upload = multer({ storage });
 
-// --- ROUTES ---
 router.get('/ukm-list', authMiddleware, getUkmList);
 router.post('/send', authMiddleware, upload.single('attachment'), sendMail);
 router.get('/inbox', authMiddleware, getInbox);
 
-// Khusus Super Admin
 router.get('/pending', authMiddleware, role(['super_admin']), getPendingBroadcasts);
 router.put('/approval', authMiddleware, role(['super_admin']), approveBroadcast);
 

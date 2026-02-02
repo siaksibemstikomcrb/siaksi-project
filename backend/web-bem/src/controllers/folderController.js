@@ -1,6 +1,5 @@
 const db = require('../config/db');
 
-// Buat Folder Baru
 const createFolder = async (req, res) => {
     const { name, parent_id } = req.body;
     const ukm_id = req.user.ukm_id;
@@ -17,27 +16,22 @@ const createFolder = async (req, res) => {
     }
 };
 
-// Ambil Isi Folder (Folder & File didalamnya)
 const getFolderContent = async (req, res) => {
     const ukm_id = req.user.ukm_id;
-    // Jika query 'folderId' kosong/null, berarti kita di Root (Halaman Awal)
     const parent_id = req.query.folderId && req.query.folderId !== 'null' ? req.query.folderId : null;
 
     try {
-        // 1. Ambil Sub-folder
         let folderQuery = "SELECT * FROM folders WHERE ukm_id = $1 AND parent_id ";
         folderQuery += parent_id ? "= $2" : "IS NULL";
         const folderParams = parent_id ? [ukm_id, parent_id] : [ukm_id];
         
         const folders = await db.query(folderQuery + " ORDER BY name ASC", folderParams);
 
-        // 2. Ambil File Dokumen
         let docQuery = "SELECT * FROM documents WHERE ukm_id = $1 AND folder_id ";
         docQuery += parent_id ? "= $2" : "IS NULL";
         
         const files = await db.query(docQuery + " ORDER BY created_at DESC", folderParams);
 
-        // 3. Ambil Info Folder Saat Ini (untuk Breadcrumb/Judul)
         let currentFolder = null;
         if (parent_id) {
             const curr = await db.query("SELECT * FROM folders WHERE id = $1", [parent_id]);
@@ -55,7 +49,6 @@ const getFolderContent = async (req, res) => {
     }
 };
 
-// Hapus Folder (Recursive Delete sudah dihandle Database 'ON DELETE CASCADE')
 const deleteFolder = async (req, res) => {
     const { id } = req.params;
     try {
@@ -68,7 +61,6 @@ const deleteFolder = async (req, res) => {
 
 const moveItems = async (req, res) => {
     const { target_folder_id, items } = req.body; 
-    // items bentuknya: [{ type: 'file', id: 1 }, { type: 'folder', id: 5 }]
     const ukm_id = req.user.ukm_id;
 
     if (!items || items.length === 0) return res.status(400).json({ msg: "Tidak ada item dipilih" });
@@ -76,7 +68,6 @@ const moveItems = async (req, res) => {
     try {
         const target = target_folder_id === 'root' ? null : target_folder_id;
 
-        // Kita loop item yang mau dipindah
         for (const item of items) {
             if (item.type === 'file') {
                 await db.query(
@@ -84,7 +75,6 @@ const moveItems = async (req, res) => {
                     [target, item.id, ukm_id]
                 );
             } else if (item.type === 'folder') {
-                // Cegah memindahkan folder ke dalam dirinya sendiri
                 if (parseInt(target) === parseInt(item.id)) continue; 
                 
                 await db.query(

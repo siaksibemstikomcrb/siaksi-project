@@ -50,16 +50,13 @@ const NotificationsPage = () => {
 
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-6">
-      {/* Header Section */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
           <div className="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-200">
             <Bell className="text-white" size={24} />
           </div>
-          {/* JUDUL: Pakai text-gray-900 (Hitam Pekat) biar kontras */}
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">Notifikasi</h1>
         </div>
-        {/* BADGE COUNT: Text abu gelap di bg terang */}
         <span className="text-sm font-bold text-gray-700 bg-white border border-gray-200 px-3 py-1 rounded-full shadow-sm">
           {notifications.filter(n => !n.is_read).length} Belum dibaca
         </span>
@@ -69,7 +66,6 @@ const NotificationsPage = () => {
         {notifications.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-gray-300">
             <Bell className="mx-auto text-gray-400 mb-4" size={48} />
-            {/* EMPTY STATE: Pakai text-gray-600 (Abu Gelap) */}
             <p className="text-gray-600 font-bold text-lg">Belum ada notifikasi untukmu.</p>
           </div>
         ) : (
@@ -83,7 +79,6 @@ const NotificationsPage = () => {
                 }`}
             >
               <div className="flex gap-4">
-                {/* Icon Wrapper */}
                 <div className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center border
                   ${notif.is_read ? 'bg-gray-50 border-gray-100' : 'bg-blue-50 border-blue-100'}`}>
                   {getIcon(notif.type)}
@@ -91,17 +86,14 @@ const NotificationsPage = () => {
 
                 <div className="flex-1">
                   <div className="flex justify-between items-start mb-1.5">
-                    {/* JUDUL ITEM: Pakai text-gray-900 (Hitam) atau Biru Tua */}
                     <h3 className={`font-bold text-lg ${!notif.is_read ? 'text-blue-800' : 'text-gray-900'}`}>
                       {notif.title}
                     </h3>
-                    {/* TANGGAL: Pakai text-gray-500 (Abu Medium) */}
                     <span className="text-xs font-bold text-gray-500 uppercase tracking-wide bg-gray-100 px-2 py-1 rounded-md">
                       {new Date(notif.created_at).toLocaleDateString('id-ID')}
                     </span>
                   </div>
 
-                  {/* PESAN UTAMA: Pakai text-gray-800 (Sangat Gelap) - INI KUNCINYA */}
                   <p className="text-sm text-gray-800 font-medium leading-relaxed mb-3">
                     {notif.message}
                   </p>

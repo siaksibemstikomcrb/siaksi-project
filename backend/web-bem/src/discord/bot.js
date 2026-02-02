@@ -1,19 +1,16 @@
-// src/discord/bot.js
 const { Client, GatewayIntentBits } = require('discord.js');
-const db = require('../config/db'); // Koneksi ke database utama
+const db = require('../config/db');
 require('dotenv').config();
 
-// 1. Inisialisasi Client dengan Izin Lengkap
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMembers, // Wajib untuk manage role
+        GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
     ],
 });
 
-// 2. Event: Bot Menyala
 client.once('ready', async () => {
     console.log(`\n=============================================`);
     console.log(`🤖 BOT ONLINE: ${client.user.tag}`);
@@ -22,7 +19,6 @@ client.once('ready', async () => {
     const envGuildId = process.env.DISCORD_GUILD_ID;
     console.log(`🎯 TARGET ID (.env) : ${envGuildId}`);
 
-    // Cek apakah bot benar-benar ada di server itu?
     const guild = client.guilds.cache.get(envGuildId);
 
     if (!guild) {
@@ -37,7 +33,7 @@ client.once('ready', async () => {
         console.log(`👥 Jumlah Member: ${guild.memberCount}`);
         
         try {
-            await guild.members.fetch(); // Paksa fetch semua member
+            await guild.members.fetch();
             console.log(`👀 Bot BERHASIL melihat daftar member.`);
         } catch (err) {
             console.log(`❌ Bot BUTA! Tidak bisa fetch member. Cek 'Server Members Intent' di Dev Portal.`);
@@ -46,44 +42,35 @@ client.once('ready', async () => {
     console.log(`=============================================\n`);
 });
 
-// 3. Fungsi Helper: Sinkronisasi Role (Akan dipanggil dari Controller Web)
-// Ini adalah "Jembatan" antara Web dan Discord
 const syncUserRole = async (discordId, roleWeb, ukmName = null) => {
     try {
         const guild = await client.guilds.fetch(process.env.DISCORD_GUILD_ID);
         
         let member;
         try {
-            // Coba ambil member. Kalau user BELUM JOIN, baris ini akan throw error 10007
             member = await guild.members.fetch(discordId);
         } catch (err) {
-            // Jika errornya "Unknown Member", berarti user belum join server
             if (err.code === 10007 || err.message.includes('Unknown Member')) {
                 console.log(`⚠️ User ${discordId} belum join server Discord.`);
                 return { success: true, need_join: true, msg: 'User belum join server' };
             }
-            throw err; // Lempar error lain jika bukan masalah member not found
+            throw err;
         }
 
-        // Jika sampai sini, berarti member ADA di server -> Kasih Role
         const roleMahasiswa = guild.roles.cache.find(r => r.name === 'Mahasiswa');
         if (roleMahasiswa) await member.roles.add(roleMahasiswa);
 
-        // Logic UKM / Admin
         if (roleWeb === 'admin' || roleWeb === 'admin_ukm') {
-             // ... logic role ukm ...
         }
 
         return { success: true, msg: 'Sinkronisasi Berhasil' };
 
     } catch (error) {
         console.error("Discord Sync Error:", error);
-        // Jangan throw error, return success: false saja agar frontend tidak crash
         return { success: false, msg: error.message };
     }
 };
 
-// Export Client dan Helper Function
 module.exports = { 
     client, 
     syncUserRole 

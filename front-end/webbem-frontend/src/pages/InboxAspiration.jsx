@@ -5,7 +5,7 @@ import api from '../api/axios';
 const InboxAspiration = () => {
   const [aspirations, setAspirations] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [selectedImg, setSelectedImg] = useState(null); // State untuk Modal Gambar
+  const [selectedImg, setSelectedImg] = useState(null);
 
   useEffect(() => {
     fetchAspirations();
@@ -38,7 +38,6 @@ const InboxAspiration = () => {
           aspirations.map((item) => (
             <div key={item.id} className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-all">
               <div className="p-6">
-                {/* Header Info */}
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <h3 className="font-bold text-lg text-gray-900 mb-1">{item.subject}</h3>
@@ -53,14 +52,12 @@ const InboxAspiration = () => {
                   </div>
                 </div>
 
-                {/* Pesan */}
                 <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 mb-4">
                   <p className="text-gray-700 text-sm leading-relaxed italic">
                     "{item.message}"
                   </p>
                 </div>
 
-                {/* Tampilan Gambar Langsung (Jika Ada) */}
                 {item.image_url && (
                   <div className="mt-4">
                     <p className="text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Lampiran Bukti:</p>
@@ -85,7 +82,6 @@ const InboxAspiration = () => {
         )}
       </div>
 
-      {/* MODAL PRATINJAU GAMBAR (Lightbox) */}
       {selectedImg && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-10">
           <div 

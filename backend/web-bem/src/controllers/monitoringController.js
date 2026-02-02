@@ -1,4 +1,3 @@
-// backend/src/controllers/monitoringController.js
 const db = require('../config/db');
 
 const getGlobalMonitoring = async (req, res) => {
@@ -45,23 +44,18 @@ const getGlobalMonitoring = async (req, res) => {
     }
 };
 
-// backend/src/controllers/monitoringController.js
 
-// backend/src/controllers/monitoringController.js
 const getUKMDetail = async (req, res) => {
     const { id } = req.params;
     try {
-        // 1. Ambil Info Dasar UKM
         const ukmInfo = await db.query('SELECT * FROM UKMs WHERE id = $1', [id]);
         if (ukmInfo.rows.length === 0) return res.status(404).json({ msg: 'UKM tidak ditemukan' });
 
-        // 2. Ambil Daftar Admin (Tanpa Statistik Absen)
         const admins = await db.query(
             'SELECT id, name, nia FROM Users WHERE ukm_id = $1 AND role_id = 2', 
             [id]
         );
 
-        // 3. Ambil Daftar Anggota (Lengkap dengan Statistik)
         const membersStats = await db.query(`
             SELECT 
                 u.id, u.name, u.nia,
@@ -88,8 +82,8 @@ const getUKMDetail = async (req, res) => {
         res.json({
             ...ukmInfo.rows[0],
             total_events: eventsCount.rows[0].count,
-            admins: admins.rows, // List Admin
-            members: membersStats.rows // List Member
+            admins: admins.rows,
+            members: membersStats.rows
         });
     } catch (err) {
         console.error(err.message);

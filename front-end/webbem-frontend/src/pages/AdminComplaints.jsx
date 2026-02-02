@@ -27,7 +27,7 @@ const AdminComplaints = () => {
     try {
         await api.put(`/complaints/${id}/status`, { status: 'resolved' });
         toast.success("Laporan ditandai selesai");
-        fetchComplaints(); // Refresh
+        fetchComplaints();
     } catch (err) {
         toast.error("Gagal update status");
     }
@@ -68,7 +68,7 @@ const AdminComplaints = () => {
                         <div className="mb-4">
                              <p className="text-xs font-bold text-gray-400 mb-1">Lampiran Screenshot:</p>
                              <a 
-                                href={`http://localhost:5000/${item.screenshot_url}`} // Sesuaikan URL Backend
+                                href={`http://localhost:5000/${item.screenshot_url}`}
                                 target="_blank" 
                                 rel="noreferrer"
                                 className="inline-flex items-center gap-2 text-blue-600 text-sm hover:underline"

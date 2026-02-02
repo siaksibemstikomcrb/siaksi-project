@@ -7,17 +7,13 @@ import {
 } from 'lucide-react';
 
 const ManageUKM = () => {
-    // --- STATE LIST DATA ---
     const [ukms, setUkms] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-
-    // --- STATE FORM (MODAL) ---
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [formLoading, setFormLoading] = useState(false);
     const [formData, setFormData] = useState({ ukm_name: '', leader_name: '', description: '' });
 
-    // --- 1. FETCH DATA UKM ---
     const fetchUkms = async () => {
         try {
             const res = await api.get('/ukms'); 
@@ -34,7 +30,6 @@ const ManageUKM = () => {
         fetchUkms();
     }, []);
 
-    // --- 2. HANDLE SUBMIT (TAMBAH UKM) ---
     const handleSubmit = async (e) => {
         e.preventDefault();
         setFormLoading(true);
@@ -43,11 +38,9 @@ const ManageUKM = () => {
             await api.post('/ukms', formData);
             toast.success('Organisasi Berhasil Didaftarkan!');
             
-            // Reset Form & Tutup Modal
             setFormData({ ukm_name: '', leader_name: '', description: '' });
             setIsModalOpen(false);
             
-            // Refresh Data
             fetchUkms(); 
         } catch (err) {
             console.error(err);
@@ -57,7 +50,6 @@ const ManageUKM = () => {
         }
     };
 
-    // --- 3. HANDLE DELETE UKM ---
     const handleDelete = async (id, ukmName) => {
         const confirmDelete = window.confirm(
             `⚠️ PERINGATAN!\n\nMenghapus UKM "${ukmName}" akan MENGHAPUS SEMUA ANGGOTA (User) di dalamnya.\n\nLanjut hapus?`
@@ -75,7 +67,6 @@ const ManageUKM = () => {
         }
     };
 
-    // Filter Pencarian
     const filteredUkms = ukms.filter(ukm => 
         ukm.ukm_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (ukm.description && ukm.description.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -84,7 +75,6 @@ const ManageUKM = () => {
     return (
         <div className="p-4 md:p-6 min-h-screen bg-gray-50 font-sans text-slate-800 pb-20">
             
-            {/* --- HEADER SECTION --- */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <div>
                     <h1 className="text-2xl md:text-3xl font-bold text-slate-900 flex items-center gap-2">
@@ -93,7 +83,6 @@ const ManageUKM = () => {
                     <p className="text-sm text-gray-500 mt-1">Manajemen Unit Kegiatan Mahasiswa</p>
                 </div>
                 
-                {/* TOMBOL BUKA MODAL */}
                 <button 
                     onClick={() => setIsModalOpen(true)}
                     className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 md:py-2.5 rounded-xl font-bold text-sm flex justify-center items-center gap-2 transition-all shadow-md active:scale-95"
@@ -102,7 +91,6 @@ const ManageUKM = () => {
                 </button>
             </div>
 
-            {/* --- SEARCH BAR --- */}
             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 sticky top-0 z-10 md:static">
                 <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
                     <div className="relative w-full md:w-96">
@@ -121,7 +109,6 @@ const ManageUKM = () => {
                 </div>
             </div>
 
-            {/* --- CONTENT AREA (List Data) --- */}
             {loading ? (
                 <div className="flex flex-col items-center justify-center py-20 text-gray-400 gap-3">
                     <Loader2 className="animate-spin text-blue-600" size={32} />
@@ -134,7 +121,6 @@ const ManageUKM = () => {
                 </div>
             ) : (
                 <>
-                    {/* === TAMPILAN MOBILE (CARD VIEW) === */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:hidden">
                         {filteredUkms.map((ukm) => (
                             <div key={ukm.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-4">
@@ -171,7 +157,6 @@ const ManageUKM = () => {
                         ))}
                     </div>
 
-                    {/* === TAMPILAN DESKTOP (TABLE VIEW) === */}
                     <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                         <table className="w-full text-left border-collapse">
                             <thead>
@@ -224,11 +209,9 @@ const ManageUKM = () => {
                 </>
             )}
 
-            {/* --- MODAL POPUP FORM --- */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-                        {/* Modal Header */}
                         <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 bg-gray-50">
                             <div className="flex items-center gap-3">
                                 <div className="bg-blue-100 p-2 rounded-lg text-blue-600">
@@ -244,7 +227,6 @@ const ManageUKM = () => {
                             </button>
                         </div>
 
-                        {/* Modal Body (Form) */}
                         <div className="p-6 md:p-8 max-h-[80vh] overflow-y-auto">
                             <form onSubmit={handleSubmit} className="space-y-6">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -297,7 +279,6 @@ const ManageUKM = () => {
     );
 };
 
-// Komponen Input Kecil (Helper)
 const InputGroup = ({ label, value, placeholder, onChange, isTextArea }) => (
   <div className="space-y-2">
     <label className="text-xs font-bold text-gray-500 uppercase tracking-wide ml-1">{label}</label>

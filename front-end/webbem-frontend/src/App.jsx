@@ -57,7 +57,10 @@ import GeneralError from './pages/response/GeneralError';
 
 import LearningCenter from './pages/learning/LearningCenter';
 import VideoDetail from './pages/learning/VideoDetail';
+
 import LearningLayout from './components/layouts/LearningLayout';
+import ManageLearning from './pages/learning/ManageLearning';
+import ManageCategories from './pages/learning/ManageCategories'; // ✅ 1. Import Halaman Kategori
 
 function App() {
   return (
@@ -69,14 +72,13 @@ function App() {
         <Route path="/" element={<HomePage/>} />
         <Route path="/login" element={<Login />} />
         
-
         <Route path="/news" element={<MaintenancePage title="Portal Berita Lagi Update Dulu Ya..." />} />
         <Route path="/news/:id" element={<MaintenancePage title="Berita Tidak Tersedia" />} />
 
         <Route path="/learning" element={<LearningLayout />}>
             <Route index element={<LearningCenter />} />
             <Route path="nonton/:id" element={<VideoDetail />} />
-          </Route>
+        </Route>
 
         <Route path="/privacy" element={<LegalPage />} />
         <Route path="/terms" element={<LegalPage />} />
@@ -137,6 +139,26 @@ function App() {
           } 
         />
 
+        {/* ✅ RUTE MANAJEMEN VIDEO */}
+        <Route 
+            path="/admin/learning" 
+            element={
+                <ProtectedRoute allowedRoles={['super_admin', 'admin']}>
+                    <Layout><ManageLearning /></Layout>
+                </ProtectedRoute>
+            } 
+        />
+
+        {/* ✅ 2. RUTE BARU: MANAJEMEN KATEGORI */}
+        <Route 
+            path="/admin/learning/categories" 
+            element={
+                <ProtectedRoute allowedRoles={['super_admin']}>
+                    <Layout><ManageCategories /></Layout>
+                </ProtectedRoute>
+            } 
+        />
+
         <Route path="/aspirasi" element={<Layout><UserAspiration /></Layout>} />
 
         <Route 
@@ -147,7 +169,7 @@ function App() {
             </ProtectedRoute>
           } 
         />
-
+  
         <Route path="/maintenance" element={<MaintenancePage />} />
         <Route path="/forbidden" element={<GeneralError type="403" />} />
         <Route path="/server-error" element={<GeneralError type="500" />} />

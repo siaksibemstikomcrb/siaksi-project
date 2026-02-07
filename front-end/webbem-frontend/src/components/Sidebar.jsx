@@ -40,6 +40,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                         { label: "Buat Jadwal", path: "/admin-dashboard" },
                         { label: "Riwayat Acara", path: "/admin/events" },
                         { label: "Presensi Anggota", path: "/admin/members" },
+                        {label: "Kelola Learning", path: "/admin/learning", roles: ['super_admin']},
+                        {label: "Kategori Learning", path: "/admin/learning/categories", role: ['super_admin']}
                     ]
                 },
                 { 

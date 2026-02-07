@@ -62,6 +62,7 @@ app.use('/api/monitoring', require('./src/routes/monitoringRoutes'));
 app.use('/api/notifications', require('./src/routes/notificationRoutes'));
 app.use('/api/schedules', require('./src/routes/scheduleRoutes'));
 app.use('/api/discord', require('./src/routes/discordRoutes'));
+app.use('/api/learning', require('./src/routes/learningRoutes'));
 
 app.use((err, req, res, next) => {
     const statusCode = res.statusCode === 200 ? 500 : res.statusCode;

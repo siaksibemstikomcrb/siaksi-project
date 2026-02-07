@@ -88,7 +88,7 @@ const Navbar = ({ isTransparent = false }) => {
     { 
       
       icon: <GraduationCap size={20} />, 
-      label: 'Belajar', 
+      label: 'SILearning', 
       onClick: () => navigate('/learning') 
     },
     { 
@@ -141,7 +141,7 @@ const Navbar = ({ isTransparent = false }) => {
               <button onClick={() => handleScrollToSection('top')} className="px-5 py-2 rounded-full text-sm text-white hover:bg-white/10 transition-all">Home</button>
               <button onClick={() => handleScrollToSection('features')} className="px-5 py-2 rounded-full text-sm text-slate-400 hover:text-white transition-all">Fitur</button>
               <Link to="/news" className="px-5 py-2 rounded-full text-sm text-slate-400 hover:text-white transition-all">Berita</Link>
-              <Link to="/learning" className="px-5 py-2 rounded-full text-sm text-slate-400 hover:text-white transition-all">Belajar</Link>             
+              <Link to="/learning" className="px-5 py-2 rounded-full text-sm text-slate-400 hover:text-white transition-all">SILearning</Link>             
           </div>
 
           <div className="hidden md:flex items-center gap-3" ref={searchContainerRef}>

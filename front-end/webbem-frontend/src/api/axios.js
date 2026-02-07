@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://siaksi.stikompoltekcirebon.ac.id/api', 
+  baseURL: 'https://siaksi.stikompoltekcirebon.ac.id/api', 
   withCredentials: true,
   timeout: 60000,
 });

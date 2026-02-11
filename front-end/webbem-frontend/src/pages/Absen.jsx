@@ -25,8 +25,6 @@ const Absen = () => {
   const fetchSchedules = async () => {
     try {
       const res = await api.get('/schedules');
-      // Backend baru mengirimkan semua jadwal aktif.
-      // Kita bisa filter di sini jika mau menampilkan hanya yg ongoing/upcoming di atas.
       setSchedules(res.data);
       setLoading(false);
     } catch (err) {
@@ -49,7 +47,7 @@ const Absen = () => {
             try {
                 await api.post('/attendance/submit', { schedule_id: scheduleId, latitude: null, longitude: null });
                 resolve("Berhasil Absen!");
-                fetchSchedules(); // Refresh data
+                fetchSchedules(); 
             } catch (err) { reject(err.response?.data?.msg || "Gagal Absen."); } 
             finally { setProcessing(false); }
             return;
@@ -60,7 +58,7 @@ const Absen = () => {
                 try {
                     await api.post('/attendance/submit', { schedule_id: scheduleId, latitude, longitude });
                     resolve("Berhasil Absen di Lokasi!");
-                    fetchSchedules(); // Refresh data
+                    fetchSchedules();
                 } catch (err) { reject(err.response?.data?.msg || "Diluar jangkauan lokasi."); } 
                 finally { setProcessing(false); }
             }, (error) => { 
@@ -150,16 +148,24 @@ const Absen = () => {
                 const isOnline = !item.latitude;
                 const isExpanded = expandedId === item.id;
                 const hasAttended = item.my_status; 
-                // Gunakan status_kegiatan dari backend
+                
                 const statusKegiatan = item.status_kegiatan || 'upcoming'; 
                 const isOngoing = statusKegiatan === 'ongoing';
+                const isCompleted = statusKegiatan === 'completed';
+
+                // --- PERBAIKAN LOGIKA TOMBOL ---
+                // Izin boleh kalau kegiatan BELUM selesai (Upcoming boleh, Ongoing boleh)
+                const canIzin = !isCompleted && !hasAttended;
+                
+                // Hadir hanya boleh kalau kegiatan SEDANG berjalan
+                const canHadir = isOngoing && !hasAttended;
 
                 return (
                   <div 
                     key={item.id} 
                     className={`bg-white rounded-3xl border transition-all duration-300 overflow-hidden shadow-sm
                         ${hasAttended ? 'border-green-200 bg-green-50/20' : isExpanded ? 'border-blue-300 ring-2 ring-blue-50 shadow-md' : 'border-gray-100'}
-                        ${!isOngoing && !hasAttended ? 'opacity-70 grayscale-[0.5]' : 'opacity-100'}
+                        ${isCompleted && !hasAttended ? 'opacity-70 grayscale-[0.5]' : 'opacity-100'}
                     `}
                   >
                     <div 
@@ -238,22 +244,26 @@ const Absen = () => {
                                 <div className="flex gap-3 pt-2">
                                     <button 
                                         onClick={() => { setSelectedId(item.id); setShowModal(true); }}
-                                        className="flex-1 bg-white border-2 border-gray-200 text-gray-600 font-bold py-3 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all text-sm active:scale-95"
-                                        disabled={!isOngoing} // Disable jika belum mulai atau sudah selesai
+                                        className={`flex-1 border-2 font-bold py-3 rounded-xl transition-all text-sm active:scale-95
+                                            ${canIzin 
+                                                ? 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300' 
+                                                : 'bg-gray-100 border-gray-100 text-gray-400 cursor-not-allowed'}
+                                        `}
+                                        disabled={!canIzin} // FIX: Izin boleh kalau belum selesai
                                     >
                                         Izin
                                     </button>
                                     <button 
                                         onClick={() => handleHadir(item.id, isOnline)}
-                                        disabled={processing || !isOngoing} // Disable jika belum mulai
+                                        disabled={processing || !canHadir} 
                                         className={`flex-[2] font-bold py-3 rounded-xl transition-all shadow-lg text-sm flex justify-center items-center gap-2
-                                            ${isOngoing 
+                                            ${canHadir 
                                                 ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200 active:scale-95' 
                                                 : 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none'}
                                         `}
                                     >
                                         {processing ? <Loader2 className="animate-spin" size={18}/> : <CheckCircle2 size={18}/>}
-                                        {processing ? '...' : (isOngoing ? 'Hadir Sekarang' : 'Belum Dibuka / Selesai')}
+                                        {processing ? '...' : (canHadir ? 'Hadir Sekarang' : 'Belum Dibuka / Selesai')}
                                     </button>
                                 </div>
                             ) : (

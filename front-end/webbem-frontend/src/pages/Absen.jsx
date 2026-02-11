@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
-import { Clock, Calendar, CheckCircle2, X, MapPin, Video, ExternalLink, Globe, Loader2, Send, ChevronDown, AlertCircle } from 'lucide-react';
+import { Clock, Calendar, CheckCircle2, X, MapPin, Video, Loader2, Send, ChevronDown, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Absen = () => {
@@ -14,6 +14,7 @@ const Absen = () => {
   const [expandedId, setExpandedId] = useState(null);
 
   const [time, setTime] = useState(new Date());
+
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(timer);
@@ -24,6 +25,8 @@ const Absen = () => {
   const fetchSchedules = async () => {
     try {
       const res = await api.get('/schedules');
+      // Backend baru mengirimkan semua jadwal aktif.
+      // Kita bisa filter di sini jika mau menampilkan hanya yg ongoing/upcoming di atas.
       setSchedules(res.data);
       setLoading(false);
     } catch (err) {
@@ -46,7 +49,7 @@ const Absen = () => {
             try {
                 await api.post('/attendance/submit', { schedule_id: scheduleId, latitude: null, longitude: null });
                 resolve("Berhasil Absen!");
-                fetchSchedules();
+                fetchSchedules(); // Refresh data
             } catch (err) { reject(err.response?.data?.msg || "Gagal Absen."); } 
             finally { setProcessing(false); }
             return;
@@ -57,10 +60,14 @@ const Absen = () => {
                 try {
                     await api.post('/attendance/submit', { schedule_id: scheduleId, latitude, longitude });
                     resolve("Berhasil Absen di Lokasi!");
-                    fetchSchedules();
+                    fetchSchedules(); // Refresh data
                 } catch (err) { reject(err.response?.data?.msg || "Diluar jangkauan lokasi."); } 
                 finally { setProcessing(false); }
-            }, () => { setProcessing(false); reject("Gagal GPS. Aktifkan Izin Lokasi."); });
+            }, (error) => { 
+                setProcessing(false); 
+                console.error("GPS Error:", error);
+                reject("Gagal GPS. Pastikan Izin Lokasi aktif & Refresh browser."); 
+            });
         } else { setProcessing(false); reject("Browser tidak dukung GPS."); }
     });
     toast.promise(promise, { loading: 'Memproses...', success: (d) => d, error: (e) => e });
@@ -79,11 +86,22 @@ const Absen = () => {
     finally { setProcessing(false); }
   };
 
+  // Helper untuk Status Badge
+  const getStatusBadge = (status) => {
+      switch(status) {
+          case 'ongoing': return <span className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded border border-green-200 uppercase animate-pulse">Sedang Berjalan</span>;
+          case 'upcoming': return <span className="bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded border border-blue-200 uppercase">Akan Datang</span>;
+          case 'completed': return <span className="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-0.5 rounded border border-gray-200 uppercase">Selesai</span>;
+          default: return null;
+      }
+  };
+
   if (loading) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin text-blue-600"/></div>;
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 font-sans p-4 md:p-6 pb-24">
       
+      {/* Header Area */}
       <div className="bg-white rounded-3xl p-6 md:p-8 border border-gray-100 shadow-lg relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full -mr-20 -mt-20 blur-3xl opacity-50"></div>
         
@@ -114,16 +132,17 @@ const Absen = () => {
         </div>
       </div>
 
+      {/* List Jadwal */}
       <div>
         <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-4 px-1">
-            <Calendar size={20} className="text-blue-600" /> Jadwal Aktif
+            <Calendar size={20} className="text-blue-600" /> Jadwal Kegiatan
         </h2>
         
         {schedules.length === 0 ? (
           <div className="bg-white p-10 rounded-3xl text-center border border-dashed border-gray-300">
             <Calendar size={40} className="text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-900 font-bold">Tidak Ada Jadwal</p>
-            <p className="text-gray-500 text-sm mt-1">Tunggu admin menerbitkan agenda.</p>
+            <p className="text-gray-900 font-bold">Tidak Ada Jadwal Aktif</p>
+            <p className="text-gray-500 text-sm mt-1">Tunggu admin menerbitkan agenda baru.</p>
           </div>
         ) : (
           <div className="grid gap-4">
@@ -131,12 +150,16 @@ const Absen = () => {
                 const isOnline = !item.latitude;
                 const isExpanded = expandedId === item.id;
                 const hasAttended = item.my_status; 
+                // Gunakan status_kegiatan dari backend
+                const statusKegiatan = item.status_kegiatan || 'upcoming'; 
+                const isOngoing = statusKegiatan === 'ongoing';
 
                 return (
                   <div 
                     key={item.id} 
                     className={`bg-white rounded-3xl border transition-all duration-300 overflow-hidden shadow-sm
                         ${hasAttended ? 'border-green-200 bg-green-50/20' : isExpanded ? 'border-blue-300 ring-2 ring-blue-50 shadow-md' : 'border-gray-100'}
+                        ${!isOngoing && !hasAttended ? 'opacity-70 grayscale-[0.5]' : 'opacity-100'}
                     `}
                   >
                     <div 
@@ -145,23 +168,30 @@ const Absen = () => {
                     >
                         <div className="flex items-center gap-4 overflow-hidden">
                             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm
-                                ${hasAttended ? 'bg-green-100 text-green-600' : 'bg-blue-600 text-white'}
+                                ${hasAttended ? 'bg-green-100 text-green-600' : isOngoing ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'}
                             `}>
                                 {hasAttended ? <CheckCircle2 size={24} /> : <Calendar size={24} />}
                             </div>
 
                             <div className="min-w-0">
-                                <h3 className={`font-bold text-lg truncate ${hasAttended ? 'text-green-800' : 'text-gray-900'}`}>
-                                    {item.event_name}
-                                </h3>
-                                <div className="flex items-center gap-2 mt-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                    {getStatusBadge(statusKegiatan)}
                                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase
                                         ${isOnline ? 'bg-purple-50 text-purple-700 border-purple-100' : 'bg-orange-50 text-orange-700 border-orange-100'}
                                     `}>
                                         {isOnline ? 'Online' : 'Offline'}
                                     </span>
-                                    <span className="text-xs text-gray-500 font-medium flex items-center gap-1">
-                                        <Clock size={12}/> {item.start_time} WIB
+                                </div>
+                                <h3 className={`font-bold text-lg truncate ${hasAttended ? 'text-green-800' : 'text-gray-900'}`}>
+                                    {item.event_name}
+                                </h3>
+                                <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 font-medium">
+                                    <span className="flex items-center gap-1">
+                                        <Calendar size={12}/> {new Date(item.event_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                                    </span>
+                                    <span>•</span>
+                                    <span className="flex items-center gap-1">
+                                        <Clock size={12}/> {item.start_time.slice(0,5)} - {item.end_time.slice(0,5)}
                                     </span>
                                 </div>
                             </div>
@@ -183,8 +213,8 @@ const Absen = () => {
                                 <div className="flex items-start gap-3">
                                     <Clock size={16} className="text-blue-500 mt-0.5"/>
                                     <div>
-                                        <span className="font-bold text-gray-900 block">Waktu</span>
-                                        <span className="text-gray-500">{item.start_time} - {item.end_time} WIB</span>
+                                        <span className="font-bold text-gray-900 block">Jadwal Presensi</span>
+                                        <span className="text-gray-500">Buka: {item.attendance_open_time.slice(0,5)} - Tutup: {item.attendance_close_time.slice(0,5)} WIB</span>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-3">
@@ -193,7 +223,7 @@ const Absen = () => {
                                         <span className="font-bold text-gray-900 block">Lokasi</span>
                                         {isOnline ? (
                                             item.meeting_link ? (
-                                                <a href={item.meeting_link} target="_blank" className="text-blue-600 underline truncate block hover:text-blue-800">
+                                                <a href={item.meeting_link} target="_blank" rel="noreferrer" className="text-blue-600 underline truncate block hover:text-blue-800">
                                                     Link Meeting
                                                 </a>
                                             ) : <span className="text-gray-400 italic">Link menyusul</span>
@@ -209,21 +239,26 @@ const Absen = () => {
                                     <button 
                                         onClick={() => { setSelectedId(item.id); setShowModal(true); }}
                                         className="flex-1 bg-white border-2 border-gray-200 text-gray-600 font-bold py-3 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all text-sm active:scale-95"
+                                        disabled={!isOngoing} // Disable jika belum mulai atau sudah selesai
                                     >
                                         Izin
                                     </button>
                                     <button 
                                         onClick={() => handleHadir(item.id, isOnline)}
-                                        disabled={processing}
-                                        className="flex-[2] bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 active:scale-95 transition-all shadow-lg shadow-blue-200 text-sm flex justify-center items-center gap-2"
+                                        disabled={processing || !isOngoing} // Disable jika belum mulai
+                                        className={`flex-[2] font-bold py-3 rounded-xl transition-all shadow-lg text-sm flex justify-center items-center gap-2
+                                            ${isOngoing 
+                                                ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200 active:scale-95' 
+                                                : 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none'}
+                                        `}
                                     >
                                         {processing ? <Loader2 className="animate-spin" size={18}/> : <CheckCircle2 size={18}/>}
-                                        {processing ? '...' : 'Hadir Sekarang'}
+                                        {processing ? '...' : (isOngoing ? 'Hadir Sekarang' : 'Belum Dibuka / Selesai')}
                                     </button>
                                 </div>
                             ) : (
                                 <div className="w-full bg-green-100 text-green-800 font-bold py-3 rounded-xl text-center text-sm border border-green-200 flex justify-center items-center gap-2">
-                                    <CheckCircle2 size={18}/> Sudah Presensi: {hasAttended}
+                                    <CheckCircle2 size={18}/> Status: {hasAttended}
                                 </div>
                             )}
                         </div>
@@ -235,6 +270,7 @@ const Absen = () => {
         )}
       </div>
 
+      {/* Modal Izin */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={() => setShowModal(false)}></div>

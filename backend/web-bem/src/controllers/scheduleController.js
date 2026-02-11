@@ -1,6 +1,17 @@
 const db = require('../config/db');
 const { sendNotification } = require('../utils/notificationHelper'); 
 
+// Helper: Dapatkan Waktu Jakarta (Objek Date)
+const getJakartaDate = () => {
+    const now = new Date();
+    return new Date(now.toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
+};
+
+// Helper: Ambil String Tanggal "YYYY-MM-DD" sesuai Jakarta (PENTING BIAR GAK MUNDUR SEHARI)
+const getJakartaDateString = (dateObj) => {
+    return new Date(dateObj).toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+};
+
 const createSchedule = async (req, res) => {
     console.log("\n========== MULAI CREATE SCHEDULE ==========");
     const { 
@@ -16,10 +27,6 @@ const createSchedule = async (req, res) => {
     const created_by = req.user.id;
 
     try {
-        await db.query("ALTER TABLE Schedules ADD COLUMN IF NOT EXISTS meeting_link TEXT;"); 
-        await db.query("ALTER TABLE Schedules ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'AKTIF';");
-        
-
         const result = await db.query(
             `INSERT INTO Schedules (
                 ukm_id, created_by_user_id, event_name, description, location, event_date, 
@@ -60,51 +67,59 @@ const getAllSchedules = async (req, res) => {
     try {
         let query;
         let params = [];
-        let timeFilter = "";
-        
-        if (all !== 'true') {
-            timeFilter = `AND s.status != 'BATAL' AND (
-                (s.event_date > CURRENT_DATE) OR 
-                (s.event_date = CURRENT_DATE AND s.attendance_close_time > CURRENT_TIME)
-            )`;
-        }
+        let baseCondition = "s.status != 'BATAL'";
 
         if (role === 'super_admin') {
-            query = `SELECT s.* FROM Schedules s WHERE 1=1 ${timeFilter} ORDER BY s.event_date DESC`;
+            query = `SELECT s.* FROM Schedules s WHERE ${baseCondition} ORDER BY s.event_date DESC`;
         } else {
             query = `
                 SELECT s.*, 
                 (SELECT status FROM Attendances WHERE schedule_id = s.id AND user_id = $1 LIMIT 1) as my_status
                 FROM Schedules s
-                WHERE s.ukm_id = $2 ${timeFilter}
+                WHERE s.ukm_id = $2 AND ${baseCondition}
                 ORDER BY s.event_date DESC
             `;
             params = [id, ukm_id];
         }
 
         const result = await db.query(query, params);
-        const schedulesWithStatus = result.rows.map(schedule => {
-            const now = new Date();
-            
-            const dateStr = new Date(schedule.event_date).toISOString().split('T')[0];
-            
-            const startFull = new Date(`${dateStr}T${schedule.start_time}`);
-            const endFull   = new Date(`${dateStr}T${schedule.end_time}`);
+        
+        // --- FILTERING DI JAVASCRIPT (ANTI-TIMEZONE BUG) ---
+        const nowJakarta = getJakartaDate();
+        
+        const filteredSchedules = result.rows.filter(schedule => {
+            if (all === 'true') return true;
 
-            let computedStatus = 'upcoming';
+            // FIX: Gunakan Helper getJakartaDateString agar tanggal tidak mundur ke UTC
+            const eventDateStr = getJakartaDateString(schedule.event_date);
+            
+            const closeTime = new Date(`${eventDateStr}T${schedule.attendance_close_time}`);
+            const startTime = new Date(`${eventDateStr}T${schedule.start_time}`);
 
-            if (now > endFull) {
-                computedStatus = 'completed';
-            } else if (now >= startFull && now <= endFull) {
-                computedStatus = 'ongoing';
-            } else {
-                computedStatus = 'upcoming';
+            // Handle Lintas Hari
+            if (closeTime < startTime) {
+                closeTime.setDate(closeTime.getDate() + 1);
             }
 
-            return { 
-                ...schedule, 
-                status_kegiatan: computedStatus
-            };
+            // Tampilkan jika BELUM lewat waktu tutup
+            return nowJakarta <= closeTime;
+        });
+
+        // Mapping Status
+        const schedulesWithStatus = filteredSchedules.map(schedule => {
+            const eventDateStr = getJakartaDateString(schedule.event_date); // FIX DISINI JUGA
+            const startFull = new Date(`${eventDateStr}T${schedule.start_time}`);
+            const endFull   = new Date(`${eventDateStr}T${schedule.end_time}`);
+
+            if (endFull < startFull) {
+                endFull.setDate(endFull.getDate() + 1);
+            }
+
+            let computedStatus = 'upcoming';
+            if (nowJakarta > endFull) computedStatus = 'completed';
+            else if (nowJakarta >= startFull && nowJakarta <= endFull) computedStatus = 'ongoing';
+
+            return { ...schedule, status_kegiatan: computedStatus };
         });
 
         res.json(schedulesWithStatus);
@@ -166,10 +181,8 @@ const updateSchedule = async (req, res) => {
 
 const cancelSchedule = async (req, res) => {
     const { id } = req.params;
-    
     try {
         await db.query('BEGIN');
-
         const updateQuery = "UPDATE Schedules SET status = 'BATAL' WHERE id = $1 RETURNING *";
         const result = await db.query(updateQuery, [id]);
 
@@ -177,12 +190,9 @@ const cancelSchedule = async (req, res) => {
             await db.query('ROLLBACK');
             return res.status(404).json({ msg: 'Jadwal tidak ditemukan.' });
         }
-
         await db.query("UPDATE Attendances SET status = 'Batal' WHERE schedule_id = $1", [id]);
-
         await db.query('COMMIT');
         res.json({ msg: 'Jadwal berhasil dibatalkan.', data: result.rows[0] });
-
     } catch (err) {
         await db.query('ROLLBACK');
         console.error("Cancel Error:", err.message);
@@ -194,11 +204,8 @@ const deleteSchedule = async (req, res) => {
     const { id } = req.params;
     try {
         await db.query('DELETE FROM Attendances WHERE schedule_id = $1', [id]);
-        
         const result = await db.query('DELETE FROM Schedules WHERE id = $1', [id]);
-        
         if (result.rowCount === 0) return res.status(404).json({ msg: 'Jadwal tidak ditemukan' });
-
         res.json({ msg: 'Jadwal berhasil dihapus permanen' });
     } catch (err) {
         console.error("Delete Error:", err.message);

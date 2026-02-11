@@ -91,7 +91,7 @@ const Dashboard = () => {
   }, [isOnline]);
 
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000); // Interval tetap 1 detik agar update menit tepat waktu
     return () => clearInterval(timer);
   }, []);
 
@@ -187,7 +187,10 @@ const Dashboard = () => {
                             {role === 'super_admin' ? 'Global Overview' : (viewMode === 'create' ? 'Agenda Baru' : 'Dashboard')}
                         </h1>
                         <p className="text-xs text-slate-500 font-medium hidden md:block">
+                            {/* Update: Jam ditampilkan tanpa detik */}
                             {currentTime.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                            {' • '}
+                            {currentTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB
                         </p>
                     </div>
                 </div>

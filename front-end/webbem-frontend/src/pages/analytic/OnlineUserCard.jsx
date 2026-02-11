@@ -14,7 +14,6 @@ const OnlineUsersCard = () => {
         };
         
         fetchOnline();
-        // Update tiap 10 detik biar realtime-ish
         const interval = setInterval(fetchOnline, 10000);
         return () => clearInterval(interval);
     }, []);

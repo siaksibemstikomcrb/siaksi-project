@@ -60,7 +60,7 @@ import VideoDetail from './pages/learning/VideoDetail';
 
 import LearningLayout from './components/layouts/LearningLayout';
 import ManageLearning from './pages/learning/ManageLearning';
-import ManageCategories from './pages/learning/ManageCategories'; // ✅ 1. Import Halaman Kategori
+import ManageCategories from './pages/learning/ManageCategories';
 
 function App() {
   return (
@@ -139,7 +139,6 @@ function App() {
           } 
         />
 
-        {/* ✅ RUTE MANAJEMEN VIDEO */}
         <Route 
             path="/admin/learning" 
             element={
@@ -149,7 +148,6 @@ function App() {
             } 
         />
 
-        {/* ✅ 2. RUTE BARU: MANAJEMEN KATEGORI */}
         <Route 
             path="/admin/learning/categories" 
             element={

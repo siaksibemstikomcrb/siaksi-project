@@ -1,12 +1,10 @@
 const db = require('../config/db');
 
-// Helper: Dapatkan Waktu Jakarta
 const getJakartaDate = () => {
     const now = new Date();
     return new Date(now.toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
 };
 
-// Helper: Ambil String Tanggal Jakarta (YYYY-MM-DD)
 const getJakartaDateString = (dateObj) => {
     return new Date(dateObj).toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
 };
@@ -26,13 +24,11 @@ const submitAttendance = async (req, res) => {
         
         const nowJakarta = getJakartaDate();
         
-        // FIX: Pakai Helper biar tanggal gak mundur ke UTC
         const eventDateStr = getJakartaDateString(schedule.event_date);
 
         const openTime = new Date(`${eventDateStr}T${schedule.attendance_open_time}`);
         const closeTime = new Date(`${eventDateStr}T${schedule.attendance_close_time}`);
         
-        // Handle Lintas Hari
         if (closeTime < openTime) {
             closeTime.setDate(closeTime.getDate() + 1);
         }
@@ -111,7 +107,7 @@ const getMemberHistory = async (req, res) => {
         const nowJakarta = getJakartaDate();
         
         const formattedHistory = historyRes.rows.map(row => {
-            const eventDateStr = getJakartaDateString(row.event_date); // FIX TANGGAL MUNDUR
+            const eventDateStr = getJakartaDateString(row.event_date);
             const closeTime = new Date(`${eventDateStr}T${row.attendance_close_time}`);
             const startTime = new Date(`${eventDateStr}T${row.start_time}`);
             

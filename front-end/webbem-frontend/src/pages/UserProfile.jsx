@@ -11,16 +11,13 @@ const UserProfile = () => {
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState({ attendance: 0 });
   
-  // State untuk Upload Foto
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
 
-  // State untuk Tab & Password
   const [activeTab, setActiveTab] = useState('overview');
   const [passData, setPassData] = useState({ current: '', new: '', confirm: '' });
   const [updatingPass, setUpdatingPass] = useState(false);
 
-  // --- STATE BARU: UNTUK EDIT BIODATA ---
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ name: '', email: '', nia: '' });
   const [updatingProfile, setUpdatingProfile] = useState(false);
@@ -30,7 +27,6 @@ const UserProfile = () => {
       const res = await api.get('/users/me');
       setUser(res.data.user);
       setStats(res.data.stats);
-      // Set data awal untuk form edit
       setEditForm({
         name: res.data.user.name || '',
         email: res.data.user.email || '',
@@ -45,7 +41,6 @@ const UserProfile = () => {
 
   useEffect(() => { fetchProfile(); }, []);
 
-  // Handle Upload Foto
   const handlePhotoChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -60,7 +55,6 @@ const UserProfile = () => {
     finally { setUploading(false); }
   };
 
-  // Handle Ganti Password
   const handleChangePassword = async (e) => {
     e.preventDefault();
     if (passData.new !== passData.confirm) return toast.error("Konfirmasi password tidak cocok!");
@@ -73,13 +67,12 @@ const UserProfile = () => {
     finally { setUpdatingPass(false); }
   };
 
-  // --- FUNGSI BARU: HANDLE EDIT BIODATA ---
   const handleEditSubmit = async (e) => {
       e.preventDefault();
       setUpdatingProfile(true);
       try {
-          const res = await api.put('/users/me', editForm); // Pastikan route backend ini ada
-          setUser(prev => ({ ...prev, ...editForm })); // Update UI langsung
+          const res = await api.put('/users/me', editForm);
+          setUser(prev => ({ ...prev, ...editForm }));
           toast.success("Biodata berhasil diperbarui!");
           setIsEditing(false);
       } catch (err) {
@@ -98,7 +91,6 @@ const UserProfile = () => {
   return (
     <div className="min-h-screen bg-gray-50 pb-20 font-sans text-slate-800 relative"> 
       
-      {/* --- MODAL EDIT BIODATA --- */}
       {isEditing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
             <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
@@ -165,7 +157,6 @@ const UserProfile = () => {
 
       <div className="bg-white shadow-sm border-b border-gray-200">
         
-        {/* Banner */}
         <div className="h-40 md:h-56 bg-gradient-to-r from-slate-800 to-blue-900 relative overflow-hidden">
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
             <div className="absolute bottom-0 left-0 w-full h-20 bg-gradient-to-t from-black/30 to-transparent"></div>
@@ -173,10 +164,8 @@ const UserProfile = () => {
 
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative pb-6">
             
-            {/* Header Profil (Layout Fixed) */}
             <div className="flex flex-col md:flex-row items-center md:items-start -mt-16 md:-mt-20 gap-6">            
                 
-                {/* Foto Profil */}
                 <div className="relative group shrink-0">
                     <div className="w-32 h-32 md:w-44 md:h-44 rounded-full border-[6px] border-white shadow-2xl overflow-hidden bg-white">
                         <img 
@@ -203,7 +192,6 @@ const UserProfile = () => {
                     </button>
                 </div>
 
-                {/* Nama & Username (Layout Fixed) */}
                 <div className="flex-1 text-center md:text-left w-full mt-2 md:mt-28 md:mb-4">
                     <h1 className="text-2xl md:text-4xl font-black text-gray-900 capitalize tracking-tight leading-tight">
                         {user?.name || user?.username || "Nama Pengguna"}
@@ -222,7 +210,6 @@ const UserProfile = () => {
                     </div>
                 </div>
 
-                {/* Tombol Tab (Layout Fixed) */}
                 <div className="w-full md:w-auto grid grid-cols-2 gap-2 bg-gray-100 p-1.5 rounded-xl md:self-end md:mb-4">
                     <button 
                         onClick={() => setActiveTab('overview')}
@@ -247,12 +234,10 @@ const UserProfile = () => {
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 md:mt-8">     
         
-        {/* Content Tab: Overview */}
         {activeTab === 'overview' && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">      
                 
                 <div className="space-y-4 md:space-y-6">
-                    {/* Card Total Kehadiran */}
                     <div className="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between relative overflow-hidden group">
                          <div className="absolute right-0 top-0 w-24 h-24 bg-emerald-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
                          <div className="relative z-10">
@@ -264,7 +249,6 @@ const UserProfile = () => {
                          </div>
                     </div>
 
-                    {/* Card Status Akun */}
                      <div className="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-gray-100">
                         <div className="flex items-center gap-4 mb-4">
                             <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center">
@@ -282,11 +266,9 @@ const UserProfile = () => {
                     </div>
                 </div>
 
-                {/* Detail Biodata */}
                 <div className="lg:col-span-2">
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                         
-                        {/* Header dengan Tombol Edit */}
                         <div className="px-5 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <FileText size={18} className="text-blue-600"/>
@@ -346,7 +328,6 @@ const UserProfile = () => {
             </div>
         )}
 
-        {/* Content Tab: Security */}
         {activeTab === 'security' && (
             <div className="max-w-2xl mx-auto">
                 <div className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm">

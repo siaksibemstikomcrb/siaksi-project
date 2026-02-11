@@ -84,7 +84,6 @@ const Absen = () => {
     finally { setProcessing(false); }
   };
 
-  // Helper untuk Status Badge
   const getStatusBadge = (status) => {
       switch(status) {
           case 'ongoing': return <span className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded border border-green-200 uppercase animate-pulse">Sedang Berjalan</span>;
@@ -99,7 +98,6 @@ const Absen = () => {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 font-sans p-4 md:p-6 pb-24">
       
-      {/* Header Area */}
       <div className="bg-white rounded-3xl p-6 md:p-8 border border-gray-100 shadow-lg relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full -mr-20 -mt-20 blur-3xl opacity-50"></div>
         
@@ -130,7 +128,6 @@ const Absen = () => {
         </div>
       </div>
 
-      {/* List Jadwal */}
       <div>
         <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-4 px-1">
             <Calendar size={20} className="text-blue-600" /> Jadwal Kegiatan
@@ -153,11 +150,8 @@ const Absen = () => {
                 const isOngoing = statusKegiatan === 'ongoing';
                 const isCompleted = statusKegiatan === 'completed';
 
-                // --- PERBAIKAN LOGIKA TOMBOL ---
-                // Izin boleh kalau kegiatan BELUM selesai (Upcoming boleh, Ongoing boleh)
                 const canIzin = !isCompleted && !hasAttended;
                 
-                // Hadir hanya boleh kalau kegiatan SEDANG berjalan
                 const canHadir = isOngoing && !hasAttended;
 
                 return (
@@ -249,7 +243,7 @@ const Absen = () => {
                                                 ? 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300' 
                                                 : 'bg-gray-100 border-gray-100 text-gray-400 cursor-not-allowed'}
                                         `}
-                                        disabled={!canIzin} // FIX: Izin boleh kalau belum selesai
+                                        disabled={!canIzin}
                                     >
                                         Izin
                                     </button>
@@ -280,7 +274,6 @@ const Absen = () => {
         )}
       </div>
 
-      {/* Modal Izin */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={() => setShowModal(false)}></div>

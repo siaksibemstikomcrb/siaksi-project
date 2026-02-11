@@ -17,11 +17,9 @@ import L from 'leaflet';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 
-// --- IMPORT FITUR ANALITIK ---
 import OnlineUsersCard from './analytic/OnlineUserCard';
 import VisitorStats from './analytic/VisitorStats';
 
-// --- LEAFLET SETUP ---
 const KAMPUS_COORDS = { lat: -6.7126309, lng: 108.531254 };
 let DefaultIcon = L.icon({
     iconUrl: icon,
@@ -46,7 +44,6 @@ const LocationPicker = ({ position, setPosition }) => {
     return position ? <Marker position={position} /> : null;
 };
 
-// --- MAIN COMPONENT ---
 const Dashboard = () => {
   const navigate = useNavigate();
   const role = localStorage.getItem('role');
@@ -57,7 +54,6 @@ const Dashboard = () => {
   const [viewMode, setViewMode] = useState('dashboard');
   const [submitting, setSubmitting] = useState(false);
 
-  // Form States
   const [isOnline, setIsOnline] = useState(false);
   const [useRadius, setUseRadius] = useState(false);
   const [mapPosition, setMapPosition] = useState(null); 
@@ -120,7 +116,6 @@ const Dashboard = () => {
     fetchData();
   }, [role, viewMode]);
 
-  // Handlers
   const handleMyLocation = () => {
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition((position) => {
@@ -182,7 +177,6 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-slate-50/50 font-sans text-slate-800 pb-20">
         
-        {/* --- HEADER --- */}
         <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-slate-200 px-4 sm:px-6 py-4 transition-all">
             <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="flex items-center gap-3">
@@ -224,14 +218,11 @@ const Dashboard = () => {
             </div>
         </div>
 
-        {/* --- MAIN CONTENT --- */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         
-        {/* === FITUR: DASHBOARD === */}
         {viewMode === 'dashboard' && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 
-                {/* 1. VISITOR STATS (Khusus Super Admin) */}
                 {role === 'super_admin' && (
                     <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
                         <div className="flex items-center gap-2 mb-4">
@@ -244,10 +235,8 @@ const Dashboard = () => {
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     
-                    {/* KOLOM KIRI (UTAMA) */}
                     <div className="lg:col-span-8 space-y-8">
                         
-                        {/* Grafik Super Admin */}
                         {role === 'super_admin' && (
                             <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
                                 <div className="flex items-center justify-between mb-6">
@@ -271,7 +260,6 @@ const Dashboard = () => {
                             </div>
                         )}
 
-                        {/* Banner Admin UKM */}
                         {role === 'admin' && (
                             <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-3xl p-8 text-white relative overflow-hidden shadow-xl shadow-slate-200">
                                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
@@ -290,13 +278,10 @@ const Dashboard = () => {
                         )}
                     </div>
 
-                    {/* KOLOM KANAN (SIDEBAR) */}
                     <div className="lg:col-span-4 space-y-6">
                         
-                        {/* 2. ONLINE USERS WIDGET (Muncul untuk Admin & Super Admin) */}
                         <OnlineUsersCard />
 
-                        {/* List Jadwal Terakhir (Khusus Admin UKM) */}
                         {role === 'admin' && (
                             <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col h-full max-h-[600px]">
                                 <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
@@ -313,7 +298,6 @@ const Dashboard = () => {
                                         recentSchedules.map((item, idx) => (
                                             <div key={idx} className="group bg-slate-50 hover:bg-white border border-transparent hover:border-blue-200 p-4 rounded-2xl transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md">
                                                 <div className="flex gap-4">
-                                                    {/* Date Badge */}
                                                     <div className="flex flex-col items-center justify-center bg-white border border-slate-200 w-14 h-14 rounded-xl shadow-sm group-hover:border-blue-100 group-hover:bg-blue-50 transition-colors">
                                                         <span className="text-[10px] font-bold text-slate-400 uppercase group-hover:text-blue-500">
                                                             {new Date(item.event_date).toLocaleString('id-ID', { month: 'short' })}
@@ -323,7 +307,6 @@ const Dashboard = () => {
                                                         </span>
                                                     </div>
                                                     
-                                                    {/* Content */}
                                                     <div className="flex-1 min-w-0">
                                                         <h4 className="font-bold text-slate-900 text-sm truncate mb-1 group-hover:text-blue-700">{item.event_name}</h4>
                                                         <div className="flex flex-wrap gap-2">
@@ -356,12 +339,10 @@ const Dashboard = () => {
             </div>
         )}
 
-        {/* === FITUR: CREATE FORM === */}
         {viewMode === 'create' && (
             <div className="max-w-3xl mx-auto animate-in slide-in-from-right-8 duration-500">
                 <form onSubmit={handleSubmit} className="space-y-6">
                     
-                    {/* SECTION 1: DETAIL */}
                     <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
                         <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 flex items-center gap-2">
                             <LayoutDashboard size={16} className="text-blue-600"/> Detail Kegiatan
@@ -383,7 +364,6 @@ const Dashboard = () => {
                         </div>
                     </div>
 
-                    {/* SECTION 2: WAKTU */}
                     <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
                         <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 flex items-center gap-2">
                             <Clock size={16} className="text-blue-600"/> Waktu & Presensi
@@ -418,7 +398,6 @@ const Dashboard = () => {
                         </div>
                     </div>
 
-                    {/* SECTION 3: LOKASI */}
                     <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                             <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
@@ -473,7 +452,6 @@ const Dashboard = () => {
                         )}
                     </div>
 
-                    {/* SUBMIT BUTTON */}
                     <div className="pt-4 pb-12 flex gap-4">
                         <button type="button" onClick={() => setViewMode('dashboard')} className="flex-1 px-6 py-4 rounded-2xl font-bold text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 transition-all">
                             Batal
@@ -492,7 +470,6 @@ const Dashboard = () => {
   );
 };
 
-// --- REUSABLE COMPONENTS ---
 const SoftInput = ({ type = "text", label, placeholder, value, onChange, ...props }) => (
     <div className="w-full">
         {label && <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">{label}</label>}

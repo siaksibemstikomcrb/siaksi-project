@@ -154,7 +154,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
     return (
         <>
-            {/* OVERLAY: z-40 (Di bawah sidebar, di atas konten) */}
             {isOpen && (
                 <div 
                     className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden transition-opacity duration-300" 
@@ -162,14 +161,12 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                 />
             )}
 
-            {/* SIDEBAR: z-50 (Paling Atas), Fixed, H-Screen (Tinggi Penuh) */}
             <aside className={`
                 fixed md:static inset-y-0 left-0 z-50 w-72 h-screen bg-white border-r border-gray-200 
                 transform transition-transform duration-300 ease-in-out flex flex-col shadow-2xl md:shadow-none
                 ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
             `}>
                 
-                {/* HEADER: Diam di atas (Tidak ikut scroll menu) */}
                 <div className="h-16 shrink-0 flex items-center justify-between px-6 border-b border-gray-100 bg-white">
                     <div className="flex items-center gap-3">
                         <div className="bg-slate-900 w-8 h-8 rounded-lg flex items-center justify-center text-white">
@@ -177,13 +174,11 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                         </div>
                         <span className="font-bold text-lg text-slate-800 tracking-tight">SIAKSI</span>
                     </div>
-                    {/* Tombol Close Mobile */}
                     <button onClick={() => setIsOpen(false)} className="md:hidden p-1 rounded-full hover:bg-gray-100 text-gray-500">
                         <X size={24} />
                     </button>
                 </div>
 
-                {/* MENU LIST: Scrollable Area (Flex-1) */}
                 <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6 custom-scrollbar bg-white">
                     {MENU_ITEMS.map((group, idx) => {
                         if (!hasRole(group.roles)) return null;
@@ -199,7 +194,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                                     {group.items.map((item, itemIdx) => {
                                         if (!hasRole(item.roles)) return null;
 
-                                        // --- SUBMENU ---
                                         if (item.children) {
                                             const isOpenMenu = openMenus[item.label];
                                             const isChildActive = item.children.some(c => isActive(c.path));
@@ -243,7 +237,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                                             );
                                         }
 
-                                        // --- SINGLE MENU ---
                                         const active = isActive(item.path);
                                         return (
                                             <Link 
@@ -275,7 +268,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                     })}
                 </div>
 
-                {/* FOOTER: Diam di bawah */}
                 <div className="p-4 border-t border-gray-100 bg-slate-50/50 shrink-0">
                     <div className="flex items-center gap-3 p-2 rounded-xl border border-slate-200 bg-white shadow-sm mb-3">
                         <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm shrink-0">

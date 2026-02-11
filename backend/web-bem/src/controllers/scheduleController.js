@@ -1,13 +1,11 @@
 const db = require('../config/db');
 const { sendNotification } = require('../utils/notificationHelper'); 
 
-// Helper: Dapatkan Waktu Jakarta (Objek Date)
 const getJakartaDate = () => {
     const now = new Date();
     return new Date(now.toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
 };
 
-// Helper: Ambil String Tanggal "YYYY-MM-DD" sesuai Jakarta (PENTING BIAR GAK MUNDUR SEHARI)
 const getJakartaDateString = (dateObj) => {
     return new Date(dateObj).toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
 };
@@ -84,30 +82,25 @@ const getAllSchedules = async (req, res) => {
 
         const result = await db.query(query, params);
         
-        // --- FILTERING DI JAVASCRIPT (ANTI-TIMEZONE BUG) ---
         const nowJakarta = getJakartaDate();
         
         const filteredSchedules = result.rows.filter(schedule => {
             if (all === 'true') return true;
 
-            // FIX: Gunakan Helper getJakartaDateString agar tanggal tidak mundur ke UTC
             const eventDateStr = getJakartaDateString(schedule.event_date);
             
             const closeTime = new Date(`${eventDateStr}T${schedule.attendance_close_time}`);
             const startTime = new Date(`${eventDateStr}T${schedule.start_time}`);
 
-            // Handle Lintas Hari
             if (closeTime < startTime) {
                 closeTime.setDate(closeTime.getDate() + 1);
             }
 
-            // Tampilkan jika BELUM lewat waktu tutup
             return nowJakarta <= closeTime;
         });
 
-        // Mapping Status
         const schedulesWithStatus = filteredSchedules.map(schedule => {
-            const eventDateStr = getJakartaDateString(schedule.event_date); // FIX DISINI JUGA
+            const eventDateStr = getJakartaDateString(schedule.event_date);
             const startFull = new Date(`${eventDateStr}T${schedule.start_time}`);
             const endFull   = new Date(`${eventDateStr}T${schedule.end_time}`);
 

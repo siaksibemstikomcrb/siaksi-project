@@ -11,8 +11,7 @@ const LearningCenter = () => {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   
-  // Ambil parameter dari URL
-  const activeCategory = queryParams.get('category'); // Slug kategori aktif
+  const activeCategory = queryParams.get('category');
   const searchQuery = queryParams.get('search')?.toLowerCase() || "";
   
   const [videos, setVideos] = useState([]);
@@ -20,7 +19,6 @@ const LearningCenter = () => {
   const [loading, setLoading] = useState(true);
   const [searchInput, setSearchInput] = useState(searchQuery);
 
-  // 1. Fetch Struktur Kategori (Tree)
   useEffect(() => {
     const fetchCategories = async () => {
         try {
@@ -33,7 +31,6 @@ const LearningCenter = () => {
     fetchCategories();
   }, []);
 
-  // 2. Fetch Video
   useEffect(() => {
     const fetchVideos = async () => {
       setLoading(true);
@@ -56,11 +53,9 @@ const LearningCenter = () => {
 
 const handleSearchSubmit = (e) => {
       e.preventDefault();
-      // PERBAIKAN: Tambahkan encodeURIComponent di sini juga
       navigate(`/learning?category=${activeCategory || 'all'}&search=${encodeURIComponent(searchInput)}`);
   };
 
-  // --- LOGIKA RECURSIVE CATEGORY FINDER ---
   const findCategoryNode = (nodes, targetSlug) => {
       for (const node of nodes) {
           if (node.slug === targetSlug) return node;
@@ -81,11 +76,9 @@ const handleSearchSubmit = (e) => {
 
   if (activeNode) {
       if (activeNode.children && activeNode.children.length > 0) {
-          // Punya anak -> Tampilkan anak
           subCategoriesToShow = activeNode.children;
           parentLabel = `Channel di ${activeNode.name}`;
       } else {
-          // Tidak punya anak -> Cari parent agar bisa menampilkan saudara
           const findParent = (nodes, targetId) => {
               for (const node of nodes) {
                   if (node.children?.some(child => child.id === targetId)) return node;
@@ -107,7 +100,6 @@ const handleSearchSubmit = (e) => {
   return (
     <div className="min-h-screen bg-[#FDFBF7] font-sans pb-20">
       
-      {/* HERO BANNER */}
       <div className="relative bg-[#0a0a0a] text-white overflow-hidden border-b border-yellow-900/30">
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-yellow-500/10 rounded-full blur-[100px] -mr-32 -mt-32 pointer-events-none"></div>
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-yellow-600/5 rounded-full blur-[80px] -ml-20 -mb-20 pointer-events-none"></div>
@@ -141,12 +133,9 @@ const handleSearchSubmit = (e) => {
           </div>
       </div>
 
-      {/* --- STICKY NAVIGATION (FIXED Z-INDEX) --- */}
-      {/* UPDATE: Mengubah z-30 menjadi z-10 agar tertutup oleh Sidebar (z-30) */}
       <div className="sticky top-0 z-10 bg-[#FDFBF7]/95 backdrop-blur-md border-b border-gray-200 shadow-sm transition-all">
         <div className="max-w-7xl mx-auto px-4 md:px-6">
            
-           {/* Level 1: Induk */}
            <div className="flex items-center gap-8 overflow-x-auto no-scrollbar py-4">
               <button
                   onClick={() => navigate('/learning')}
@@ -174,7 +163,6 @@ const handleSearchSubmit = (e) => {
               ))}
            </div>
 
-           {/* Level 2: Sub-Kategori */}
            {subCategoriesToShow.length > 0 && (
                <div className="flex items-center gap-3 pb-4 overflow-x-auto no-scrollbar animate-in slide-in-from-top-2">
                    {activeNode && activeNode.children?.length > 0 && (
@@ -201,7 +189,6 @@ const handleSearchSubmit = (e) => {
         </div>
       </div>
 
-      {/* CONTENT GRID */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-24">

@@ -13,7 +13,6 @@ const ManageCategories = () => {
     const [loading, setLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Fetch Data
     const fetchCategories = async () => {
         setLoading(true);
         try {
@@ -29,7 +28,6 @@ const ManageCategories = () => {
 
     useEffect(() => { fetchCategories(); }, []);
 
-    // Handle Submit
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!name.trim()) return;
@@ -51,7 +49,6 @@ const ManageCategories = () => {
         }
     };
 
-    // Handle Delete
     const handleDelete = async (id, categoryName) => {
         if(!confirm(`Hapus kategori "${categoryName}"? \nVideo di dalamnya akan kehilangan kategori.`)) return;
         try {
@@ -61,14 +58,11 @@ const ManageCategories = () => {
         } catch(e) { toast.error("Gagal hapus kategori."); }
     };
 
-    // --- RENDER HELPERS ---
 
-    // 1. Render Options untuk Dropdown (Recursive text indent)
     const renderSelectOptions = (items, level = 0) => {
         return items.map(cat => (
             <React.Fragment key={cat.id}>
                 <option value={cat.id} className="text-gray-900 font-medium">
-                    {/* Visual indentasi di dalam select option */}
                     {level === 0 ? '📂 ' : '\u00A0\u00A0\u00A0\u00A0↳ '} 
                     {cat.name}
                 </option>
@@ -77,7 +71,6 @@ const ManageCategories = () => {
         ));
     };
 
-    // 2. Komponen Item Tree (Recursive Visual)
     const CategoryItem = ({ item, level = 0 }) => (
         <div className="relative">
             <div 
@@ -89,7 +82,6 @@ const ManageCategories = () => {
                 `}
             >
                 <div className="flex items-center gap-3 overflow-hidden">
-                    {/* Ikon Visual Berdasarkan Level */}
                     {level === 0 ? (
                         <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
                             <Layers size={20} />
@@ -121,10 +113,8 @@ const ManageCategories = () => {
                 </button>
             </div>
 
-            {/* Render Children (Rekursif) dengan Garis Penghubung */}
             {item.children && item.children.length > 0 && (
                 <div className="relative">
-                    {/* Garis Vertikal Penghubung */}
                     <div className="absolute left-[20px] md:left-[36px] top-[-10px] bottom-4 w-px border-l-2 border-dashed border-gray-200 z-0" />
                     {item.children.map(child => (
                         <CategoryItem key={child.id} item={child} level={level + 1} />
@@ -137,7 +127,6 @@ const ManageCategories = () => {
     return (
         <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen">
             
-            {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
                     <h1 className="text-2xl md:text-3xl font-black text-gray-900 flex items-center gap-3">
@@ -152,10 +141,8 @@ const ManageCategories = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                 
-                {/* --- KOLOM KIRI: FORM (Sticky di Desktop) --- */}
                 <div className="lg:col-span-4 lg:sticky lg:top-8 z-10">
                     <div className="bg-white p-6 rounded-3xl shadow-xl shadow-gray-100 border border-gray-100 overflow-hidden relative">
-                        {/* Hiasan Background */}
                         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full -mr-8 -mt-8 z-0" />
                         
                         <div className="relative z-10">
@@ -213,7 +200,6 @@ const ManageCategories = () => {
                     </div>
                 </div>
 
-                {/* --- KOLOM KANAN: LIST TREE --- */}
                 <div className="lg:col-span-8">
                     <div className="bg-white/50 backdrop-blur-sm rounded-3xl border border-gray-200/60 p-1">
                         {loading ? (
@@ -237,7 +223,6 @@ const ManageCategories = () => {
                                         {categories.length} Induk Utama
                                     </span>
                                 </div>
-                                {/* Render Root Categories */}
                                 {categories.map(cat => (
                                     <CategoryItem key={cat.id} item={cat} level={0} />
                                 ))}

@@ -8,28 +8,23 @@ import {
 } from 'lucide-react';
 
 const ManageLearning = () => {
-    // Data State
     const [videos, setVideos] = useState([]);
     const [categoryTree, setCategoryTree] = useState([]);
     const [loading, setLoading] = useState(true);
     
-    // UI State
     const [search, setSearch] = useState("");
     const [filterCategory, setFilterCategory] = useState("all");
     const [selectedIds, setSelectedIds] = useState([]);
     
-    // Modal State
     const [showImportModal, setShowImportModal] = useState(false);
     const [showMoveModal, setShowMoveModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     
-    // Form State
     const [importForm, setImportForm] = useState({ url: '', category_id: '' });
-    const [editForm, setEditForm] = useState(null); // Data video yang sedang diedit
+    const [editForm, setEditForm] = useState(null);
     const [moveTargetId, setMoveTargetId] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
-    // --- FETCH DATA ---
     const fetchData = async () => {
         setLoading(true);
         try {
@@ -48,7 +43,6 @@ const ManageLearning = () => {
 
     useEffect(() => { fetchData(); }, []);
 
-    // --- FILTERING LOGIC ---
     const filteredVideos = useMemo(() => {
         return videos.filter(v => {
             const matchSearch = v.title.toLowerCase().includes(search.toLowerCase()) || 
@@ -62,7 +56,6 @@ const ManageLearning = () => {
         });
     }, [videos, search, filterCategory]);
 
-    // --- SELECTION LOGIC ---
     const toggleSelect = (id) => {
         setSelectedIds(prev => 
             prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
@@ -77,7 +70,6 @@ const ManageLearning = () => {
         }
     };
 
-    // --- BULK ACTIONS ---
     const handleBulkDelete = async () => {
         if(!confirm(`Yakin hapus ${selectedIds.length} video terpilih?`)) return;
         try {
@@ -106,7 +98,6 @@ const ManageLearning = () => {
         finally { setSubmitting(false); }
     };
 
-    // --- SINGLE ACTIONS ---
     const handleEditSave = async (e) => {
         e.preventDefault();
         setSubmitting(true);
@@ -145,7 +136,6 @@ const ManageLearning = () => {
         }
     };
 
-    // Helper: Render Category Options Tree
     const renderCategoryOptions = (cats, level = 0) => {
         return cats.map(cat => (
             <React.Fragment key={cat.id}>
@@ -160,7 +150,6 @@ const ManageLearning = () => {
     return (
         <div className="min-h-screen bg-gray-50/50 p-6 md:p-8 pb-32">
             
-            {/* HEADER */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
                     <h1 className="text-2xl font-black text-gray-900 flex items-center gap-3">
@@ -181,7 +170,6 @@ const ManageLearning = () => {
                 </div>
             </div>
 
-            {/* TOOLBAR (Search & Filter) */}
             <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
                 <div className="relative w-full md:w-96">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
@@ -207,7 +195,6 @@ const ManageLearning = () => {
                 </div>
             </div>
 
-            {/* TABLE LIST */}
             <div className="bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm text-gray-600">
@@ -288,7 +275,6 @@ const ManageLearning = () => {
                 </div>
             </div>
 
-            {/* --- FLOATING ACTION BAR (BULK) --- */}
             {selectedIds.length > 0 && (
                 <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-black text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-6 z-50 animate-in slide-in-from-bottom-4">
                     <div className="flex items-center gap-3 border-r border-gray-700 pr-6">
@@ -315,7 +301,6 @@ const ManageLearning = () => {
                 </div>
             )}
 
-            {/* --- MODAL EDIT VIDEO --- */}
             {showEditModal && editForm && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
                     <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl p-6 relative animate-in zoom-in-95">
@@ -357,7 +342,6 @@ const ManageLearning = () => {
                 </div>
             )}
 
-            {/* --- MODAL MOVE BULK --- */}
             {showMoveModal && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
                     <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl p-6 relative animate-in zoom-in-95">
@@ -385,7 +369,6 @@ const ManageLearning = () => {
                 </div>
             )}
 
-            {/* --- MODAL IMPORT (Sama kayak dulu, tapi dirapikan dikit) --- */}
             {showImportModal && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
                     <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl p-6 relative animate-in zoom-in-95">

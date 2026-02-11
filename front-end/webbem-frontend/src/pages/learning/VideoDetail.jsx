@@ -8,7 +8,6 @@ import {
 import CodePlayground from '../CodePlayground'; 
 import api from '../../api/axios';
 
-// --- DAFTAR BAHASA (Disesuaikan dengan Screenshot) ---
 const SUPPORTED_LANGUAGES = [
     { id: 'javascript', name: 'JavaScript (Node.js)' },
     { id: 'typescript', name: 'TypeScript (TS)' },
@@ -29,23 +28,19 @@ const VideoDetail = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
-  // UI States
   const [activeTab, setActiveTab] = useState('notes'); 
   const [notes, setNotes] = useState("");
-  const [isExpanded, setIsExpanded] = useState(false); // Mode Fokus
+  const [isExpanded, setIsExpanded] = useState(false);
   const [isDescOpen, setIsDescOpen] = useState(false);
   const [showMobileWorkspace, setShowMobileWorkspace] = useState(false);
   
-  // Language States
   const [currentLang, setCurrentLang] = useState('javascript');
   const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
   
-  // Data States
   const [relatedVideos, setRelatedVideos] = useState([]);
   
   const video = location.state?.videoData;
 
-  // --- LOGIKA DETEKSI BAHASA DARI KATEGORI ---
   const getLanguageFromCategory = (category) => {
       if (!category) return 'javascript';
       const cat = category.toLowerCase();
@@ -61,14 +56,13 @@ const VideoDetail = () => {
       if (cat.includes('dart')) return 'dart';
       if (cat.includes('php')) return 'php';
       if (cat.includes('typescript') || cat.includes('ts')) return 'typescript';
-      if (cat.includes('html')) return 'html'; // Code playground biasanya handle HTML sbg text/xml atau JS
+      if (cat.includes('html')) return 'html';
       if (cat.includes('css')) return 'css';
       if (cat === 'c' || cat === 'bahasa c') return 'c';
       
       return 'javascript';
   };
 
-  // --- FETCH & INIT ---
   useEffect(() => {
     const fetchRelated = async () => {
         if (!video?.category_name && !video?.category) return;
@@ -90,7 +84,6 @@ const VideoDetail = () => {
         setNotes(""); 
         setShowMobileWorkspace(false);
         
-        // Auto-set bahasa saat ganti video
         const detectedLang = getLanguageFromCategory(video.category_name || video.category);
         setCurrentLang(detectedLang);
     }
@@ -113,7 +106,6 @@ const VideoDetail = () => {
   return (
     <div className="h-screen bg-[#0a0a0a] font-sans text-gray-200 flex flex-col overflow-hidden selection:bg-yellow-500 selection:text-black relative">
       
-      {/* HEADER */}
       <div className="h-16 bg-[#0a0a0a] border-b border-white/10 flex items-center justify-between px-6 shrink-0 z-20">
         <button 
             onClick={() => navigate('/learning')} 
@@ -129,11 +121,9 @@ const VideoDetail = () => {
         </span>
       </div>
 
-      {/* MAIN CONTENT */}
       <div className="flex-1 overflow-hidden p-4 md:p-6 relative">
         <div className="max-w-[1920px] mx-auto h-full grid grid-cols-1 lg:grid-cols-12 gap-6">
             
-            {/* KOLOM KIRI (VIDEO & INFO) */}
             <div className={`
                 flex flex-col h-full overflow-y-auto pr-2 custom-scrollbar gap-6
                 ${isExpanded ? 'lg:col-span-4' : 'lg:col-span-8'}
@@ -190,7 +180,6 @@ const VideoDetail = () => {
                 </div>
             </div>
 
-            {/* KOLOM KANAN (WORKSPACE - DESKTOP) */}
             <div className={`
                 hidden lg:flex flex-col h-full bg-[#121212] rounded-2xl border border-white/10 overflow-hidden transition-all duration-300 relative
                 ${isExpanded ? 'lg:col-span-8' : 'lg:col-span-4'}
@@ -212,7 +201,6 @@ const VideoDetail = () => {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        {/* --- DESKTOP DROPDOWN BAHASA --- */}
                         {activeTab === 'code' && (
                             <div className="relative">
                                 <button 
@@ -254,7 +242,6 @@ const VideoDetail = () => {
                     </div>
                 </div>
 
-                {/* Content Workspace */}
                 <div className="flex-1 overflow-hidden relative">
                     {activeTab === 'notes' ? (
                         <div className="h-full flex flex-col">
@@ -272,7 +259,6 @@ const VideoDetail = () => {
                             </div>
                         </div>
                     ) : (
-                        // ✅ PANGGIL CODE PLAYGROUND DI SINI
                         <CodePlayground defaultLanguage={currentLang} />
                     )}
                 </div>
@@ -281,7 +267,6 @@ const VideoDetail = () => {
         </div>
       </div>
 
-      {/* MOBILE DRAWER */}
       <div className={`
           fixed bottom-0 left-0 right-0 z-50 bg-[#121212] rounded-t-3xl border-t border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.8)] 
           transition-transform duration-300 ease-in-out lg:hidden flex flex-col h-[60vh]
@@ -294,7 +279,6 @@ const VideoDetail = () => {
                       {activeTab === 'notes' ? 'Catatan' : 'Code'}
                   </span>
                   
-                  {/* MOBILE DROPDOWN BAHASA */}
                   {activeTab === 'code' && (
                       <select 
                         value={currentLang}
@@ -333,7 +317,6 @@ const VideoDetail = () => {
                     </div>
                  </div>
              ) : (
-                 // ✅ PANGGIL CODE PLAYGROUND (MOBILE)
                  <CodePlayground defaultLanguage={currentLang} />
              )}
           </div>

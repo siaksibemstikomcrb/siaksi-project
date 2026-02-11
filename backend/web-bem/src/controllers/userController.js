@@ -183,13 +183,11 @@ const createUser = async (req, res) => {
     }
 };
 
-// Update Biodata User (Fixed)
 const updateProfile = async (req, res) => {
     try {
         const { name, email, nia } = req.body;
-        const userId = req.user.id; // Dari token JWT
+        const userId = req.user.id;
 
-        // Menggunakan db.query sesuai konfigurasi
         const query = `
             UPDATE users 
             SET name = $1, email = $2, nia = $3
@@ -222,5 +220,5 @@ module.exports = {
     deleteUser,
     resetUserPassword,
     createUser,
-    updateProfile // Pastikan diekspor
+    updateProfile
 };

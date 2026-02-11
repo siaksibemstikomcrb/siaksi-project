@@ -7,6 +7,9 @@ const { client: discordBot } = require('./src/discord/bot');
 const cookieParser = require('cookie-parser'); 
 require('dotenv').config();
 
+// --- IMPORT MIDDLEWARE ACTIVITY LOGGER ---
+const activityLogger = require('./src/middleware/activityLongger');
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 require('./src/config/db');
@@ -44,10 +47,15 @@ app.use(cors({
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// --- PASANG ACTIVITY LOGGER DISINI ---
+// Ditaruh sebelum routes agar mencatat semua aktivitas pengunjung & user
+app.use(activityLogger);
+
 app.get('/', (req, res) => {
-    res.send('? SERVER SIAKSI BERJALAN LANCAR (STABIL)');
+    res.send('✅ SERVER SIAKSI BERJALAN LANCAR (STABIL)');
 });
 
+// Routes
 app.use('/api/auth', require('./src/routes/authRoutes'));
 app.use('/api/admin', require('./src/routes/adminRoutes'));
 app.use('/api/users', require('./src/routes/userRoutes'));
@@ -58,31 +66,32 @@ app.use('/api/mail', require('./src/routes/mailRoutes'));
 app.use('/api/complaints', require('./src/routes/complaintRoutes'));
 app.use('/api/aspirations', require('./src/routes/aspirationRoutes'));
 app.use('/api/attendance', require('./src/routes/attendanceRoutes'));
-app.use('/api/monitoring', require('./src/routes/monitoringRoutes'));
+app.use('/api/monitoring', require('./src/routes/monitoringRoutes')); // Monitoring User Online
 app.use('/api/notifications', require('./src/routes/notificationRoutes'));
 app.use('/api/schedules', require('./src/routes/scheduleRoutes'));
 app.use('/api/discord', require('./src/routes/discordRoutes'));
 app.use('/api/learning', require('./src/routes/learningRoutes'));
 
+// Error Handling
 app.use((err, req, res, next) => {
     const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
     if (process.env.NODE_ENV !== 'production') {
-        console.error("?? ERROR STACK:", err.stack);
+        console.error("🔥 ERROR STACK:", err.stack);
     } else {
-        console.error(`?? ERROR [${statusCode}]: ${err.message}`);
+        console.error(`🔥 ERROR [${statusCode}]: ${err.message}`);
     }
 
-        res.status(statusCode).json({
-            status: 'error',
-            msg: process.env.NODE_ENV === 'production' 
-                ? 'Terjadi kesalahan pada sistem. Silakan hubungi admin.' 
-                : err.message
-        });
+    res.status(statusCode).json({
+        status: 'error',
+        msg: process.env.NODE_ENV === 'production' 
+            ? 'Terjadi kesalahan pada sistem. Silakan hubungi admin.' 
+            : err.message
+    });
 });
 
 app.listen(PORT , async () => {
-   console.log(`?? Server running on port ${PORT}`);
-   console.log(`?? Socket.io ready on port ${PORT}`);
+   console.log(`🚀 Server running on port ${PORT}`);
+   console.log(`🔌 Socket.io ready on port ${PORT}`);
 
    try {
         await discordBot.login(process.env.DISCORD_BOT_TOKEN);

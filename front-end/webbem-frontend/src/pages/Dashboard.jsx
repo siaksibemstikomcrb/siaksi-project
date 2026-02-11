@@ -5,9 +5,9 @@ import {
   BarChart, Bar, ResponsiveContainer, XAxis, Tooltip, CartesianGrid 
 } from 'recharts';
 import { 
-  Plus, Calendar, MapPin, Globe, Clock, Check, 
+  Plus, Calendar, MapPin, Clock, Check, 
   Search, Crosshair, Loader2, ChevronRight, ArrowLeft, 
-  MoreHorizontal, CalendarDays, Users
+  CalendarDays, Users, LayoutDashboard, MonitorPlay, Eye
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -17,6 +17,11 @@ import L from 'leaflet';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 
+// --- IMPORT FITUR ANALITIK ---
+import OnlineUsersCard from './analytic/OnlineUserCard';
+import VisitorStats from './analytic/VisitorStats';
+
+// --- LEAFLET SETUP ---
 const KAMPUS_COORDS = { lat: -6.7126309, lng: 108.531254 };
 let DefaultIcon = L.icon({
     iconUrl: icon,
@@ -41,6 +46,7 @@ const LocationPicker = ({ position, setPosition }) => {
     return position ? <Marker position={position} /> : null;
 };
 
+// --- MAIN COMPONENT ---
 const Dashboard = () => {
   const navigate = useNavigate();
   const role = localStorage.getItem('role');
@@ -51,6 +57,7 @@ const Dashboard = () => {
   const [viewMode, setViewMode] = useState('dashboard');
   const [submitting, setSubmitting] = useState(false);
 
+  // Form States
   const [isOnline, setIsOnline] = useState(false);
   const [useRadius, setUseRadius] = useState(false);
   const [mapPosition, setMapPosition] = useState(null); 
@@ -91,7 +98,7 @@ const Dashboard = () => {
   }, [isOnline]);
 
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000); // Interval tetap 1 detik agar update menit tepat waktu
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
@@ -113,6 +120,7 @@ const Dashboard = () => {
     fetchData();
   }, [role, viewMode]);
 
+  // Handlers
   const handleMyLocation = () => {
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition((position) => {
@@ -172,256 +180,348 @@ const Dashboard = () => {
   if (!role) return null;
 
   return (
-    <div className="min-h-screen bg-white font-sans text-slate-800 pb-20">
+    <div className="min-h-screen bg-slate-50/50 font-sans text-slate-800 pb-20">
         
-        <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-slate-100 px-6 py-4">
-            <div className="max-w-5xl mx-auto flex justify-between items-center">
+        {/* --- HEADER --- */}
+        <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-slate-200 px-4 sm:px-6 py-4 transition-all">
+            <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="flex items-center gap-3">
                     {viewMode === 'create' && (
-                        <button onClick={() => setViewMode('dashboard')} className="p-2 -ml-2 hover:bg-slate-50 rounded-full transition-colors">
-                            <ArrowLeft size={20} className="text-slate-600" />
+                        <button onClick={() => setViewMode('dashboard')} className="p-2 -ml-2 hover:bg-slate-100 rounded-full transition-colors group">
+                            <ArrowLeft size={20} className="text-slate-500 group-hover:text-slate-900" />
                         </button>
                     )}
                     <div>
-                        <h1 className="text-xl font-semibold tracking-tight text-slate-900">
-                            {role === 'super_admin' ? 'Global Overview' : (viewMode === 'create' ? 'Agenda Baru' : 'Dashboard')}
+                        <h1 className="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+                            {viewMode === 'create' ? 'Buat Agenda Baru' : 'Dashboard'}
                         </h1>
-                        <p className="text-xs text-slate-500 font-medium hidden md:block">
-                            {/* Update: Jam ditampilkan tanpa detik */}
-                            {currentTime.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                            {' • '}
-                            {currentTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB
+                        <p className="text-xs font-medium text-slate-500">
+                            {role === 'super_admin' ? 'Monitoring & Analitik Global' : 'Kelola kegiatan organisasi Anda'}
                         </p>
                     </div>
                 </div>
                 
-                {viewMode === 'dashboard' && role === 'admin' && (
-                    <button 
-                        onClick={() => setViewMode('create')}
-                        className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 shadow-lg shadow-slate-200 active:scale-95"
-                    >
-                        <Plus size={16} /> <span className="hidden sm:inline">Buat Agenda</span>
-                    </button>
-                )}
+                <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
+                    <div className="text-right hidden sm:block">
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                            {currentTime.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' })}
+                        </p>
+                        <p className="text-lg font-black text-slate-900 leading-none tracking-tight">
+                            {currentTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                            <span className="text-xs font-medium text-slate-400 ml-1">WIB</span>
+                        </p>
+                    </div>
+
+                    {viewMode === 'dashboard' && role === 'admin' && (
+                        <button 
+                            onClick={() => setViewMode('create')}
+                            className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-lg shadow-slate-200 active:scale-95 hover:-translate-y-0.5"
+                        >
+                            <Plus size={18} /> <span className="hidden sm:inline">Agenda Baru</span>
+                        </button>
+                    )}
+                </div>
             </div>
         </div>
 
-        <div className="max-w-5xl mx-auto px-6 py-8">
+        {/* --- MAIN CONTENT --- */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         
-        {role === 'super_admin' && (
-            <div className="space-y-8 animate-in fade-in duration-500">
-                <div className="bg-slate-50 rounded-3xl p-6 border border-slate-100">
-                    <h3 className="text-sm font-semibold text-slate-900 mb-6 flex items-center gap-2">
-                        <Users size={16} className="text-blue-600"/> Aktivitas UKM
-                    </h3>
-                    <div className="h-64 w-full">
-                        <ResponsiveContainer>
-                            <BarChart data={chartData}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 11, fill: '#64748b'}} />
-                                <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{borderRadius:'12px', border:'none', boxShadow:'0 4px 6px -1px rgba(0, 0, 0, 0.1)'}} />
-                                <Bar dataKey="events" fill="#4f46e5" radius={[6, 6, 6, 6]} barSize={30} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-            </div>
-        )}
-
-        {role === 'admin' && viewMode === 'dashboard' && (
-            <div className="animate-in fade-in duration-500">
-                {recentSchedules.length > 0 ? (
-                    <div className="space-y-4">
-                        <div className="flex justify-between items-end mb-2">
-                            <h2 className="text-lg font-semibold text-slate-900">Jadwal Terakhir</h2>
-                            <button onClick={() => navigate('/admin/events')} className="text-sm text-blue-600 font-medium hover:underline flex items-center gap-1">
-                                Lihat Semua <ChevronRight size={14}/>
-                            </button>
+        {/* === FITUR: DASHBOARD === */}
+        {viewMode === 'dashboard' && (
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                
+                {/* 1. VISITOR STATS (Khusus Super Admin) */}
+                {role === 'super_admin' && (
+                    <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="p-2 bg-purple-50 text-purple-600 rounded-lg"><Eye size={18}/></div>
+                            <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wide">Statistik Pengunjung</h3>
                         </div>
-                        
-                        <div className="grid gap-3">
-                            {recentSchedules.map((item, idx) => (
-                                <div key={idx} className="group bg-white border border-slate-100 hover:border-blue-200 p-4 rounded-2xl shadow-sm hover:shadow-md transition-all flex justify-between items-center cursor-pointer">
-                                    <div className="flex gap-4 items-center">
-                                        <div className="h-12 w-12 bg-blue-50 text-blue-600 rounded-xl flex flex-col items-center justify-center border border-blue-100">
-                                            <span className="text-[10px] font-bold uppercase">{new Date(item.event_date).toLocaleString('id-ID', { month: 'short' })}</span>
-                                            <span className="text-lg font-bold leading-none">{new Date(item.event_date).getDate()}</span>
-                                        </div>
-                                        <div>
-                                            <h3 className="font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">{item.event_name}</h3>
-                                            <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
-                                                <span className="flex items-center gap-1"><Clock size={12}/> {item.start_time.slice(0,5)}</span>
-                                                <span className="flex items-center gap-1"><MapPin size={12}/> {item.is_online ? 'Online' : 'Offline'}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="bg-slate-50 p-2 rounded-full text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                                        <ChevronRight size={18} />
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                ) : (
-                    <div className="text-center py-20 px-6">
-                        <div className="bg-slate-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <CalendarDays size={32} className="text-slate-300" />
-                        </div>
-                        <h2 className="text-xl font-semibold text-slate-900 mb-2">Belum ada agenda</h2>
-                        <p className="text-slate-500 mb-8 max-w-xs mx-auto text-sm">
-                            Agenda yang Anda buat akan muncul di sini. Mulai buat jadwal untuk anggota sekarang.
-                        </p>
-                        <button 
-                            onClick={() => setViewMode('create')}
-                            className="bg-slate-900 text-white px-6 py-3 rounded-full font-medium shadow-lg shadow-slate-200 hover:scale-105 transition-transform"
-                        >
-                            Buat Agenda Pertama
-                        </button>
+                        <VisitorStats />
                     </div>
                 )}
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    
+                    {/* KOLOM KIRI (UTAMA) */}
+                    <div className="lg:col-span-8 space-y-8">
+                        
+                        {/* Grafik Super Admin */}
+                        {role === 'super_admin' && (
+                            <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                                        <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                                            <Users size={18}/>
+                                        </div>
+                                        Aktivitas UKM
+                                    </h3>
+                                </div>
+                                <div className="h-72 w-full">
+                                    <ResponsiveContainer>
+                                        <BarChart data={chartData}>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 11, fill: '#64748b'}} interval={0} />
+                                            <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{borderRadius:'12px', border:'none', boxShadow:'0 10px 15px -3px rgba(0, 0, 0, 0.1)'}} />
+                                            <Bar dataKey="events" fill="#3b82f6" radius={[6, 6, 6, 6]} barSize={40} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Banner Admin UKM */}
+                        {role === 'admin' && (
+                            <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-3xl p-8 text-white relative overflow-hidden shadow-xl shadow-slate-200">
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+                                <div className="relative z-10">
+                                    <h2 className="text-2xl font-bold mb-2">Kelola Organisasi Lebih Mudah</h2>
+                                    <p className="text-slate-300 max-w-lg text-sm leading-relaxed mb-6">
+                                        Pantau jadwal, presensi anggota, dan publikasi berita dalam satu dashboard terintegrasi.
+                                    </p>
+                                    <div className="flex gap-3">
+                                        <button onClick={() => setViewMode('create')} className="bg-white text-slate-900 px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-100 transition-colors">
+                                            Buat Kegiatan
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* KOLOM KANAN (SIDEBAR) */}
+                    <div className="lg:col-span-4 space-y-6">
+                        
+                        {/* 2. ONLINE USERS WIDGET (Muncul untuk Admin & Super Admin) */}
+                        <OnlineUsersCard />
+
+                        {/* List Jadwal Terakhir (Khusus Admin UKM) */}
+                        {role === 'admin' && (
+                            <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col h-full max-h-[600px]">
+                                <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
+                                    <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                                        <CalendarDays size={18} className="text-blue-500"/> Jadwal Terakhir
+                                    </h3>
+                                    <button onClick={() => navigate('/admin/events')} className="text-xs font-bold text-blue-600 hover:bg-blue-50 px-2 py-1 rounded transition-colors">
+                                        Lihat Semua
+                                    </button>
+                                </div>
+                                
+                                <div className="overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                                    {recentSchedules.length > 0 ? (
+                                        recentSchedules.map((item, idx) => (
+                                            <div key={idx} className="group bg-slate-50 hover:bg-white border border-transparent hover:border-blue-200 p-4 rounded-2xl transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md">
+                                                <div className="flex gap-4">
+                                                    {/* Date Badge */}
+                                                    <div className="flex flex-col items-center justify-center bg-white border border-slate-200 w-14 h-14 rounded-xl shadow-sm group-hover:border-blue-100 group-hover:bg-blue-50 transition-colors">
+                                                        <span className="text-[10px] font-bold text-slate-400 uppercase group-hover:text-blue-500">
+                                                            {new Date(item.event_date).toLocaleString('id-ID', { month: 'short' })}
+                                                        </span>
+                                                        <span className="text-xl font-black text-slate-800 leading-none group-hover:text-blue-700">
+                                                            {new Date(item.event_date).getDate()}
+                                                        </span>
+                                                    </div>
+                                                    
+                                                    {/* Content */}
+                                                    <div className="flex-1 min-w-0">
+                                                        <h4 className="font-bold text-slate-900 text-sm truncate mb-1 group-hover:text-blue-700">{item.event_name}</h4>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-slate-200 text-slate-600">
+                                                                <Clock size={10}/> {item.start_time.slice(0,5)}
+                                                            </span>
+                                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium border ${item.is_online ? 'bg-purple-50 text-purple-700 border-purple-100' : 'bg-orange-50 text-orange-700 border-orange-100'}`}>
+                                                                {item.is_online ? <MonitorPlay size={10}/> : <MapPin size={10}/>}
+                                                                {item.is_online ? 'Online' : 'Offline'}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="text-center py-10">
+                                            <div className="bg-slate-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
+                                                <Calendar size={24} className="text-slate-300" />
+                                            </div>
+                                            <p className="text-sm font-medium text-slate-900">Belum ada agenda</p>
+                                            <p className="text-xs text-slate-500">Jadwal yang dibuat akan muncul di sini.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
         )}
 
+        {/* === FITUR: CREATE FORM === */}
         {viewMode === 'create' && (
-            <form onSubmit={handleSubmit} className="space-y-8 animate-in slide-in-from-right-8 duration-500">
-                
-                <section className="space-y-4">
-                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Detail Kegiatan</h3>
-                    <div className="grid gap-4">
-                        <SoftInput placeholder="Nama Kegiatan (Cth: Rapat Bulanan)" value={formData.event_name} onChange={(e) => setFormData({...formData, event_name: e.target.value})} autoFocus />
-                        <textarea 
-                            className="w-full bg-slate-50 border-0 rounded-2xl px-5 py-4 text-sm font-medium text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all resize-none h-32"
-                            placeholder="Deskripsi singkat..."
-                            value={formData.description}
-                            onChange={(e) => setFormData({...formData, description: e.target.value})}
-                        />
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <SoftSelect value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})} options={['Rapat', 'Kegiatan', 'Pelatihan', 'Lainnya']} />
-                            <SoftInput type="date" value={formData.event_date} onChange={(e) => setFormData({...formData, event_date: e.target.value})} />
-                        </div>
-                    </div>
-                </section>
-
-                <section className="space-y-4">
-                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Waktu & Presensi</h3>
-                    <div className="bg-slate-50 p-6 rounded-3xl space-y-6">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-xs font-medium text-slate-500 ml-2 mb-1 block">Mulai</label>
-                                <SoftInput type="time" value={formData.start_time} onChange={(e) => setFormData({...formData, start_time: e.target.value})} bg="bg-white" />
-                            </div>
-                            <div>
-                                <label className="text-xs font-medium text-slate-500 ml-2 mb-1 block">Selesai</label>
-                                <SoftInput type="time" value={formData.end_time} onChange={(e) => setFormData({...formData, end_time: e.target.value})} bg="bg-white" />
-                            </div>
-                        </div>
-                        
-                        <div className="pt-4 border-t border-slate-200">
-                            <div className="flex items-center justify-between mb-4">
-                                <span className="text-sm font-semibold text-slate-700">Jendela Presensi</span>
-                                <div className="flex items-center gap-2 bg-white px-3 py-1 rounded-full border border-slate-200">
-                                    <span className="text-[10px] text-slate-400">Toleransi</span>
-                                    <input type="number" className="w-8 text-center font-bold text-slate-900 outline-none text-sm" value={formData.tolerance_minutes} onChange={(e) => setFormData({...formData, tolerance_minutes: e.target.value})} />
-                                    <span className="text-[10px] text-slate-400">Menit</span>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-4">
-                                <div className="flex-1 text-center">
-                                    <input type="time" className="w-full bg-white border border-slate-200 rounded-xl px-2 py-3 text-center font-bold text-slate-900 shadow-sm outline-none focus:ring-2 focus:ring-blue-100" value={formData.attendance_open_time} onChange={(e) => setFormData({...formData, attendance_open_time: e.target.value})} />
-                                    <p className="text-[10px] text-slate-400 mt-2">Buka</p>
-                                </div>
-                                <span className="text-slate-300">-</span>
-                                <div className="flex-1 text-center">
-                                    <input type="time" className="w-full bg-white border border-slate-200 rounded-xl px-2 py-3 text-center font-bold text-slate-900 shadow-sm outline-none focus:ring-2 focus:ring-blue-100" value={formData.attendance_close_time} onChange={(e) => setFormData({...formData, attendance_close_time: e.target.value})} />
-                                    <p className="text-[10px] text-slate-400 mt-2">Tutup</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <section className="space-y-4">
-                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Lokasi</h3>
+            <div className="max-w-3xl mx-auto animate-in slide-in-from-right-8 duration-500">
+                <form onSubmit={handleSubmit} className="space-y-6">
                     
-                    <div className="flex gap-2 p-1 bg-slate-100 rounded-xl w-fit">
-                        <button type="button" onClick={() => setIsOnline(false)} className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${!isOnline ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Offline (Kampus)</button>
-                        <button type="button" onClick={() => setIsOnline(true)} className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${isOnline ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Online (Zoom)</button>
+                    {/* SECTION 1: DETAIL */}
+                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+                            <LayoutDashboard size={16} className="text-blue-600"/> Detail Kegiatan
+                        </h3>
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <SoftInput label="Nama Kegiatan" placeholder="Contoh: Rapat Bulanan" value={formData.event_name} onChange={(e) => setFormData({...formData, event_name: e.target.value})} autoFocus />
+                                <SoftSelect label="Jenis Kegiatan" value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})} options={['Rapat', 'Kegiatan', 'Pelatihan', 'Lainnya']} />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">Deskripsi</label>
+                                <textarea 
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-medium text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-100 focus:border-blue-300 focus:bg-white transition-all resize-none h-28 outline-none"
+                                    placeholder="Jelaskan secara singkat agenda kegiatan..."
+                                    value={formData.description}
+                                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                                />
+                            </div>
+                        </div>
                     </div>
 
-                    {isOnline ? (
-                        <div className="space-y-4 animate-in fade-in">
-                            <SoftInput placeholder="Link Meeting (https://...)" value={formData.meeting_link} onChange={(e) => setFormData({...formData, meeting_link: e.target.value})} />
-                            <SoftInput placeholder="Platform (Zoom / Google Meet)" value={formData.location} onChange={(e) => setFormData({...formData, location: e.target.value})} />
+                    {/* SECTION 2: WAKTU */}
+                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+                            <Clock size={16} className="text-blue-600"/> Waktu & Presensi
+                        </h3>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <SoftInput type="date" label="Tanggal Pelaksanaan" value={formData.event_date} onChange={(e) => setFormData({...formData, event_date: e.target.value})} />
+                            <SoftInput type="time" label="Jam Mulai" value={formData.start_time} onChange={(e) => setFormData({...formData, start_time: e.target.value})} />
+                            <SoftInput type="time" label="Jam Selesai" value={formData.end_time} onChange={(e) => setFormData({...formData, end_time: e.target.value})} />
                         </div>
-                    ) : (
-                        <div className="space-y-4 animate-in fade-in">
-                            <div className="relative">
-                                <input type="text" className="w-full pl-10 pr-4 py-4 rounded-2xl bg-slate-50 border-0 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all text-sm font-medium placeholder-slate-400" placeholder="Cari lokasi..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-                                <Search className="absolute left-3.5 top-4 text-slate-400" size={18} />
-                                <button type="button" onClick={handleSearchLocation} className="absolute right-2 top-2 bg-slate-200 text-slate-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-slate-300 transition-colors">Cari</button>
-                            </div>
 
-                            <div className="h-64 w-full bg-slate-200 rounded-3xl overflow-hidden relative z-0">
-                                <MapContainer center={mapCenter} zoom={17} scrollWheelZoom={false} style={{ height: "100%", width: "100%" }}>
-                                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                                    <MapController centerCoords={mapCenter} />
-                                    <LocationPicker position={mapPosition} setPosition={setMapPosition} />
-                                </MapContainer>
-                                <button type="button" onClick={handleMyLocation} className="absolute bottom-4 right-4 bg-white p-3 rounded-full shadow-lg z-[400] hover:scale-105 transition-transform text-slate-700">
-                                    <Crosshair size={20}/>
-                                </button>
+                        <div className="bg-blue-50/50 rounded-2xl p-5 border border-blue-100">
+                            <div className="flex items-center justify-between mb-4">
+                                <span className="text-sm font-bold text-blue-900">Jendela Presensi</span>
+                                <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-blue-100 shadow-sm">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase">Toleransi</span>
+                                    <input type="number" className="w-10 text-center font-bold text-slate-900 outline-none text-sm" value={formData.tolerance_minutes} onChange={(e) => setFormData({...formData, tolerance_minutes: e.target.value})} />
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase">Menit</span>
+                                </div>
                             </div>
-
                             <div className="flex items-center gap-3">
-                                <input type="checkbox" id="radius" className="w-5 h-5 text-blue-600 rounded-md border-slate-300 focus:ring-blue-500" checked={useRadius} onChange={() => setUseRadius(!useRadius)} />
-                                <label htmlFor="radius" className="text-sm font-medium text-slate-700">Wajib dalam radius</label>
-                                {useRadius && (
-                                    <div className="flex items-center gap-2 bg-slate-50 px-3 py-1 rounded-lg border border-slate-200 ml-auto">
-                                        <input type="number" className="w-12 bg-transparent text-right font-bold text-slate-900 outline-none text-sm" value={formData.radius_meters} onChange={(e) => setFormData({...formData, radius_meters: e.target.value})} />
-                                        <span className="text-xs text-slate-400">Meter</span>
-                                    </div>
-                                )}
+                                <div className="flex-1">
+                                    <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase">Buka</label>
+                                    <input type="time" className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-center font-bold text-slate-900 shadow-sm outline-none focus:ring-2 focus:ring-blue-100" value={formData.attendance_open_time} onChange={(e) => setFormData({...formData, attendance_open_time: e.target.value})} />
+                                </div>
+                                <div className="pt-5 text-slate-300">-</div>
+                                <div className="flex-1">
+                                    <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase">Tutup</label>
+                                    <input type="time" className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-center font-bold text-slate-900 shadow-sm outline-none focus:ring-2 focus:ring-blue-100" value={formData.attendance_close_time} onChange={(e) => setFormData({...formData, attendance_close_time: e.target.value})} />
+                                </div>
                             </div>
-                            <SoftInput placeholder="Nama Ruangan (Gedung A)" value={formData.location} onChange={(e) => setFormData({...formData, location: e.target.value})} />
                         </div>
-                    )}
-                </section>
+                    </div>
 
-                <div className="pt-6">
-                    <button type="submit" disabled={submitting} className="w-full bg-slate-900 text-white font-medium py-4 rounded-2xl hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 active:scale-[0.98] disabled:opacity-70 flex justify-center items-center gap-2">
-                        {submitting ? <Loader2 className="animate-spin" size={20} /> : <Check size={20} />}
-                        {submitting ? 'Memproses...' : 'Terbitkan Agenda'}
-                    </button>
-                </div>
+                    {/* SECTION 3: LOKASI */}
+                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                                <MapPin size={16} className="text-blue-600"/> Lokasi Kegiatan
+                            </h3>
+                            <div className="flex bg-slate-100 p-1 rounded-xl">
+                                <button type="button" onClick={() => setIsOnline(false)} className={`flex-1 px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${!isOnline ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Offline</button>
+                                <button type="button" onClick={() => setIsOnline(true)} className={`flex-1 px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${isOnline ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Online</button>
+                            </div>
+                        </div>
 
-            </form>
+                        {isOnline ? (
+                            <div className="space-y-4 animate-in fade-in">
+                                <SoftInput label="Link Meeting" placeholder="https://zoom.us/j/..." value={formData.meeting_link} onChange={(e) => setFormData({...formData, meeting_link: e.target.value})} />
+                                <SoftInput label="Platform" placeholder="Zoom / Google Meet" value={formData.location} onChange={(e) => setFormData({...formData, location: e.target.value})} />
+                            </div>
+                        ) : (
+                            <div className="space-y-4 animate-in fade-in">
+                                <div className="relative">
+                                    <input type="text" className="w-full pl-10 pr-20 py-3 rounded-2xl bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-all text-sm font-medium placeholder-slate-400 outline-none" placeholder="Cari lokasi di peta..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                                    <Search className="absolute left-3.5 top-3.5 text-slate-400" size={18} />
+                                    <button type="button" onClick={handleSearchLocation} className="absolute right-1.5 top-1.5 bg-slate-200 hover:bg-slate-300 text-slate-600 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors">
+                                        Cari
+                                    </button>
+                                </div>
+
+                                <div className="h-64 w-full bg-slate-100 rounded-2xl overflow-hidden relative z-0 border border-slate-200">
+                                    <MapContainer center={mapCenter} zoom={17} scrollWheelZoom={false} style={{ height: "100%", width: "100%" }}>
+                                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                                        <MapController centerCoords={mapCenter} />
+                                        <LocationPicker position={mapPosition} setPosition={setMapPosition} />
+                                    </MapContainer>
+                                    <button type="button" onClick={handleMyLocation} className="absolute bottom-3 right-3 bg-white p-2.5 rounded-xl shadow-md z-[400] hover:scale-105 transition-transform text-slate-700 border border-slate-200">
+                                        <Crosshair size={20}/>
+                                    </button>
+                                </div>
+
+                                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                                    <div className="flex items-center gap-3">
+                                        <input type="checkbox" id="radius" className="w-5 h-5 text-blue-600 rounded-md border-slate-300 focus:ring-blue-500 cursor-pointer" checked={useRadius} onChange={() => setUseRadius(!useRadius)} />
+                                        <label htmlFor="radius" className="text-sm font-bold text-slate-700 cursor-pointer select-none">Batasi Radius Presensi</label>
+                                    </div>
+                                    {useRadius && (
+                                        <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm w-full sm:w-auto">
+                                            <input type="number" className="w-full sm:w-16 bg-transparent text-right font-bold text-slate-900 outline-none text-sm" value={formData.radius_meters} onChange={(e) => setFormData({...formData, radius_meters: e.target.value})} />
+                                            <span className="text-xs font-bold text-slate-400">Meter</span>
+                                        </div>
+                                    )}
+                                </div>
+                                <SoftInput label="Nama Tempat / Ruangan" placeholder="Contoh: Gedung A, Ruang 101" value={formData.location} onChange={(e) => setFormData({...formData, location: e.target.value})} />
+                            </div>
+                        )}
+                    </div>
+
+                    {/* SUBMIT BUTTON */}
+                    <div className="pt-4 pb-12 flex gap-4">
+                        <button type="button" onClick={() => setViewMode('dashboard')} className="flex-1 px-6 py-4 rounded-2xl font-bold text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 transition-all">
+                            Batal
+                        </button>
+                        <button type="submit" disabled={submitting} className="flex-[2] bg-slate-900 text-white font-bold py-4 rounded-2xl hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 active:scale-[0.98] disabled:opacity-70 flex justify-center items-center gap-2">
+                            {submitting ? <Loader2 className="animate-spin" size={20} /> : <Check size={20} />}
+                            {submitting ? 'Menyimpan...' : 'Terbitkan Agenda'}
+                        </button>
+                    </div>
+
+                </form>
+            </div>
         )}
         </div>
     </div>
   );
 };
 
-const SoftInput = ({ type = "text", placeholder, value, onChange, bg = "bg-slate-50", ...props }) => (
-    <input 
-        type={type} 
-        className={`w-full ${bg} border-0 rounded-2xl px-5 py-4 text-sm font-medium text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none`}
-        placeholder={placeholder}
-        value={value}
-        onChange={onChange}
-        {...props}
-    />
-);
-
-const SoftSelect = ({ value, onChange, options }) => (
-    <div className="relative">
-        <select 
-            className="w-full bg-slate-50 border-0 rounded-2xl px-5 py-4 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none appearance-none cursor-pointer"
+// --- REUSABLE COMPONENTS ---
+const SoftInput = ({ type = "text", label, placeholder, value, onChange, ...props }) => (
+    <div className="w-full">
+        {label && <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">{label}</label>}
+        <input 
+            type={type} 
+            className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-medium text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-100 focus:border-blue-300 focus:bg-white transition-all outline-none"
+            placeholder={placeholder}
             value={value}
             onChange={onChange}
-        >
-            {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-        </select>
-        <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">▼</div>
+            {...props}
+        />
+    </div>
+);
+
+const SoftSelect = ({ label, value, onChange, options }) => (
+    <div className="w-full">
+        {label && <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">{label}</label>}
+        <div className="relative">
+            <select 
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-blue-100 focus:border-blue-300 focus:bg-white transition-all outline-none appearance-none cursor-pointer"
+                value={value}
+                onChange={onChange}
+            >
+                {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+            </select>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                <ChevronRight size={16} className="rotate-90" />
+            </div>
+        </div>
     </div>
 );
 

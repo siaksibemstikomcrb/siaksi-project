@@ -17,7 +17,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     const [unreadCount, setUnreadCount] = useState(0); 
     const [openMenus, setOpenMenus] = useState({}); 
 
-    
     const MENU_ITEMS = [
         {
             title: "Main Menu",
@@ -40,8 +39,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                         { label: "Buat Jadwal", path: "/admin-dashboard" },
                         { label: "Riwayat Acara", path: "/admin/events" },
                         { label: "Presensi Anggota", path: "/admin/members" },
-                        {label: "Kelola Learning", path: "/admin/learning", roles: ['super_admin']},
-                        {label: "Kategori Learning", path: "/admin/learning/categories", role: ['super_admin']}
+                        { label: "Kelola Learning", path: "/admin/learning", roles: ['super_admin']},
+                        { label: "Kategori Learning", path: "/admin/learning/categories", role: ['super_admin']}
                     ]
                 },
                 { 
@@ -49,13 +48,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                     icon: Building,
                     roles: ['super_admin', 'admin'], 
                     children: [
-                        
                         { label: "Kelola UKM", path: "/superadmin/manage-ukm", roles: ['super_admin'] }, 
-                        
-                        
                         { label: "Kelola Users", path: "/superadmin/manage-users", roles: ['super_admin', 'admin'] },
-                        
-                        
                         { label: "Import Anggota (Excel)", path: "/superadmin/import-members", roles: ['super_admin', 'admin'] }, 
                     ]
                 }
@@ -107,7 +101,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         }
     ];
 
-    
     useEffect(() => {
         if (role) {
             const getNotif = async () => {
@@ -137,7 +130,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         setOpenMenus(prev => ({ ...prev, [label]: !prev[label] }));
     };
 
-    
     useEffect(() => {
         MENU_ITEMS.forEach(group => {
             if(group.items) {
@@ -160,32 +152,39 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
     if (!role) return null;
 
-    
     return (
         <>
+            {/* OVERLAY: z-40 (Di bawah sidebar, di atas konten) */}
             {isOpen && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px] z-30 md:hidden transition-opacity" onClick={() => setIsOpen(false)} />
+                <div 
+                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden transition-opacity duration-300" 
+                    onClick={() => setIsOpen(false)} 
+                />
             )}
 
+            {/* SIDEBAR: z-50 (Paling Atas), Fixed, H-Screen (Tinggi Penuh) */}
             <aside className={`
-                fixed md:static inset-y-0 left-0 z-40 w-72 bg-white border-r border-gray-200 
+                fixed md:static inset-y-0 left-0 z-50 w-72 h-screen bg-white border-r border-gray-200 
                 transform transition-transform duration-300 ease-in-out flex flex-col shadow-2xl md:shadow-none
                 ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
             `}>
                 
-                <div className="h-16 flex items-center justify-between px-6 border-b border-gray-100 bg-white sticky top-0 z-10">
+                {/* HEADER: Diam di atas (Tidak ikut scroll menu) */}
+                <div className="h-16 shrink-0 flex items-center justify-between px-6 border-b border-gray-100 bg-white">
                     <div className="flex items-center gap-3">
                         <div className="bg-slate-900 w-8 h-8 rounded-lg flex items-center justify-center text-white">
                             <ShieldCheck size={18} />
                         </div>
                         <span className="font-bold text-lg text-slate-800 tracking-tight">SIAKSI</span>
                     </div>
-                    <button onClick={() => setIsOpen(false)} className="md:hidden text-gray-400">
+                    {/* Tombol Close Mobile */}
+                    <button onClick={() => setIsOpen(false)} className="md:hidden p-1 rounded-full hover:bg-gray-100 text-gray-500">
                         <X size={24} />
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6 custom-scrollbar">
+                {/* MENU LIST: Scrollable Area (Flex-1) */}
+                <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6 custom-scrollbar bg-white">
                     {MENU_ITEMS.map((group, idx) => {
                         if (!hasRole(group.roles)) return null;
 
@@ -200,9 +199,9 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                                     {group.items.map((item, itemIdx) => {
                                         if (!hasRole(item.roles)) return null;
 
-                                        
+                                        // --- SUBMENU ---
                                         if (item.children) {
-                                            const isOpen = openMenus[item.label];
+                                            const isOpenMenu = openMenus[item.label];
                                             const isChildActive = item.children.some(c => isActive(c.path));
                                             
                                             return (
@@ -210,18 +209,18 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                                                     <button 
                                                         onClick={() => toggleMenu(item.label)}
                                                         className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all text-sm font-medium
-                                                            ${isOpen || isChildActive ? 'text-slate-800 bg-slate-50' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}
+                                                            ${isOpenMenu || isChildActive ? 'text-slate-800 bg-slate-50' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}
                                                         `}
                                                     >
                                                         <div className="flex items-center gap-3">
-                                                            <item.icon size={18} className={isOpen || isChildActive ? 'text-blue-600' : 'text-slate-400'} />
+                                                            <item.icon size={18} className={isOpenMenu || isChildActive ? 'text-blue-600' : 'text-slate-400'} />
                                                             <span>{item.label}</span>
                                                         </div>
-                                                        <ChevronRight size={16} className={`text-slate-300 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />
+                                                        <ChevronRight size={16} className={`text-slate-300 transition-transform duration-200 ${isOpenMenu ? 'rotate-90' : ''}`} />
                                                     </button>
 
-                                                    {isOpen && (
-                                                        <div className="mt-1 ml-4 pl-4 border-l border-slate-200 space-y-1">
+                                                    {isOpenMenu && (
+                                                        <div className="mt-1 ml-4 pl-4 border-l border-slate-200 space-y-1 animate-in slide-in-from-left-2 duration-200">
                                                             {item.children.map((child, cIdx) => {
                                                                 if (child.roles && !hasRole(child.roles)) return null;
                                                                 const active = isActive(child.path);
@@ -244,7 +243,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                                             );
                                         }
 
-                                        
+                                        // --- SINGLE MENU ---
                                         const active = isActive(item.path);
                                         return (
                                             <Link 
@@ -276,14 +275,15 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                     })}
                 </div>
 
-                <div className="p-4 border-t border-gray-100 bg-slate-50/50">
+                {/* FOOTER: Diam di bawah */}
+                <div className="p-4 border-t border-gray-100 bg-slate-50/50 shrink-0">
                     <div className="flex items-center gap-3 p-2 rounded-xl border border-slate-200 bg-white shadow-sm mb-3">
-                        <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm">
+                        <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm shrink-0">
                             {role.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 overflow-hidden">
                             <p className="text-xs font-bold text-slate-800 truncate uppercase">{role.replace('_', ' ')}</p>
-                            <Link to="/user/profile" className="text-[10px] text-slate-500 hover:text-blue-600 flex items-center gap-1">
+                            <Link to="/user/profile" onClick={() => window.innerWidth < 768 && setIsOpen(false)} className="text-[10px] text-slate-500 hover:text-blue-600 flex items-center gap-1">
                                 Lihat Profil <ChevronRight size={10} />
                             </Link>
                         </div>

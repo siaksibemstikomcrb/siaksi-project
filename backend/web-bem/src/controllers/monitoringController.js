@@ -91,4 +91,66 @@ const getUKMDetail = async (req, res) => {
     }
 };
 
-module.exports = { getGlobalMonitoring, getUKMDetail };
+const getOnlineUsers = async (req, res) => {
+    const { role, ukm_id } = req.user;
+
+    try {
+        // PERBAIKAN: Tambahkan 'u.' di depan 'id' agar tidak ambigu
+        let query = `
+            SELECT u.id, u.name, u.username, u.profile_pic, r.role_name, k.ukm_name, u.last_active 
+            FROM users u
+            LEFT JOIN roles r ON u.role_id = r.id
+            LEFT JOIN ukms k ON u.ukm_id = k.id
+            WHERE u.last_active > NOW() - INTERVAL '5 minutes'
+        `;
+        
+        let params = [];
+
+        // Jika Admin UKM, hanya lihat anggotanya sendiri
+        if (role !== 'super_admin') {
+            query += ` AND u.ukm_id = $1`;
+            params.push(ukm_id);
+        }
+
+        query += ` ORDER BY u.last_active DESC`;
+
+        const result = await db.query(query, params);
+        res.json(result.rows);
+
+    } catch (err) {
+        console.error(err); // Akan mencetak error detail ke terminal jika masih ada masalah
+        res.status(500).send('Server Error');
+    }
+};
+
+// Get Visitor Stats (Khusus Super Admin)
+const getVisitorStats = async (req, res) => {
+    try {
+        // Hitung total kunjungan hari ini
+        const todayHits = await db.query(
+            `SELECT COUNT(*) FROM visitor_logs WHERE visited_at::date = CURRENT_DATE`
+        );
+
+        // Hitung total kunjungan bulan ini
+        const monthHits = await db.query(
+            `SELECT COUNT(*) FROM visitor_logs WHERE date_trunc('month', visited_at) = date_trunc('month', CURRENT_DATE)`
+        );
+
+        // Hitung User Unik (Berdasarkan IP) Hari Ini
+        const uniqueVisitors = await db.query(
+            `SELECT COUNT(DISTINCT ip_address) FROM visitor_logs WHERE visited_at::date = CURRENT_DATE`
+        );
+
+        res.json({
+            today_hits: parseInt(todayHits.rows[0].count),
+            month_hits: parseInt(monthHits.rows[0].count),
+            unique_visitors_today: parseInt(uniqueVisitors.rows[0].count)
+        });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+};
+
+module.exports = { getGlobalMonitoring, getUKMDetail, getOnlineUsers, getVisitorStats};

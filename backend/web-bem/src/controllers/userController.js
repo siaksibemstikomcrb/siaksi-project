@@ -6,7 +6,7 @@ const getMyProfile = async (req, res) => {
 
     try {
         const userQuery = await db.query(`
-            SELECT u.id, u.username, u.profile_pic, r.role_name, k.ukm_name
+            SELECT u.id, u.username, u.profile_pic, u.name, u.email, u.nia, r.role_name, k.ukm_name
             FROM Users u
             LEFT JOIN Roles r ON u.role_id = r.id
             LEFT JOIN Ukms k ON u.ukm_id = k.id
@@ -147,7 +147,6 @@ const createUser = async (req, res) => {
     console.log("📥 [Create User] Data Masuk:", req.body);
 
     try {
-        
         let parsedUkmId = parseInt(ukm_id);
         if (isNaN(parsedUkmId) || parsedUkmId === 0) {
             console.log("⚠️ UKM ID kosong. Default set ke 9 (BEM).");
@@ -184,6 +183,37 @@ const createUser = async (req, res) => {
     }
 };
 
+// Update Biodata User (Fixed)
+const updateProfile = async (req, res) => {
+    try {
+        const { name, email, nia } = req.body;
+        const userId = req.user.id; // Dari token JWT
+
+        // Menggunakan db.query sesuai konfigurasi
+        const query = `
+            UPDATE users 
+            SET name = $1, email = $2, nia = $3
+            WHERE id = $4
+            RETURNING id, name, email, nia, profile_pic
+        `;
+        
+        const { rows } = await db.query(query, [name, email, nia, userId]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ msg: "User tidak ditemukan" });
+        }
+
+        res.json({
+            msg: "Profil berhasil diperbarui",
+            user: rows[0]
+        });
+
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send("Server Error");
+    }
+};
+
 module.exports = { 
     getMyProfile, 
     updatePhoto, 
@@ -191,5 +221,6 @@ module.exports = {
     getUsers, 
     deleteUser,
     resetUserPassword,
-    createUser
+    createUser,
+    updateProfile // Pastikan diekspor
 };

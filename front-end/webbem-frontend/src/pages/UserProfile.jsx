@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   User, Mail, Camera, Shield, MapPin, Loader2, Key, CheckCircle, 
-  CreditCard, Activity, Calendar, FileText
+  CreditCard, Activity, Calendar, FileText, Edit2, X, Save
 } from 'lucide-react';
 import api from '../api/axios';
 import { toast } from 'sonner';
@@ -10,17 +10,32 @@ const UserProfile = () => {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState({ attendance: 0 });
+  
+  // State untuk Upload Foto
   const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
+
+  // State untuk Tab & Password
   const [activeTab, setActiveTab] = useState('overview');
   const [passData, setPassData] = useState({ current: '', new: '', confirm: '' });
   const [updatingPass, setUpdatingPass] = useState(false);
-  const fileInputRef = useRef(null);
+
+  // --- STATE BARU: UNTUK EDIT BIODATA ---
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', email: '', nia: '' });
+  const [updatingProfile, setUpdatingProfile] = useState(false);
 
   const fetchProfile = async () => {
     try {
       const res = await api.get('/users/me');
       setUser(res.data.user);
       setStats(res.data.stats);
+      // Set data awal untuk form edit
+      setEditForm({
+        name: res.data.user.name || '',
+        email: res.data.user.email || '',
+        nia: res.data.user.nia || ''
+      });
       setLoading(false);
     } catch (err) {
       toast.error("Gagal memuat profil.");
@@ -30,6 +45,7 @@ const UserProfile = () => {
 
   useEffect(() => { fetchProfile(); }, []);
 
+  // Handle Upload Foto
   const handlePhotoChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -44,6 +60,7 @@ const UserProfile = () => {
     finally { setUploading(false); }
   };
 
+  // Handle Ganti Password
   const handleChangePassword = async (e) => {
     e.preventDefault();
     if (passData.new !== passData.confirm) return toast.error("Konfirmasi password tidak cocok!");
@@ -56,6 +73,22 @@ const UserProfile = () => {
     finally { setUpdatingPass(false); }
   };
 
+  // --- FUNGSI BARU: HANDLE EDIT BIODATA ---
+  const handleEditSubmit = async (e) => {
+      e.preventDefault();
+      setUpdatingProfile(true);
+      try {
+          const res = await api.put('/users/me', editForm); // Pastikan route backend ini ada
+          setUser(prev => ({ ...prev, ...editForm })); // Update UI langsung
+          toast.success("Biodata berhasil diperbarui!");
+          setIsEditing(false);
+      } catch (err) {
+          toast.error("Gagal memperbarui biodata.");
+      } finally {
+          setUpdatingProfile(false);
+      }
+  };
+
   if (loading) return (
     <div className="flex h-screen items-center justify-center bg-gray-50">
         <Loader2 className="animate-spin text-blue-600" size={40}/>
@@ -63,10 +96,76 @@ const UserProfile = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 font-sans text-slate-800"> 
+    <div className="min-h-screen bg-gray-50 pb-20 font-sans text-slate-800 relative"> 
       
+      {/* --- MODAL EDIT BIODATA --- */}
+      {isEditing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
+            <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                    <h3 className="font-bold text-gray-800">Edit Biodata</h3>
+                    <button onClick={() => setIsEditing(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                        <X size={20} />
+                    </button>
+                </div>
+                <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
+                    <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nama Lengkap</label>
+                        <input 
+                            type="text" 
+                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                            value={editForm.name}
+                            onChange={e => setEditForm({...editForm, name: e.target.value})}
+                            placeholder="Nama Lengkap Anda"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Email</label>
+                        <input 
+                            type="email" 
+                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-gray-50"
+                            value={editForm.email}
+                            onChange={e => setEditForm({...editForm, email: e.target.value})}
+                            placeholder="email@contoh.com"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nomor Induk (NIA)</label>
+                        <input 
+                            type="text" 
+                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                            value={editForm.nia}
+                            onChange={e => setEditForm({...editForm, nia: e.target.value})}
+                            placeholder="Contoh: 12345678"
+                        />
+                        <p className="text-[10px] text-gray-400 mt-1">*Nomor Induk Anggota / NIM</p>
+                    </div>
+
+                    <div className="pt-4 flex justify-end gap-3">
+                        <button 
+                            type="button" 
+                            onClick={() => setIsEditing(false)}
+                            className="px-4 py-2 text-sm font-bold text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                        >
+                            Batal
+                        </button>
+                        <button 
+                            type="submit" 
+                            disabled={updatingProfile}
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg shadow-md flex items-center gap-2 transition-all disabled:opacity-70"
+                        >
+                            {updatingProfile ? <Loader2 className="animate-spin" size={16}/> : <Save size={16}/>}
+                            Simpan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+      )}
+
       <div className="bg-white shadow-sm border-b border-gray-200">
         
+        {/* Banner */}
         <div className="h-40 md:h-56 bg-gradient-to-r from-slate-800 to-blue-900 relative overflow-hidden">
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
             <div className="absolute bottom-0 left-0 w-full h-20 bg-gradient-to-t from-black/30 to-transparent"></div>
@@ -74,8 +173,10 @@ const UserProfile = () => {
 
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative pb-6">
             
-            <div className="flex flex-col md:flex-row items-center md:items-end -mt-16 md:-mt-20 gap-6">            
+            {/* Header Profil (Layout Fixed) */}
+            <div className="flex flex-col md:flex-row items-center md:items-start -mt-16 md:-mt-20 gap-6">            
                 
+                {/* Foto Profil */}
                 <div className="relative group shrink-0">
                     <div className="w-32 h-32 md:w-44 md:h-44 rounded-full border-[6px] border-white shadow-2xl overflow-hidden bg-white">
                         <img 
@@ -102,7 +203,8 @@ const UserProfile = () => {
                     </button>
                 </div>
 
-                <div className="flex-1 text-center md:text-left w-full md:mb-4">
+                {/* Nama & Username (Layout Fixed) */}
+                <div className="flex-1 text-center md:text-left w-full mt-2 md:mt-28 md:mb-4">
                     <h1 className="text-2xl md:text-4xl font-black text-gray-900 capitalize tracking-tight leading-tight">
                         {user?.name || user?.username || "Nama Pengguna"}
                     </h1>
@@ -120,7 +222,8 @@ const UserProfile = () => {
                     </div>
                 </div>
 
-                <div className="w-full md:w-auto grid grid-cols-2 gap-2 bg-gray-100 p-1.5 rounded-xl">
+                {/* Tombol Tab (Layout Fixed) */}
+                <div className="w-full md:w-auto grid grid-cols-2 gap-2 bg-gray-100 p-1.5 rounded-xl md:self-end md:mb-4">
                     <button 
                         onClick={() => setActiveTab('overview')}
                         className={`flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold rounded-lg transition-all ${activeTab === 'overview' ? 'bg-white text-blue-600 shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700'}`}
@@ -144,11 +247,12 @@ const UserProfile = () => {
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 md:mt-8">     
         
+        {/* Content Tab: Overview */}
         {activeTab === 'overview' && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">      
                 
                 <div className="space-y-4 md:space-y-6">
-                    
+                    {/* Card Total Kehadiran */}
                     <div className="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between relative overflow-hidden group">
                          <div className="absolute right-0 top-0 w-24 h-24 bg-emerald-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
                          <div className="relative z-10">
@@ -160,6 +264,7 @@ const UserProfile = () => {
                          </div>
                     </div>
 
+                    {/* Card Status Akun */}
                      <div className="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-gray-100">
                         <div className="flex items-center gap-4 mb-4">
                             <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center">
@@ -177,11 +282,22 @@ const UserProfile = () => {
                     </div>
                 </div>
 
+                {/* Detail Biodata */}
                 <div className="lg:col-span-2">
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div className="px-5 py-4 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
-                            <FileText size={18} className="text-blue-600"/>
-                            <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wide">Detail Biodata</h3>
+                        
+                        {/* Header dengan Tombol Edit */}
+                        <div className="px-5 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <FileText size={18} className="text-blue-600"/>
+                                <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wide">Detail Biodata</h3>
+                            </div>
+                            <button 
+                                onClick={() => setIsEditing(true)} 
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-600 text-xs font-bold rounded-lg hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm"
+                            >
+                                <Edit2 size={12}/> Edit Data
+                            </button>
                         </div>
                         
                         <div className="divide-y divide-gray-50">
@@ -189,14 +305,14 @@ const UserProfile = () => {
                             <div className="px-5 py-4 grid grid-cols-1 md:grid-cols-3 gap-1 md:gap-4 hover:bg-gray-50/50 transition">
                                 <div className="text-xs md:text-sm font-medium text-gray-500 uppercase md:normal-case">Nama Lengkap</div>
                                 <div className="md:col-span-2 text-sm md:text-base font-medium text-gray-900">
-                                    {user?.name}
+                                    {user?.name || <span className="text-gray-400 italic">Belum diisi</span>}
                                 </div>
                             </div>
 
                             <div className="px-5 py-4 grid grid-cols-1 md:grid-cols-3 gap-1 md:gap-4 hover:bg-gray-50/50 transition">
                                 <div className="text-xs md:text-sm font-medium text-gray-500 uppercase md:normal-case">Alamat Email</div>
                                 <div className="md:col-span-2 text-sm md:text-base font-medium text-gray-900 break-all">
-                                    {user?.email || "-"}
+                                    {user?.email || <span className="text-gray-400 italic">Belum diisi</span>}
                                 </div>
                             </div>
 
@@ -230,6 +346,7 @@ const UserProfile = () => {
             </div>
         )}
 
+        {/* Content Tab: Security */}
         {activeTab === 'security' && (
             <div className="max-w-2xl mx-auto">
                 <div className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm">

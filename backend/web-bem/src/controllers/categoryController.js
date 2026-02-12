@@ -1,13 +1,10 @@
 const db = require('../config/db');
 
-// Ambil Kategori dengan Struktur Tree (Induk -> Anak)
 const getCategoryTree = async (req, res) => {
     try {
-        // Ambil semua kategori
         const result = await db.query("SELECT * FROM learning_categories ORDER BY id ASC");
         const categories = result.rows;
 
-        // Fungsi recursive bikin tree
         const buildTree = (items, parentId = null) => {
             return items
                 .filter(item => item.parent_id === parentId)
@@ -25,7 +22,6 @@ const getCategoryTree = async (req, res) => {
     }
 };
 
-// Tambah Kategori Baru
 const createCategory = async (req, res) => {
     const { name, parent_id } = req.body;
     try {
@@ -41,7 +37,6 @@ const createCategory = async (req, res) => {
     }
 };
 
-// Hapus Kategori
 const deleteCategory = async (req, res) => {
     const { id } = req.params;
     try {

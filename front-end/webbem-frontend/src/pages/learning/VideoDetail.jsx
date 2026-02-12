@@ -1,12 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
 import { 
-  ChevronLeft, Download, BookOpen, Code, Youtube, Clock, 
-  Maximize2, Minimize2, ChevronDown, ChevronUp, Play, X, Edit3, Check 
+  ChevronLeft, BookOpen, Code, Youtube, Clock, 
+  Maximize2, Minimize2, ChevronDown, ChevronUp, Edit3, Check,
+  Bot, Send, Loader2, User 
 } from 'lucide-react';
 import CodePlayground from '../CodePlayground'; 
 import api from '../../api/axios';
+
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 const SUPPORTED_LANGUAGES = [
     { id: 'javascript', name: 'JavaScript (Node.js)' },
@@ -37,29 +43,23 @@ const VideoDetail = () => {
   const [currentLang, setCurrentLang] = useState('javascript');
   const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
   
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState("");
+  const [isChatTyping, setIsChatTyping] = useState(false);
+  const chatEndRef = useRef(null);
+
   const [relatedVideos, setRelatedVideos] = useState([]);
-  
   const video = location.state?.videoData;
 
   const getLanguageFromCategory = (category) => {
       if (!category) return 'javascript';
       const cat = category.toLowerCase();
-      
-      if (cat.includes('c++') || cat.includes('cpp')) return 'cpp';
-      if (cat.includes('c#') || cat.includes('csharp')) return 'csharp';
-      if (cat.includes('java') && !cat.includes('script')) return 'java';
       if (cat.includes('python')) return 'python';
-      if (cat.includes('go') || cat.includes('golang')) return 'go';
-      if (cat.includes('ruby')) return 'ruby';
-      if (cat.includes('swift')) return 'swift';
-      if (cat.includes('kotlin')) return 'kotlin';
-      if (cat.includes('dart')) return 'dart';
+      if (cat.includes('java')) return 'java';
+      if (cat.includes('cpp')) return 'cpp';
+      if (cat.includes('c#')) return 'csharp';
+      if (cat.includes('go')) return 'go';
       if (cat.includes('php')) return 'php';
-      if (cat.includes('typescript') || cat.includes('ts')) return 'typescript';
-      if (cat.includes('html')) return 'html';
-      if (cat.includes('css')) return 'css';
-      if (cat === 'c' || cat === 'bahasa c') return 'c';
-      
       return 'javascript';
   };
 
@@ -84,10 +84,18 @@ const VideoDetail = () => {
         setNotes(""); 
         setShowMobileWorkspace(false);
         
+        setChatMessages([
+            { role: 'ai', text: `Halo! Saya asisten pintar untuk video **"${video.title}"**. Ada yang kurang paham? Tanyakan saja! 🤖` }
+        ]);
+
         const detectedLang = getLanguageFromCategory(video.category_name || video.category);
         setCurrentLang(detectedLang);
     }
   }, [video]);
+
+  useEffect(() => {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages, isChatTyping]);
 
   if (!video) return null;
 
@@ -101,6 +109,30 @@ const VideoDetail = () => {
   const handleSwitchVideo = (newVideo) => {
       navigate(`/learning/nonton/${newVideo.id}`, { state: { videoData: newVideo } });
       window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSendChat = async (e) => {
+      e.preventDefault();
+      if (!chatInput.trim()) return;
+
+      const userMsg = chatInput;
+      setChatInput("");
+      setChatMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+      setIsChatTyping(true);
+
+      try {
+          const res = await api.post('/learning/chat', {
+              material_id: video.id,
+              question: userMsg
+          });
+
+          setChatMessages(prev => [...prev, { role: 'ai', text: res.data.answer }]);
+      } catch (err) {
+          console.error("AI Error:", err);
+          setChatMessages(prev => [...prev, { role: 'ai', text: "Maaf, server AI sedang sibuk. Coba lagi nanti ya!" }]);
+      } finally {
+          setIsChatTyping(false);
+      }
   };
 
   return (
@@ -185,18 +217,24 @@ const VideoDetail = () => {
                 ${isExpanded ? 'lg:col-span-8' : 'lg:col-span-4'}
             `}>
                 <div className="h-14 border-b border-white/10 flex items-center justify-between px-4 bg-[#151515] shrink-0 relative z-20">
-                    <div className="flex bg-black/30 p-1 rounded-lg">
+                    <div className="flex bg-black/30 p-1 rounded-lg gap-1">
                         <button 
                             onClick={() => setActiveTab('notes')}
-                            className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'notes' ? 'bg-yellow-500 text-black' : 'text-gray-500 hover:text-white'}`}
+                            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'notes' ? 'bg-yellow-500 text-black' : 'text-gray-500 hover:text-white'}`}
                         >
                             <BookOpen size={14}/> Catatan
                         </button>
                         <button 
                             onClick={() => setActiveTab('code')}
-                            className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'code' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-white'}`}
+                            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'code' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-white'}`}
                         >
                             <Code size={14}/> Code
+                        </button>
+                        <button 
+                            onClick={() => setActiveTab('ai')}
+                            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'ai' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/20' : 'text-gray-500 hover:text-white'}`}
+                        >
+                            <Bot size={14}/> AI Tutor
                         </button>
                     </div>
 
@@ -235,7 +273,6 @@ const VideoDetail = () => {
                         )}
 
                         <div className="w-px bg-white/10 h-6 mx-1"></div>
-                        
                         <button onClick={() => setIsExpanded(!isExpanded)} className="text-gray-500 hover:text-white p-2 rounded-lg hover:bg-white/5">
                             {isExpanded ? <Minimize2 size={18}/> : <Maximize2 size={18}/>}
                         </button>
@@ -243,8 +280,9 @@ const VideoDetail = () => {
                 </div>
 
                 <div className="flex-1 overflow-hidden relative">
-                    {activeTab === 'notes' ? (
-                        <div className="h-full flex flex-col">
+                    
+                    {activeTab === 'notes' && (
+                        <div className="h-full flex flex-col animate-in fade-in zoom-in-95 duration-200">
                             <textarea 
                                 className="flex-1 w-full bg-transparent p-6 text-gray-300 font-mono text-sm leading-relaxed focus:outline-none resize-none custom-scrollbar"
                                 placeholder="Tulis rangkuman materi di sini..."
@@ -258,8 +296,96 @@ const VideoDetail = () => {
                                 </button>
                             </div>
                         </div>
-                    ) : (
-                        <CodePlayground defaultLanguage={currentLang} />
+                    )}
+
+                    {activeTab === 'code' && (
+                        <div className="h-full animate-in fade-in zoom-in-95 duration-200">
+                            <CodePlayground defaultLanguage={currentLang} />
+                        </div>
+                    )}
+
+                    {activeTab === 'ai' && (
+                        <div className="h-full flex flex-col bg-[#0f0f0f] animate-in fade-in zoom-in-95 duration-200">
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                                {chatMessages.map((msg, idx) => (
+                                    <div key={idx} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border ${msg.role === 'ai' ? 'bg-purple-600 border-purple-500 text-white' : 'bg-gray-700 border-gray-600 text-gray-300'}`}>
+                                            {msg.role === 'ai' ? <Bot size={16}/> : <User size={16}/>}
+                                        </div>
+                                        
+                                        <div className={`max-w-[85%] rounded-2xl text-sm leading-relaxed overflow-hidden shadow-sm 
+                                            ${msg.role === 'user' 
+                                                ? 'bg-white/10 text-white rounded-tr-none px-4 py-2' 
+                                                : 'bg-[#1e1e1e] text-gray-300 border border-white/10 rounded-tl-none'}`
+                                        }>
+                                            {msg.role === 'user' ? (
+                                                <span>{msg.text}</span>
+                                            ) : (
+                                                <div className="markdown-body p-4">
+                                                    <ReactMarkdown
+                                                        remarkPlugins={[remarkGfm]}
+                                                        components={{
+                                                            code({node, inline, className, children, ...props}) {
+                                                                const match = /language-(\w+)/.exec(className || '')
+                                                                return !inline && match ? (
+                                                                    <div className="rounded-lg overflow-hidden my-3 border border-white/10">
+                                                                        <div className="bg-[#151515] px-3 py-1 text-[10px] font-mono text-gray-500 border-b border-white/10 flex justify-between items-center">
+                                                                            <span className="uppercase">{match[1]}</span>
+                                                                        </div>
+                                                                        <SyntaxHighlighter
+                                                                            children={String(children).replace(/\n$/, '')}
+                                                                            style={vscDarkPlus}
+                                                                            language={match[1]}
+                                                                            PreTag="div"
+                                                                            customStyle={{ margin: 0, borderRadius: 0, fontSize: '13px' }}
+                                                                            {...props}
+                                                                        />
+                                                                    </div>
+                                                                ) : (
+                                                                    <code className="bg-white/10 text-yellow-500 px-1 py-0.5 rounded font-mono text-xs" {...props}>
+                                                                        {children}
+                                                                    </code>
+                                                                )
+                                                            },
+                                                            p: ({children}) => <p className="mb-3 last:mb-0">{children}</p>,
+                                                            ul: ({children}) => <ul className="list-disc pl-4 mb-3 space-y-1">{children}</ul>,
+                                                            ol: ({children}) => <ol className="list-decimal pl-4 mb-3 space-y-1">{children}</ol>,
+                                                            strong: ({children}) => <strong className="text-white font-bold">{children}</strong>,
+                                                            a: ({href, children}) => <a href={href} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">{children}</a>
+                                                        }}
+                                                    >
+                                                        {msg.text}
+                                                    </ReactMarkdown>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                                {isChatTyping && (
+                                    <div className="flex gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center shrink-0"><Bot size={16}/></div>
+                                        <div className="bg-purple-900/20 px-4 py-3 rounded-2xl rounded-tl-none border border-purple-500/20 flex items-center gap-1">
+                                            <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce"></span>
+                                            <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce delay-100"></span>
+                                            <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce delay-200"></span>
+                                        </div>
+                                    </div>
+                                )}
+                                <div ref={chatEndRef} />
+                            </div>
+
+                            <form onSubmit={handleSendChat} className="p-4 border-t border-white/10 bg-[#151515] flex gap-2">
+                                <input 
+                                    type="text" 
+                                    className="flex-1 bg-[#222] border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:border-purple-500 outline-none"
+                                    placeholder="Tanya AI..."
+                                    value={chatInput}
+                                    onChange={(e) => setChatInput(e.target.value)}
+                                    disabled={isChatTyping}
+                                />
+                                <button type="submit" disabled={!chatInput.trim()} className="p-2 bg-purple-600 rounded-lg text-white hover:bg-purple-500 transition-colors"><Send size={18}/></button>
+                            </form>
+                        </div>
                     )}
                 </div>
             </div>
@@ -269,14 +395,14 @@ const VideoDetail = () => {
 
       <div className={`
           fixed bottom-0 left-0 right-0 z-50 bg-[#121212] rounded-t-3xl border-t border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.8)] 
-          transition-transform duration-300 ease-in-out lg:hidden flex flex-col h-[60vh]
+          transition-transform duration-300 ease-in-out lg:hidden flex flex-col h-[70vh]
           ${showMobileWorkspace ? 'translate-y-0' : 'translate-y-full'}
       `}>
           <div className="px-6 py-3 border-b border-white/10 flex items-center justify-between shrink-0 bg-[#151515] rounded-t-3xl">
               <div className="w-10 h-1 bg-white/20 rounded-full mx-auto absolute left-0 right-0 top-3"></div>
               <div className="flex items-center gap-3 mt-2">
                   <span className="text-xs font-bold text-yellow-500 uppercase tracking-wider">
-                      {activeTab === 'notes' ? 'Catatan' : 'Code'}
+                      {activeTab === 'notes' ? 'Catatan' : activeTab === 'code' ? 'Code' : 'AI Assistant'}
                   </span>
                   
                   {activeTab === 'code' && (
@@ -298,13 +424,14 @@ const VideoDetail = () => {
 
           <div className="p-4 shrink-0">
              <div className="flex bg-black/40 p-1 rounded-xl">
-                <button onClick={() => setActiveTab('notes')} className={`flex-1 py-2 rounded-lg text-xs font-bold ${activeTab === 'notes' ? 'bg-yellow-500 text-black' : 'text-gray-500'}`}>Catatan</button>
-                <button onClick={() => setActiveTab('code')} className={`flex-1 py-2 rounded-lg text-xs font-bold ${activeTab === 'code' ? 'bg-blue-600 text-white' : 'text-gray-500'}`}>Coding</button>
+                <button onClick={() => setActiveTab('notes')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'notes' ? 'bg-yellow-500 text-black' : 'text-gray-500'}`}>Catatan</button>
+                <button onClick={() => setActiveTab('code')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'code' ? 'bg-blue-600 text-white' : 'text-gray-500'}`}>Coding</button>
+                <button onClick={() => setActiveTab('ai')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'ai' ? 'bg-purple-600 text-white' : 'text-gray-500'}`}>AI Chat</button>
              </div>
           </div>
 
           <div className="flex-1 overflow-hidden relative bg-[#0a0a0a]">
-             {activeTab === 'notes' ? (
+             {activeTab === 'notes' && (
                  <div className="h-full flex flex-col">
                     <textarea 
                         className="flex-1 w-full bg-transparent p-4 text-gray-300 font-mono text-sm resize-none focus:outline-none"
@@ -316,8 +443,48 @@ const VideoDetail = () => {
                         <button onClick={handleDownloadPDF} disabled={!notes.trim()} className="w-full py-3 bg-white/10 rounded-xl text-xs font-bold text-white">Simpan PDF</button>
                     </div>
                  </div>
-             ) : (
+             )}
+             
+             {activeTab === 'code' && (
                  <CodePlayground defaultLanguage={currentLang} />
+             )}
+
+             {activeTab === 'ai' && (
+                 <div className="h-full flex flex-col">
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                        {chatMessages.map((msg, idx) => (
+                            <div key={idx} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border ${msg.role === 'ai' ? 'bg-purple-600 border-purple-500 text-white' : 'bg-gray-700 border-gray-600 text-gray-300'}`}>
+                                    {msg.role === 'ai' ? <Bot size={14}/> : <User size={14}/>}
+                                </div>
+                                <div className={`max-w-[85%] rounded-xl text-sm leading-relaxed overflow-hidden ${msg.role === 'user' ? 'bg-white/10 text-white px-4 py-2' : 'bg-[#1e1e1e] text-purple-100 border border-purple-500/20'}`}>
+                                    {msg.role === 'user' ? (
+                                        <span>{msg.text}</span>
+                                    ) : (
+                                        <div className="markdown-body p-4">
+                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                                {msg.text}
+                                            </ReactMarkdown>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                        {isChatTyping && <div className="text-gray-500 text-xs italic p-4">AI sedang mengetik...</div>}
+                        <div ref={chatEndRef} />
+                    </div>
+                    <form onSubmit={handleSendChat} className="p-4 border-t border-white/10 bg-[#151515] flex gap-2">
+                        <input 
+                            type="text" 
+                            className="flex-1 bg-[#222] border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:border-purple-500 outline-none"
+                            placeholder="Tanya AI..."
+                            value={chatInput}
+                            onChange={(e) => setChatInput(e.target.value)}
+                            disabled={isChatTyping}
+                        />
+                        <button type="submit" disabled={!chatInput.trim()} className="p-2 bg-purple-600 rounded-lg text-white"><Send size={18}/></button>
+                    </form>
+                 </div>
              )}
           </div>
       </div>

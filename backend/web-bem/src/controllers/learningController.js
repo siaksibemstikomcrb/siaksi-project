@@ -2,20 +2,29 @@ const db = require('../config/db');
 const { getVideoDetails, getPlaylistVideos } = require('../utils/youtubeHelper');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { YoutubeTranscript } = require('youtube-transcript');
+const Hashids = require('hashids');
 require('dotenv').config();
 
+const hashids = new Hashids(process.env.HASHIDS_SALT || 'F2asVh2YusKa', 10); 
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+const formatResponse = (data) => {
+    if (!data) return null;
+    return {
+        ...data,
+        public_id: hashids.encode(data.id),
+        id: undefined
+    };
+};
 
 const fetchTranscript = async (videoId) => {
     try {
         const transcriptList = await YoutubeTranscript.fetchTranscript(videoId);
-        
         if (transcriptList && transcriptList.length > 0) {
             return transcriptList.map(item => item.text).join(' ');
         }
-        
         throw new Error("Transcript kosong");
-
     } catch (err) {
         try {
             const transcriptIndo = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'id' });
@@ -86,7 +95,7 @@ const addVideo = async (req, res) => {
                 description || details.description, transcriptText
             ]);
 
-            return res.json({ msg: "Video berhasil ditambahkan!", data: saved.rows[0] });
+            return res.json({ msg: "Video berhasil ditambahkan!", data: formatResponse(saved.rows[0]) });
         }
 
     } catch (err) {
@@ -130,7 +139,10 @@ const getVideos = async (req, res) => {
 
         query += " ORDER BY m.created_at DESC";
         const result = await db.query(query, params);
-        res.json(result.rows);
+
+        const secureData = result.rows.map(item => formatResponse(item));
+
+        res.json(secureData);
     } catch (err) {
         console.error(err);
         res.status(500).json({ msg: "Server Error" });
@@ -138,17 +150,26 @@ const getVideos = async (req, res) => {
 };
 
 const getMaterialById = async (req, res) => {
-    const { id } = req.params;
+    const { id: public_id } = req.params;
+    
     try {
+        const decoded = hashids.decode(public_id);
+        if (!decoded || decoded.length === 0) {
+            return res.status(404).json({ msg: "Video tidak ditemukan (Invalid ID)" });
+        }
+        const originalId = decoded[0];
+
         const result = await db.query(`
             SELECT m.*, c.name as category_name 
             FROM learning_materials m
             LEFT JOIN learning_categories c ON m.category_id = c.id
             WHERE m.id = $1
-        `, [id]);
+        `, [originalId]);
         
         if(result.rows.length === 0) return res.status(404).json({msg: "Video tidak ditemukan"});
-        res.json(result.rows[0]);
+        
+        res.json(formatResponse(result.rows[0]));
+
     } catch (err) {
         console.error(err);
         res.status(500).send("Server Error");
@@ -159,9 +180,17 @@ const chatWithVideo = async (req, res) => {
     const { material_id, question } = req.body;
 
     try {
+        const decoded = hashids.decode(material_id);
+        
+        if (!decoded || decoded.length === 0) {
+            console.log("Gagal decode ID:", material_id);
+            return res.status(400).json({ msg: "ID Materi tidak valid" });
+        }
+        const originalId = decoded[0];
+
         const material = await db.query(
             "SELECT title, description, transcript, channel_name FROM learning_materials WHERE id = $1", 
-            [material_id]
+            [originalId]
         );
 
         if (material.rows.length === 0) return res.status(404).json({ msg: "Materi tidak ditemukan" });
@@ -218,30 +247,60 @@ const chatWithVideo = async (req, res) => {
 };
 
 const deleteVideo = async (req, res) => {
+    const { id: public_id } = req.params;
+
     try {
-        await db.query("DELETE FROM learning_materials WHERE id = $1", [req.params.id]);
+        const decoded = hashids.decode(public_id);
+        if (!decoded || decoded.length === 0) return res.status(404).json({ msg: "ID tidak valid" });
+        const originalId = decoded[0];
+
+        await db.query("DELETE FROM learning_materials WHERE id = $1", [originalId]);
         res.json({ msg: "Video dihapus" });
     } catch (err) { res.status(500).json({ msg: "Gagal menghapus" }); }
 };
 
 const bulkDeleteVideos = async (req, res) => {
     try {
-        await db.query("DELETE FROM learning_materials WHERE id = ANY($1::int[])", [req.body.videoIds]);
+        const { videoIds } = req.body; 
+        
+        const originalIds = videoIds.map(hash => {
+            const decoded = hashids.decode(hash);
+            return decoded.length > 0 ? decoded[0] : null;
+        }).filter(id => id !== null);
+
+        if (originalIds.length === 0) return res.status(400).json({ msg: "Tidak ada ID yang valid" });
+
+        await db.query("DELETE FROM learning_materials WHERE id = ANY($1::int[])", [originalIds]);
         res.json({ msg: "Video berhasil dihapus" });
     } catch (err) { res.status(500).json({ msg: "Gagal menghapus" }); }
 };
 
 const bulkMoveVideos = async (req, res) => {
     try {
-        await db.query("UPDATE learning_materials SET category_id = $1 WHERE id = ANY($2::int[])", [req.body.newCategoryId, req.body.videoIds]);
+        const { newCategoryId, videoIds } = req.body;
+        
+        const originalIds = videoIds.map(hash => {
+            const decoded = hashids.decode(hash);
+            return decoded.length > 0 ? decoded[0] : null;
+        }).filter(id => id !== null);
+
+        if (originalIds.length === 0) return res.status(400).json({ msg: "Tidak ada ID yang valid" });
+
+        await db.query("UPDATE learning_materials SET category_id = $1 WHERE id = ANY($2::int[])", [newCategoryId, originalIds]);
         res.json({ msg: "Video berhasil dipindahkan" });
     } catch (err) { res.status(500).json({ msg: "Gagal memindahkan" }); }
 };
 
 const updateVideo = async (req, res) => {
+    const { id: public_id } = req.params;
+    
     try {
+        const decoded = hashids.decode(public_id);
+        if (!decoded || decoded.length === 0) return res.status(404).json({ msg: "ID tidak valid" });
+        const originalId = decoded[0];
+
         await db.query("UPDATE learning_materials SET title = $1, description = $2, category_id = $3 WHERE id = $4", 
-        [req.body.title, req.body.description, req.body.category_id, req.params.id]);
+        [req.body.title, req.body.description, req.body.category_id, originalId]);
         res.json({ msg: "Video berhasil diperbarui" });
     } catch (err) { res.status(500).json({ msg: "Gagal update" }); }
 };
@@ -256,15 +315,12 @@ const generateMissingTranscripts = async (req, res) => {
             return res.json({ msg: "Semua video sudah punya transkrip. Aman!" });
         }
 
-        console.log(`Memulai proses generate transkrip untuk ${videos.rows.length} video...`);
-
         let successCount = 0;
         let failCount = 0;
 
         for (const video of videos.rows) {
             try {
                 console.log(`Processing: ${video.title}...`);
-                
                 const transcriptText = await fetchTranscript(video.youtube_id);
 
                 if (transcriptText) {
@@ -273,14 +329,12 @@ const generateMissingTranscripts = async (req, res) => {
                         [transcriptText, video.id]
                     );
                     successCount++;
-                    console.log(`Berhasil: ${video.title}`);
                 } else {
                     await db.query(
                         "UPDATE learning_materials SET transcript = $1 WHERE id = $2",
                         ["Transkrip tidak tersedia dari YouTube.", video.id]
                     );
                     failCount++;
-                    console.log(`Gagal (No CC): ${video.title}`);
                 }
 
             } catch (err) {
@@ -291,7 +345,6 @@ const generateMissingTranscripts = async (req, res) => {
 
         res.json({ 
             msg: "Proses Selesai!", 
-            total_processed: videos.rows.length,
             success: successCount,
             failed_no_cc: failCount
         });

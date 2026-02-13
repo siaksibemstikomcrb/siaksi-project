@@ -200,8 +200,8 @@ const handleSearchSubmit = (e) => {
              {videos.length > 0 ? (
                videos.map((video) => (
                   <div 
-                     key={video.id} 
-                     onClick={() => navigate(`/learning/nonton/${video.id}`, { state: { videoData: video } })}
+                     key={video.public_id || video.id} 
+                     onClick={() => navigate(`/learning/nonton/${video.public_id}`, { state: { videoData: video } })}
                      className="group bg-white rounded-2xl p-3 border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col h-full"
                   >
                      <div className="relative aspect-video rounded-xl overflow-hidden mb-4 bg-gray-100 shrink-0">

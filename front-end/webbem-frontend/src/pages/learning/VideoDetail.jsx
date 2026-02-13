@@ -4,7 +4,8 @@ import { jsPDF } from 'jspdf';
 import { 
   ChevronLeft, BookOpen, Code, Youtube, Clock, 
   Maximize2, Minimize2, ChevronDown, ChevronUp, Edit3, Check,
-  Bot, Send, Loader2, User 
+  Bot, Send, Loader2, User, Copy, CheckCircle, Sparkles,
+  ArrowUpFromLine, ArrowDownToLine, X
 } from 'lucide-react';
 import CodePlayground from '../CodePlayground'; 
 import api from '../../api/axios';
@@ -30,6 +31,108 @@ const SUPPORTED_LANGUAGES = [
     { id: 'dart', name: 'Dart' },
 ];
 
+const TypewriterEffect = ({ text, onComplete }) => {
+    const [displayedText, setDisplayedText] = useState('');
+    const indexRef = useRef(0);
+
+    useEffect(() => {
+        setDisplayedText('');
+        indexRef.current = 0;
+
+        const interval = setInterval(() => {
+            if (indexRef.current < text.length) {
+                setDisplayedText((prev) => prev + text.charAt(indexRef.current));
+                indexRef.current++;
+            } else {
+                clearInterval(interval);
+                if (onComplete) onComplete();
+            }
+        }, 5);
+
+        return () => clearInterval(interval);
+    }, [text]);
+
+    return (
+        <ReactMarkdown 
+            remarkPlugins={[remarkGfm]}
+            components={markdownComponents} 
+        >
+            {displayedText}
+        </ReactMarkdown>
+    );
+};
+
+const ThinkingIndicator = () => {
+    const [step, setStep] = useState(0);
+    const steps = [
+        "Membaca transkrip video...",
+        "Menganalisis pertanyaanmu...",
+        "Menghubungkan konteks...",
+        "Menyusun jawaban terbaik..."
+    ];
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setStep((prev) => (prev + 1) % steps.length);
+        }, 2000);
+        return () => clearInterval(interval);
+    }, []);
+
+    return (
+        <div className="flex items-center gap-3 p-4 bg-[#1e1e1e]/50 border border-purple-500/20 rounded-2xl rounded-tl-none animate-pulse">
+            <Loader2 size={18} className="text-purple-400 animate-spin" />
+            <span className="text-xs font-mono text-purple-300">{steps[step]}</span>
+        </div>
+    );
+};
+
+let setCopiedCodeIdGlobal = null;
+
+const handleCopyCode = (code, id) => {
+    navigator.clipboard.writeText(code);
+    if (setCopiedCodeIdGlobal) setCopiedCodeIdGlobal(id);
+    setTimeout(() => { if(setCopiedCodeIdGlobal) setCopiedCodeIdGlobal(null) }, 2000);
+};
+
+const markdownComponents = {
+    code({node, inline, className, children, ...props}) {
+        const match = /language-(\w+)/.exec(className || '');
+        const codeString = String(children).replace(/\n$/, '');
+        const uniqueId = React.useMemo(() => Math.random().toString(36).substr(2, 9), []);
+
+        return !inline && match ? (
+            <div className="rounded-lg overflow-hidden my-3 border border-white/10 group relative">
+                <div className="bg-[#151515] px-3 py-1.5 text-[10px] font-mono text-gray-500 border-b border-white/10 flex justify-between items-center">
+                    <span className="uppercase text-yellow-600 font-bold">{match[1]}</span>
+                    <button 
+                        onClick={() => handleCopyCode(codeString, uniqueId)}
+                        className="flex items-center gap-1 text-gray-400 hover:text-white transition-colors cursor-pointer z-10"
+                    >
+                        <Copy size={12}/> <span>Salin Kode</span>
+                    </button>
+                </div>
+                <SyntaxHighlighter
+                    children={codeString}
+                    style={vscDarkPlus}
+                    language={match[1]}
+                    PreTag="div"
+                    customStyle={{ margin: 0, borderRadius: 0, fontSize: '13px', background: '#0d0d0d' }}
+                    {...props}
+                />
+            </div>
+        ) : (
+            <code className="bg-white/10 text-yellow-500 px-1 py-0.5 rounded font-mono text-xs" {...props}>
+                {children}
+            </code>
+        )
+    },
+    p: ({children}) => <p className="mb-3 last:mb-0 text-gray-300 leading-relaxed">{children}</p>,
+    ul: ({children}) => <ul className="list-disc pl-4 mb-3 space-y-1 text-gray-300">{children}</ul>,
+    ol: ({children}) => <ol className="list-decimal pl-4 mb-3 space-y-1 text-gray-300">{children}</ol>,
+    strong: ({children}) => <strong className="text-white font-bold">{children}</strong>,
+    a: ({href, children}) => <a href={href} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">{children}</a>
+};
+
 const VideoDetail = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -46,9 +149,19 @@ const VideoDetail = () => {
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
   const [isChatTyping, setIsChatTyping] = useState(false);
-  const chatEndRef = useRef(null);
+  
+  const [copiedCodeId, setCopiedCodeId] = useState(null); 
+  const [copiedMsgIndex, setCopiedMsgIndex] = useState(null);
 
+  const [drawerHeight, setDrawerHeight] = useState(window.innerHeight * 0.5); 
+  const isDragging = useRef(false);
+
+  setCopiedCodeIdGlobal = setCopiedCodeId;
+
+  const chatEndRef = useRef(null);
   const [relatedVideos, setRelatedVideos] = useState([]);
+  const [isVideoLoading, setIsVideoLoading] = useState(true); 
+
   const video = location.state?.videoData;
 
   const getLanguageFromCategory = (category) => {
@@ -63,6 +176,20 @@ const VideoDetail = () => {
       return 'javascript';
   };
 
+  const handleCopyMessage = (text, index) => {
+      navigator.clipboard.writeText(text);
+      setCopiedMsgIndex(index);
+      setTimeout(() => setCopiedMsgIndex(null), 2000);
+  };
+
+  const handleDrawerDrag = (e) => {
+      const newHeight = window.innerHeight - e.touches[0].clientY;
+      
+      if (newHeight >= 200 && newHeight <= window.innerHeight) {
+          setDrawerHeight(newHeight);
+      }
+  };
+
   useEffect(() => {
     const fetchRelated = async () => {
         if (!video?.category_name && !video?.category) return;
@@ -71,7 +198,7 @@ const VideoDetail = () => {
             const res = await api.get('/learning', {
                 params: { category: categoryQuery }
             });
-            const others = res.data.filter(v => v.id !== video.id);
+            const others = res.data.filter(v => v.public_id !== video.public_id);
             setRelatedVideos(others);
         } catch (err) {
             console.error("Gagal load related videos", err);
@@ -83,9 +210,11 @@ const VideoDetail = () => {
         setIsDescOpen(false); 
         setNotes(""); 
         setShowMobileWorkspace(false);
+        setIsVideoLoading(true);
+        setDrawerHeight(window.innerHeight * 0.5);
         
         setChatMessages([
-            { role: 'ai', text: `Halo! Saya asisten pintar untuk video **"${video.title}"**. Ada yang kurang paham? Tanyakan saja! 🤖` }
+            { role: 'ai', text: `Halo! Saya asisten pintar untuk video **"${video.title}"**. Ada yang kurang paham? Tanyakan saja! 🤖`, isTypingComplete: true }
         ]);
 
         const detectedLang = getLanguageFromCategory(video.category_name || video.category);
@@ -95,7 +224,7 @@ const VideoDetail = () => {
 
   useEffect(() => {
       chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatMessages, isChatTyping]);
+  }, [chatMessages, isChatTyping, showMobileWorkspace]);
 
   if (!video) return null;
 
@@ -107,7 +236,7 @@ const VideoDetail = () => {
   };
 
   const handleSwitchVideo = (newVideo) => {
-      navigate(`/learning/nonton/${newVideo.id}`, { state: { videoData: newVideo } });
+      navigate(`/learning/nonton/${newVideo.public_id}`, { state: { videoData: newVideo } });
       window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -117,22 +246,31 @@ const VideoDetail = () => {
 
       const userMsg = chatInput;
       setChatInput("");
-      setChatMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+      
+      setChatMessages(prev => [...prev, { role: 'user', text: userMsg, isTypingComplete: true }]);
       setIsChatTyping(true);
 
       try {
           const res = await api.post('/learning/chat', {
-              material_id: video.id,
+              material_id: video.public_id, 
               question: userMsg
           });
 
-          setChatMessages(prev => [...prev, { role: 'ai', text: res.data.answer }]);
+          setChatMessages(prev => [...prev, { role: 'ai', text: res.data.answer, isTypingComplete: false }]);
       } catch (err) {
           console.error("AI Error:", err);
-          setChatMessages(prev => [...prev, { role: 'ai', text: "Maaf, server AI sedang sibuk. Coba lagi nanti ya!" }]);
+          setChatMessages(prev => [...prev, { role: 'ai', text: "Maaf, server AI sedang sibuk. Coba lagi nanti ya!", isTypingComplete: true }]);
       } finally {
           setIsChatTyping(false);
       }
+  };
+
+  const handleTypingComplete = (index) => {
+      setChatMessages(prev => {
+          const newMsgs = [...prev];
+          if(newMsgs[index]) newMsgs[index].isTypingComplete = true;
+          return newMsgs;
+      });
   };
 
   return (
@@ -148,7 +286,7 @@ const VideoDetail = () => {
             </div>
             <span className="hidden md:inline text-sm">Kembali ke List</span>
         </button>
-        <span className="text-[10px] font-bold text-yellow-500 uppercase tracking-widest bg-yellow-500/10 px-3 py-1 rounded-full border border-yellow-500/20">
+        <span className="text-[10px] font-bold text-yellow-500 uppercase tracking-widest bg-yellow-500/10 px-3 py-1 rounded-full border border-yellow-500/20 truncate max-w-[200px]">
             {video.category_name || video.category || 'Materi'}
         </span>
       </div>
@@ -161,12 +299,18 @@ const VideoDetail = () => {
                 ${isExpanded ? 'lg:col-span-4' : 'lg:col-span-8'}
             `}>
                 <div className="bg-black rounded-2xl overflow-hidden shadow-2xl border border-white/10 shrink-0 aspect-video w-full relative z-10">
+                    {isVideoLoading && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-[#111]">
+                            <Loader2 size={32} className="text-yellow-500 animate-spin" />
+                        </div>
+                    )}
                     <iframe 
                         className="w-full h-full"
                         src={`https://www.youtube.com/embed/${video.youtube_id || video.videoId}?autoplay=0&modestbranding=1&rel=0`} 
                         title={video.title}
                         frameBorder="0"
                         allowFullScreen
+                        onLoad={() => setIsVideoLoading(false)}
                     ></iframe>
                 </div>
 
@@ -179,31 +323,33 @@ const VideoDetail = () => {
                                 <span className="flex items-center gap-1"><Clock size={14} className="text-yellow-500"/> {video.duration || '10:00'}</span>
                             </div>
                         </div>
-                        <button onClick={() => setIsDescOpen(!isDescOpen)} className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-white">
+                        <button onClick={() => setIsDescOpen(!isDescOpen)} className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-white transition-colors">
                             {isDescOpen ? <ChevronUp size={18}/> : <ChevronDown size={18}/>}
                         </button>
                     </div>
                     {isDescOpen && (
-                        <p className="mt-4 text-sm text-gray-400 leading-relaxed pt-4 border-t border-white/5 animate-in fade-in">
-                            {video.description || "Tidak ada deskripsi."}
-                        </p>
+                        <div className="mt-4 text-sm text-gray-400 leading-relaxed pt-4 border-t border-white/5 animate-in fade-in">
+                            <ReactMarkdown className="markdown-body">
+                                {video.description || "Tidak ada deskripsi."}
+                            </ReactMarkdown>
+                        </div>
                     )}
                 </div>
 
-                <div className="pb-24 lg:pb-0">
+                <div className="pb-32 lg:pb-0">
                     <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Materi Lainnya</h3>
                     <div className="space-y-3">
                         {relatedVideos.map((v) => (
                             <div 
-                                key={v.id} 
+                                key={v.public_id} 
                                 onClick={() => handleSwitchVideo(v)}
                                 className="flex gap-4 p-3 bg-[#121212] rounded-xl border border-white/5 hover:border-yellow-500/50 cursor-pointer group transition-all"
                             >
                                 <div className="w-24 h-16 bg-black rounded-lg overflow-hidden shrink-0 relative">
-                                    <img src={v.thumbnail_url} className="w-full h-full object-cover opacity-70 group-hover:opacity-100" alt={v.title} />
+                                    <img src={v.thumbnail_url} className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity" alt={v.title} />
                                 </div>
                                 <div className="flex flex-col justify-center">
-                                    <h4 className="text-sm font-bold text-gray-300 group-hover:text-yellow-500 line-clamp-2 leading-snug">{v.title}</h4>
+                                    <h4 className="text-sm font-bold text-gray-300 group-hover:text-yellow-500 line-clamp-2 leading-snug transition-colors">{v.title}</h4>
                                     <p className="text-[10px] text-gray-500 mt-1">{v.channel_name}</p>
                                 </div>
                             </div>
@@ -218,52 +364,24 @@ const VideoDetail = () => {
             `}>
                 <div className="h-14 border-b border-white/10 flex items-center justify-between px-4 bg-[#151515] shrink-0 relative z-20">
                     <div className="flex bg-black/30 p-1 rounded-lg gap-1">
-                        <button 
-                            onClick={() => setActiveTab('notes')}
-                            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'notes' ? 'bg-yellow-500 text-black' : 'text-gray-500 hover:text-white'}`}
-                        >
-                            <BookOpen size={14}/> Catatan
-                        </button>
-                        <button 
-                            onClick={() => setActiveTab('code')}
-                            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'code' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-white'}`}
-                        >
-                            <Code size={14}/> Code
-                        </button>
-                        <button 
-                            onClick={() => setActiveTab('ai')}
-                            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'ai' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/20' : 'text-gray-500 hover:text-white'}`}
-                        >
-                            <Bot size={14}/> AI Tutor
-                        </button>
+                        <button onClick={() => setActiveTab('notes')} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'notes' ? 'bg-yellow-500 text-black' : 'text-gray-500 hover:text-white'}`}><BookOpen size={14}/> Catatan</button>
+                        <button onClick={() => setActiveTab('code')} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'code' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-white'}`}><Code size={14}/> Code</button>
+                        <button onClick={() => setActiveTab('ai')} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'ai' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/20' : 'text-gray-500 hover:text-white'}`}><Sparkles size={14}/> AI Tutor</button>
                     </div>
-
                     <div className="flex items-center gap-2">
                         {activeTab === 'code' && (
                             <div className="relative">
-                                <button 
-                                    onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
-                                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-gray-300 transition-colors"
-                                >
+                                <button onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-gray-300 transition-colors">
                                     {SUPPORTED_LANGUAGES.find(l => l.id === currentLang)?.name || 'Pilih Bahasa'}
                                     <ChevronDown size={14} className={`transition-transform ${isLangDropdownOpen ? 'rotate-180' : ''}`}/>
                                 </button>
-
                                 {isLangDropdownOpen && (
                                     <>
                                         <div className="fixed inset-0 z-10" onClick={() => setIsLangDropdownOpen(false)}></div>
                                         <div className="absolute top-full right-0 mt-2 w-52 bg-[#1e1e1e] border border-white/10 rounded-xl shadow-xl z-20 overflow-hidden py-1 max-h-60 overflow-y-auto custom-scrollbar">
                                             {SUPPORTED_LANGUAGES.map((lang) => (
-                                                <button
-                                                    key={lang.id}
-                                                    onClick={() => {
-                                                        setCurrentLang(lang.id);
-                                                        setIsLangDropdownOpen(false);
-                                                    }}
-                                                    className={`w-full text-left px-4 py-2 text-xs font-bold flex items-center justify-between hover:bg-white/5 transition-colors ${currentLang === lang.id ? 'text-yellow-500 bg-yellow-500/10' : 'text-gray-400'}`}
-                                                >
-                                                    {lang.name}
-                                                    {currentLang === lang.id && <Check size={12}/>}
+                                                <button key={lang.id} onClick={() => { setCurrentLang(lang.id); setIsLangDropdownOpen(false); }} className={`w-full text-left px-4 py-2 text-xs font-bold flex items-center justify-between hover:bg-white/5 transition-colors ${currentLang === lang.id ? 'text-yellow-500 bg-yellow-500/10' : 'text-gray-400'}`}>
+                                                    {lang.name} {currentLang === lang.id && <Check size={12}/>}
                                                 </button>
                                             ))}
                                         </div>
@@ -271,120 +389,36 @@ const VideoDetail = () => {
                                 )}
                             </div>
                         )}
-
                         <div className="w-px bg-white/10 h-6 mx-1"></div>
-                        <button onClick={() => setIsExpanded(!isExpanded)} className="text-gray-500 hover:text-white p-2 rounded-lg hover:bg-white/5">
-                            {isExpanded ? <Minimize2 size={18}/> : <Maximize2 size={18}/>}
-                        </button>
+                        <button onClick={() => setIsExpanded(!isExpanded)} className="text-gray-500 hover:text-white p-2 rounded-lg hover:bg-white/5">{isExpanded ? <Minimize2 size={18}/> : <Maximize2 size={18}/>}</button>
                     </div>
                 </div>
-
                 <div className="flex-1 overflow-hidden relative">
-                    
                     {activeTab === 'notes' && (
                         <div className="h-full flex flex-col animate-in fade-in zoom-in-95 duration-200">
-                            <textarea 
-                                className="flex-1 w-full bg-transparent p-6 text-gray-300 font-mono text-sm leading-relaxed focus:outline-none resize-none custom-scrollbar"
-                                placeholder="Tulis rangkuman materi di sini..."
-                                value={notes}
-                                onChange={(e) => setNotes(e.target.value)}
-                                style={{ backgroundImage: 'linear-gradient(#222 1px, transparent 1px)', backgroundSize: '100% 32px', lineHeight: '32px' }}
-                            />
+                            <textarea className="flex-1 w-full bg-transparent p-6 text-gray-300 font-mono text-sm leading-relaxed focus:outline-none resize-none custom-scrollbar" placeholder="Tulis rangkuman materi di sini..." value={notes} onChange={(e) => setNotes(e.target.value)} style={{ backgroundImage: 'linear-gradient(#222 1px, transparent 1px)', backgroundSize: '100% 32px', lineHeight: '32px' }}/>
                             <div className="p-4 border-t border-white/10 bg-[#151515]">
-                                <button onClick={handleDownloadPDF} disabled={!notes.trim()} className="w-full py-2 bg-white/5 hover:bg-yellow-500 hover:text-black text-xs font-bold rounded-lg transition-colors border border-white/10 hover:border-yellow-500 disabled:opacity-50">
-                                    Simpan PDF
-                                </button>
+                                <button onClick={handleDownloadPDF} disabled={!notes.trim()} className="w-full py-2 bg-white/5 hover:bg-yellow-500 hover:text-black text-xs font-bold rounded-lg transition-colors border border-white/10 hover:border-yellow-500 disabled:opacity-50">Simpan PDF</button>
                             </div>
                         </div>
                     )}
-
-                    {activeTab === 'code' && (
-                        <div className="h-full animate-in fade-in zoom-in-95 duration-200">
-                            <CodePlayground defaultLanguage={currentLang} />
-                        </div>
-                    )}
-
+                    {activeTab === 'code' && <div className="h-full animate-in fade-in zoom-in-95 duration-200"><CodePlayground defaultLanguage={currentLang} /></div>}
                     {activeTab === 'ai' && (
                         <div className="h-full flex flex-col bg-[#0f0f0f] animate-in fade-in zoom-in-95 duration-200">
-                            <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                            <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
                                 {chatMessages.map((msg, idx) => (
                                     <div key={idx} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border ${msg.role === 'ai' ? 'bg-purple-600 border-purple-500 text-white' : 'bg-gray-700 border-gray-600 text-gray-300'}`}>
-                                            {msg.role === 'ai' ? <Bot size={16}/> : <User size={16}/>}
-                                        </div>
-                                        
-                                        <div className={`max-w-[85%] rounded-2xl text-sm leading-relaxed overflow-hidden shadow-sm 
-                                            ${msg.role === 'user' 
-                                                ? 'bg-white/10 text-white rounded-tr-none px-4 py-2' 
-                                                : 'bg-[#1e1e1e] text-gray-300 border border-white/10 rounded-tl-none'}`
-                                        }>
-                                            {msg.role === 'user' ? (
-                                                <span>{msg.text}</span>
-                                            ) : (
-                                                <div className="markdown-body p-4">
-                                                    <ReactMarkdown
-                                                        remarkPlugins={[remarkGfm]}
-                                                        components={{
-                                                            code({node, inline, className, children, ...props}) {
-                                                                const match = /language-(\w+)/.exec(className || '')
-                                                                return !inline && match ? (
-                                                                    <div className="rounded-lg overflow-hidden my-3 border border-white/10">
-                                                                        <div className="bg-[#151515] px-3 py-1 text-[10px] font-mono text-gray-500 border-b border-white/10 flex justify-between items-center">
-                                                                            <span className="uppercase">{match[1]}</span>
-                                                                        </div>
-                                                                        <SyntaxHighlighter
-                                                                            children={String(children).replace(/\n$/, '')}
-                                                                            style={vscDarkPlus}
-                                                                            language={match[1]}
-                                                                            PreTag="div"
-                                                                            customStyle={{ margin: 0, borderRadius: 0, fontSize: '13px' }}
-                                                                            {...props}
-                                                                        />
-                                                                    </div>
-                                                                ) : (
-                                                                    <code className="bg-white/10 text-yellow-500 px-1 py-0.5 rounded font-mono text-xs" {...props}>
-                                                                        {children}
-                                                                    </code>
-                                                                )
-                                                            },
-                                                            p: ({children}) => <p className="mb-3 last:mb-0">{children}</p>,
-                                                            ul: ({children}) => <ul className="list-disc pl-4 mb-3 space-y-1">{children}</ul>,
-                                                            ol: ({children}) => <ol className="list-decimal pl-4 mb-3 space-y-1">{children}</ol>,
-                                                            strong: ({children}) => <strong className="text-white font-bold">{children}</strong>,
-                                                            a: ({href, children}) => <a href={href} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">{children}</a>
-                                                        }}
-                                                    >
-                                                        {msg.text}
-                                                    </ReactMarkdown>
-                                                </div>
-                                            )}
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border ${msg.role === 'ai' ? 'bg-purple-600 border-purple-500 text-white' : 'bg-gray-700 border-gray-600 text-gray-300'}`}>{msg.role === 'ai' ? <Bot size={16}/> : <User size={16}/>}</div>
+                                        <div className={`relative max-w-[85%] rounded-2xl text-sm leading-relaxed shadow-sm group ${msg.role === 'user' ? 'bg-white/10 text-white rounded-tr-none px-4 py-2' : 'bg-[#1e1e1e] text-gray-300 border border-white/10 rounded-tl-none'}`}>
+                                            {msg.role === 'ai' && <button onClick={() => handleCopyMessage(msg.text, idx)} className="absolute -bottom-6 left-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-[10px] text-gray-500 hover:text-white">{copiedMsgIndex === idx ? <CheckCircle size={10} className="text-green-500"/> : <Copy size={10}/>} {copiedMsgIndex === idx ? 'Tersalin!' : 'Salin'}</button>}
+                                            {msg.role === 'user' ? <span>{msg.text}</span> : <div className="markdown-body p-4 min-w-[200px]">{idx === chatMessages.length - 1 && !msg.isTypingComplete ? <TypewriterEffect text={msg.text} onComplete={() => handleTypingComplete(idx)} /> : <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{msg.text}</ReactMarkdown>}</div>}
                                         </div>
                                     </div>
                                 ))}
-                                {isChatTyping && (
-                                    <div className="flex gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center shrink-0"><Bot size={16}/></div>
-                                        <div className="bg-purple-900/20 px-4 py-3 rounded-2xl rounded-tl-none border border-purple-500/20 flex items-center gap-1">
-                                            <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce"></span>
-                                            <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce delay-100"></span>
-                                            <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce delay-200"></span>
-                                        </div>
-                                    </div>
-                                )}
+                                {isChatTyping && <div className="flex gap-3 px-4"><div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center shrink-0 animate-pulse"><Sparkles size={14}/></div><ThinkingIndicator /></div>}
                                 <div ref={chatEndRef} />
                             </div>
-
-                            <form onSubmit={handleSendChat} className="p-4 border-t border-white/10 bg-[#151515] flex gap-2">
-                                <input 
-                                    type="text" 
-                                    className="flex-1 bg-[#222] border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:border-purple-500 outline-none"
-                                    placeholder="Tanya AI..."
-                                    value={chatInput}
-                                    onChange={(e) => setChatInput(e.target.value)}
-                                    disabled={isChatTyping}
-                                />
-                                <button type="submit" disabled={!chatInput.trim()} className="p-2 bg-purple-600 rounded-lg text-white hover:bg-purple-500 transition-colors"><Send size={18}/></button>
-                            </form>
+                            <form onSubmit={handleSendChat} className="p-4 border-t border-white/10 bg-[#151515] flex gap-2"><input type="text" className="flex-1 bg-[#222] border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:border-purple-500 outline-none" placeholder="Tanya AI tentang video ini..." value={chatInput} onChange={(e) => setChatInput(e.target.value)} disabled={isChatTyping}/><button type="submit" disabled={!chatInput.trim() || isChatTyping} className="p-2 bg-purple-600 rounded-lg text-white hover:bg-purple-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><Send size={18}/></button></form>
                         </div>
                     )}
                 </div>
@@ -393,23 +427,37 @@ const VideoDetail = () => {
         </div>
       </div>
 
-      <div className={`
-          fixed bottom-0 left-0 right-0 z-50 bg-[#121212] rounded-t-3xl border-t border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.8)] 
-          transition-transform duration-300 ease-in-out lg:hidden flex flex-col h-[70vh]
-          ${showMobileWorkspace ? 'translate-y-0' : 'translate-y-full'}
-      `}>
-          <div className="px-6 py-3 border-b border-white/10 flex items-center justify-between shrink-0 bg-[#151515] rounded-t-3xl">
-              <div className="w-10 h-1 bg-white/20 rounded-full mx-auto absolute left-0 right-0 top-3"></div>
-              <div className="flex items-center gap-3 mt-2">
-                  <span className="text-xs font-bold text-yellow-500 uppercase tracking-wider">
-                      {activeTab === 'notes' ? 'Catatan' : activeTab === 'code' ? 'Code' : 'AI Assistant'}
+      <div 
+          className={`
+              fixed bottom-0 left-0 right-0 z-50 bg-[#121212] rounded-t-3xl border-t border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.8)] 
+              flex flex-col lg:hidden transition-transform duration-300 ease-out
+              ${showMobileWorkspace ? 'translate-y-0' : 'translate-y-full'}
+          `}
+          style={{ 
+              height: showMobileWorkspace ? `${drawerHeight}px` : '0px',
+              transition: isDragging.current ? 'none' : 'transform 0.3s ease-out, height 0.2s ease-out'
+          }}
+      >
+          <div 
+            className="px-6 py-3 border-b border-white/10 flex items-center justify-between shrink-0 bg-[#151515] rounded-t-3xl cursor-row-resize touch-none"
+            onTouchMove={handleDrawerDrag}
+            onTouchStart={() => { isDragging.current = true }}
+            onTouchEnd={() => { isDragging.current = false }}
+          >
+              <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto absolute left-0 right-0 top-3 active:bg-yellow-500 transition-colors"></div>
+              
+              <div className="flex items-center gap-3 mt-3">
+                  <span className="text-xs font-bold text-yellow-500 uppercase tracking-wider flex items-center gap-2">
+                      {activeTab === 'notes' ? <BookOpen size={14}/> : activeTab === 'code' ? <Code size={14}/> : <Sparkles size={14}/>}
+                      {activeTab === 'notes' ? 'Catatan' : activeTab === 'code' ? 'Coding' : 'AI Tutor'}
                   </span>
                   
                   {activeTab === 'code' && (
                       <select 
                         value={currentLang}
                         onChange={(e) => setCurrentLang(e.target.value)}
-                        className="bg-[#2a2a2a] text-gray-200 text-xs font-bold px-2 py-1 rounded border border-white/10 outline-none"
+                        className="bg-[#2a2a2a] text-gray-200 text-[10px] font-bold px-2 py-1 rounded border border-white/10 outline-none"
+                        onClick={(e) => e.stopPropagation()}
                       >
                           {SUPPORTED_LANGUAGES.map(lang => (
                               <option key={lang.id} value={lang.id}>{lang.name}</option>
@@ -417,12 +465,32 @@ const VideoDetail = () => {
                       </select>
                   )}
               </div>
-              <button onClick={() => setShowMobileWorkspace(false)} className="mt-2 text-gray-400 hover:text-white">
-                  <ChevronDown size={24} />
-              </button>
+
+              <div className="flex gap-2 mt-2 relative z-20">
+                  <button 
+                    onClick={() => setDrawerHeight(window.innerHeight)}
+                    className="p-1.5 bg-[#2a2a2a] rounded-lg text-gray-400 hover:text-white"
+                    title="Full Screen"
+                  >
+                      <ArrowUpFromLine size={14}/>
+                  </button>
+                  <button 
+                    onClick={() => setDrawerHeight(window.innerHeight * 0.5)}
+                    className="p-1.5 bg-[#2a2a2a] rounded-lg text-gray-400 hover:text-white"
+                    title="Default"
+                  >
+                      <ArrowDownToLine size={14}/>
+                  </button>
+                  <button 
+                    onClick={() => setShowMobileWorkspace(false)}
+                    className="p-1.5 bg-red-900/30 text-red-400 rounded-lg hover:bg-red-900/50"
+                  >
+                      <X size={14} />
+                  </button>
+              </div>
           </div>
 
-          <div className="p-4 shrink-0">
+          <div className="p-3 shrink-0 bg-[#121212]">
              <div className="flex bg-black/40 p-1 rounded-xl">
                 <button onClick={() => setActiveTab('notes')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'notes' ? 'bg-yellow-500 text-black' : 'text-gray-500'}`}>Catatan</button>
                 <button onClick={() => setActiveTab('code')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'code' ? 'bg-blue-600 text-white' : 'text-gray-500'}`}>Coding</button>
@@ -432,48 +500,75 @@ const VideoDetail = () => {
 
           <div className="flex-1 overflow-hidden relative bg-[#0a0a0a]">
              {activeTab === 'notes' && (
-                 <div className="h-full flex flex-col">
+                 <div className="h-full flex flex-col animate-in fade-in">
                     <textarea 
                         className="flex-1 w-full bg-transparent p-4 text-gray-300 font-mono text-sm resize-none focus:outline-none"
                         placeholder="Mulai mencatat..."
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
                     />
-                    <div className="p-4 border-t border-white/10">
-                        <button onClick={handleDownloadPDF} disabled={!notes.trim()} className="w-full py-3 bg-white/10 rounded-xl text-xs font-bold text-white">Simpan PDF</button>
+                    <div className="p-4 border-t border-white/10 pb-16">
+                        <button onClick={handleDownloadPDF} disabled={!notes.trim()} className="w-full py-3 bg-white/10 rounded-xl text-xs font-bold text-white hover:bg-yellow-500 hover:text-black transition-colors">Simpan PDF</button>
                     </div>
                  </div>
              )}
              
              {activeTab === 'code' && (
-                 <CodePlayground defaultLanguage={currentLang} />
+                 <div className="h-full pb-16">
+                    <CodePlayground defaultLanguage={currentLang} />
+                 </div>
              )}
 
              {activeTab === 'ai' && (
                  <div className="h-full flex flex-col">
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar pb-4">
                         {chatMessages.map((msg, idx) => (
                             <div key={idx} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border ${msg.role === 'ai' ? 'bg-purple-600 border-purple-500 text-white' : 'bg-gray-700 border-gray-600 text-gray-300'}`}>
                                     {msg.role === 'ai' ? <Bot size={14}/> : <User size={14}/>}
                                 </div>
-                                <div className={`max-w-[85%] rounded-xl text-sm leading-relaxed overflow-hidden ${msg.role === 'user' ? 'bg-white/10 text-white px-4 py-2' : 'bg-[#1e1e1e] text-purple-100 border border-purple-500/20'}`}>
+                                <div className={`relative max-w-[85%] rounded-xl text-sm leading-relaxed overflow-hidden shadow-sm group ${msg.role === 'user' ? 'bg-white/10 text-white px-4 py-2' : 'bg-[#1e1e1e] text-purple-100 border border-purple-500/20'}`}>
+                                    
+                                    {msg.role === 'ai' && (
+                                        <button 
+                                            onClick={() => handleCopyMessage(msg.text, idx)}
+                                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-gray-500 hover:text-white"
+                                        >
+                                            {copiedMsgIndex === idx ? <CheckCircle size={14} className="text-green-500"/> : <Copy size={14}/>}
+                                        </button>
+                                    )}
+
                                     {msg.role === 'user' ? (
                                         <span>{msg.text}</span>
                                     ) : (
-                                        <div className="markdown-body p-4">
-                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                                {msg.text}
-                                            </ReactMarkdown>
+                                        <div className="markdown-body p-4 min-w-[200px]">
+                                            {idx === chatMessages.length - 1 && !msg.isTypingComplete ? (
+                                                <TypewriterEffect 
+                                                    text={msg.text} 
+                                                    onComplete={() => handleTypingComplete(idx)} 
+                                                />
+                                            ) : (
+                                                <ReactMarkdown 
+                                                    remarkPlugins={[remarkGfm]}
+                                                    components={markdownComponents} 
+                                                >
+                                                    {msg.text}
+                                                </ReactMarkdown>
+                                            )}
                                         </div>
                                     )}
                                 </div>
                             </div>
                         ))}
-                        {isChatTyping && <div className="text-gray-500 text-xs italic p-4">AI sedang mengetik...</div>}
+                        {isChatTyping && (
+                            <div className="flex gap-3 px-4">
+                                <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center shrink-0 animate-pulse"><Sparkles size={14}/></div>
+                                <ThinkingIndicator />
+                            </div>
+                        )}
                         <div ref={chatEndRef} />
                     </div>
-                    <form onSubmit={handleSendChat} className="p-4 border-t border-white/10 bg-[#151515] flex gap-2">
+                    <form onSubmit={handleSendChat} className="p-4 border-t border-white/10 bg-[#151515] flex gap-2 pb-8">
                         <input 
                             type="text" 
                             className="flex-1 bg-[#222] border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:border-purple-500 outline-none"
@@ -482,7 +577,7 @@ const VideoDetail = () => {
                             onChange={(e) => setChatInput(e.target.value)}
                             disabled={isChatTyping}
                         />
-                        <button type="submit" disabled={!chatInput.trim()} className="p-2 bg-purple-600 rounded-lg text-white"><Send size={18}/></button>
+                        <button type="submit" disabled={!chatInput.trim() || isChatTyping} className="p-2 bg-purple-600 rounded-lg text-white disabled:opacity-50"><Send size={18}/></button>
                     </form>
                  </div>
              )}
@@ -491,7 +586,10 @@ const VideoDetail = () => {
 
       {!showMobileWorkspace && (
           <div className="fixed bottom-6 right-6 z-50 lg:hidden">
-              <button onClick={() => setShowMobileWorkspace(true)} className="bg-yellow-500 text-black p-4 rounded-full shadow-2xl active:scale-95 transition-transform">
+              <button 
+                onClick={() => { setShowMobileWorkspace(true); setDrawerHeight(window.innerHeight * 0.5); }} 
+                className="bg-yellow-500 text-black p-4 rounded-full shadow-2xl active:scale-95 transition-transform hover:bg-yellow-400"
+              >
                  <Edit3 size={24} />
               </button>
           </div>

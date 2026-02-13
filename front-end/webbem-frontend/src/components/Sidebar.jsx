@@ -5,7 +5,7 @@ import {
     ShieldCheck, Building, X, Bell, Send, FolderOpen, 
     Printer, Newspaper, BookOpen, 
     ChevronRight, MessageCircle, MessageSquare,
-    Home 
+    Home, Clock
 } from 'lucide-react';
 import api from '../api/axios'; 
 
@@ -94,6 +94,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             title: "Layanan",
             items: [
                 { label: "Lapor BEM", path: "/complaint", icon: ShieldCheck, roles: ['member', 'admin', 'admin_ukm'] },
+                { label: "Riwayat Laporan", path: "/complaint/history", icon: Clock, roles: ['member', 'admin', 'admin_ukm'] },
                 { label: "Kotak Aspirasi", path: "/aspirasi", icon: MessageCircle, roles: ['member', 'admin', 'admin_ukm'] },
                 { label: "Inbox Laporan", path: "/superadmin/complaints", icon: MessageSquare, roles: ['super_admin'] },
                 { label: "Inbox Aspirasi", path: "/admin/aspirasi", icon: MessageCircle, roles: ['admin', 'super_admin'] },

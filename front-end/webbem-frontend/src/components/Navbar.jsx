@@ -5,8 +5,8 @@ import {
   Search, Home, Cpu, Newspaper, LogIn, Search as SearchIcon, X, GraduationCap 
 } from 'lucide-react';
 
-import Dock from './ui/Dock'; 
 
+import Dock from './Dock';
 
 import logoSiaksi from '../assets/images/logo/logo-4.png';
 import logoBem from '../assets/images/logo/logo-bem.png';

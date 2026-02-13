@@ -6,6 +6,7 @@ import api from './api/axios';
 
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
+import SmoothScrollManager from './components/SmootScrollManager';
 
 import Login from './pages/Login';
 import HomePage from './pages/Home';
@@ -44,6 +45,7 @@ import UserProfile from './pages/UserProfile';
 import MemberManagement from './pages/MemberManagement';
 
 import UserComplaint from './pages/UserComplaint';
+import UserComplaintHistory from './pages/complaints/UserComplaintHistory'; 
 import AdminComplaints from './pages/AdminComplaints';
 
 import UserAspiration from './pages/UserAspiration';
@@ -66,6 +68,9 @@ function App() {
   return (
     <Router>
       <Toaster position="top-center" richColors closeButton />
+      
+      <SmoothScrollManager />
+      
       <IdleTimer />
 
       <Routes>
@@ -128,7 +133,9 @@ function App() {
         <Route path="/info/compose" element={<Layout><ComposeMessage /></Layout>} />
         <Route path="/info/inbox" element={<Layout><InfoInbox /></Layout>} />
         <Route path="/info/approval" element={<Layout><BroadcastApproval /></Layout>} />
+        
         <Route path="/complaint" element={<Layout><UserComplaint /></Layout>} />
+        <Route path="/complaint/history" element={<Layout><UserComplaintHistory /></Layout>} /> 
 
         <Route 
           path="/superadmin/complaints" 

@@ -615,7 +615,7 @@ const Home = () => {
         </div>
       </section>
 
-      <footer className="relative pt-20 pb-10 bg-[#020617] z-10">
+<footer className="relative pt-20 pb-10 bg-[#020617] z-10">
          <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-transparent to-[#020617] -mt-32 pointer-events-none" />
          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
@@ -630,7 +630,9 @@ const Home = () => {
                 Platform resmi manajemen organisasi mahasiswa berbasis data dan kecerdasan buatan.
               </p>
               <div className="flex gap-4">
-                 <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:bg-blue-600 hover:text-white transition-all cursor-pointer"><Globe size={14}/></div>
+                 <a href="https://muhamadariz.my.id" target="_blank" rel="noopener noreferrer" title="Developer Portfolio" className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:bg-blue-600 hover:text-white transition-all cursor-pointer">
+                    <Globe size={14}/>
+                 </a>
                  <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:bg-blue-600 hover:text-white transition-all cursor-pointer"><Mail size={14}/></div>
               </div>
             </div>
@@ -641,6 +643,12 @@ const Home = () => {
                 <li><a href="#" className="hover:text-blue-400 transition-colors flex items-center gap-2"><ChevronRight size={12}/> Beranda</a></li>
                 <li><a href="/news" className="hover:text-blue-400 transition-colors flex items-center gap-2"><ChevronRight size={12}/> Berita Kegiatan</a></li>
                 <li><a href="/login" className="hover:text-blue-400 transition-colors flex items-center gap-2"><ChevronRight size={12}/> Login Anggota</a></li>
+                {/* Link Tambahan ke Web Pribadi */}
+                <li>
+                  <a href="https://muhamadariz.my.id" target="_blank" rel="noopener noreferrer" className="text-blue-400/80 hover:text-blue-400 transition-colors flex items-center gap-2">
+                    <ChevronRight size={12}/> Developer Profile
+                  </a>
+                </li>
               </ul>
             </div>
 
@@ -664,10 +672,17 @@ const Home = () => {
           </div>
           
           <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-slate-500 text-xs">
-              &copy; {new Date().getFullYear()} BEM STIKOM Poltek Cirebon
-            </p>
-            <div className="flex gap-6 text-xs text-slate-500">
+            <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4">
+              <p className="text-slate-500 text-[10px] md:text-xs">
+                &copy; {new Date().getFullYear()} BEM STIKOM Poltek Cirebon
+              </p>
+              <span className="hidden md:block w-1 h-1 bg-slate-800 rounded-full" />
+              {/* Teks Pengenal Developer */}
+              <p className="text-slate-500 text-[10px] md:text-xs">
+                Developed by <a href="https://muhamadariz.my.id" target="_blank" rel="noopener noreferrer" className="text-blue-500/80 hover:text-blue-400 font-semibold transition-colors">Muhammad Ariz</a>
+              </p>
+            </div>
+            <div className="flex gap-6 text-[10px] md:text-xs text-slate-500">
                <a href="/privacy" className="hover:text-white transition-colors">Privacy Policy</a>
                <a href="/terms" className="hover:text-white transition-colors">Terms of Service</a>
             </div>

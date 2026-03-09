@@ -24,6 +24,12 @@ const createSchedule = async (req, res) => {
     const ukm_id = req.user.ukm_id;
     const created_by = req.user.id;
 
+    // CEGAT STRING KOSONG "" MENJADI null AGAR DITERIMA POSTGRESQL TIPE TIME
+    const sTime = start_time || null;
+    const eTime = end_time || null;
+    const openTime = attendance_open_time || null;
+    const closeTime = attendance_close_time || null;
+
     try {
         const result = await db.query(
             `INSERT INTO Schedules (
@@ -34,7 +40,7 @@ const createSchedule = async (req, res) => {
             RETURNING *`,
             [
                 ukm_id, created_by, event_name, description, location, event_date,
-                start_time, end_time, attendance_open_time, attendance_close_time,
+                sTime, eTime, openTime, closeTime, // Gunakan variabel yang sudah dicegat
                 tolerance_minutes || 0, latitude, longitude, radius_meters || 50, meeting_link
             ]
         );
@@ -89,8 +95,12 @@ const getAllSchedules = async (req, res) => {
 
             const eventDateStr = getJakartaDateString(schedule.event_date);
 
-            const closeTime = new Date(`${eventDateStr}T${schedule.attendance_close_time}`);
-            const startTime = new Date(`${eventDateStr}T${schedule.start_time}`);
+            // Mencegah error pada fungsi Date jika waktu dari DB adalah null
+            const validStartTime = schedule.start_time || '00:00:00';
+            const validCloseTime = schedule.attendance_close_time || '23:59:59';
+
+            const closeTime = new Date(`${eventDateStr}T${validCloseTime}`);
+            const startTime = new Date(`${eventDateStr}T${validStartTime}`);
 
             if (closeTime < startTime) {
                 closeTime.setDate(closeTime.getDate() + 1);
@@ -101,8 +111,13 @@ const getAllSchedules = async (req, res) => {
 
         const schedulesWithStatus = filteredSchedules.map(schedule => {
             const eventDateStr = getJakartaDateString(schedule.event_date);
-            const openFull = new Date(`${eventDateStr}T${schedule.attendance_open_time}`);
-            const closeFull = new Date(`${eventDateStr}T${schedule.attendance_close_time}`);
+
+            // Mencegah error pada fungsi Date jika waktu dari DB adalah null
+            const validOpenTime = schedule.attendance_open_time || '00:00:00';
+            const validCloseTime = schedule.attendance_close_time || '23:59:59';
+
+            const openFull = new Date(`${eventDateStr}T${validOpenTime}`);
+            const closeFull = new Date(`${eventDateStr}T${validCloseTime}`);
 
             if (closeFull < openFull) {
                 closeFull.setDate(closeFull.getDate() + 1);
@@ -142,6 +157,12 @@ const updateSchedule = async (req, res) => {
         tolerance_minutes, latitude, longitude, radius_meters, meeting_link
     } = req.body;
 
+    // CEGAT STRING KOSONG "" MENJADI null
+    const sTime = start_time || null;
+    const eTime = end_time || null;
+    const openTime = attendance_open_time || null;
+    const closeTime = attendance_close_time || null;
+
     try {
         const result = await db.query(
             `UPDATE Schedules SET 
@@ -154,9 +175,8 @@ const updateSchedule = async (req, res) => {
              WHERE id = $14 RETURNING *`,
             [
                 event_name, description, location, event_date,
-                start_time, end_time,
-                attendance_open_time,
-                attendance_close_time,
+                sTime, eTime,           // Gunakan variabel yang sudah dicegat
+                openTime, closeTime,    // Gunakan variabel yang sudah dicegat
                 tolerance_minutes,
                 latitude, longitude, radius_meters,
                 meeting_link, id

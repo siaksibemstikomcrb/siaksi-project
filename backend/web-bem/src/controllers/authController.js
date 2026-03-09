@@ -38,33 +38,33 @@ const login = async (req, res) => {
     const { username, password } = req.body;
 
     try {
-        // 1. BERSIHKAN INPUT USER: Hapus spasi depan/belakang & jadikan huruf kecil
         const cleanUsername = username.trim().toLowerCase();
 
-        // 2. UBAH QUERY: Gunakan LOWER() agar database tidak peduli huruf besar/kecil
+        // UBAHAN 1: Pakai TRIM() di database dan LEFT JOIN (biar kalau role_id gak ada, user tetep ketemu)
         const userResult = await db.query(
-            'SELECT u.*, r.role_name FROM Users u JOIN Roles r ON u.role_id = r.id WHERE LOWER(u.username) = $1',
+            'SELECT u.*, r.role_name FROM Users u LEFT JOIN Roles r ON u.role_id = r.id WHERE TRIM(LOWER(u.username)) = $1',
             [cleanUsername]
         );
 
         const user = userResult.rows[0];
 
+        // UBAHAN 2: Pesan error dipecah biar ketahuan apanya yang salah
         if (!user) {
-            return res.status(401).json({ msg: 'Kredensial tidak valid.' });
+            return res.status(401).json({ msg: `Username '${cleanUsername}' TIDAK DITEMUKAN di database!` });
         }
 
-        // 3. Pastikan password juga di-trim (dihilangkan spasi nyangkut di akhir)
         const cleanPassword = password.trim();
         const isMatch = await bcrypt.compare(cleanPassword, user.password_hash);
 
         if (!isMatch) {
-            return res.status(401).json({ msg: 'Kredensial tidak valid.' });
+            return res.status(401).json({ msg: `Password untuk '${cleanUsername}' SALAH!` });
         }
 
         const payload = {
             user: {
                 id: user.id,
-                role: user.role_name,
+                // Kasih fallback kalau role_name kosong
+                role: user.role_name || 'user',
                 ukm_id: user.ukm_id,
             },
         };
@@ -92,7 +92,7 @@ const login = async (req, res) => {
                         id: user.id,
                         name: user.name,
                         username: user.username,
-                        role: user.role_name,
+                        role: user.role_name || 'user',
                         ukm_id: user.ukm_id
                     }
                 });

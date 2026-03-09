@@ -2,225 +2,278 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
-import { Save, ArrowLeft, Image as ImageIcon, Loader2, Info, Link as LinkIcon } from 'lucide-react';
+import { Save, ArrowLeft, Image as ImageIcon, Loader2, MonitorPlay } from 'lucide-react';
 import api from '../api/axios';
 import { toast } from 'sonner';
 
 const EditPost = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [fetching, setFetching] = useState(true);
-  
-  const [title, setTitle] = useState('');
-  const [subtitle, setSubtitle] = useState('');
-  const [content, setContent] = useState('');
-  const [externalLink, setExternalLink] = useState('');
-  const [image, setImage] = useState(null);
-  const [preview, setPreview] = useState(null);
+    const { id } = useParams();
+    const navigate = useNavigate();
+    const [loading, setLoading] = useState(false);
+    const [fetching, setFetching] = useState(true);
 
-  useEffect(() => {
-    const fetchPost = async () => {
-        setFetching(true);
-        try {
-            const res = await api.get(`/posts/${id}`);
-            const data = res.data;
-            setTitle(data.title);
-            setSubtitle(data.subtitle || '');
-            setContent(data.content);
-            setExternalLink(data.external_link || '');
-            setPreview(data.image_url);
-        } catch (err) {
-            console.error(err);
-            toast.error("Gagal mengambil data berita");
-            navigate('/admin/posts');
-        } finally {
-            setFetching(false);
+    const [title, setTitle] = useState('');
+    const [subtitle, setSubtitle] = useState('');
+    const [content, setContent] = useState('');
+    const [externalLink, setExternalLink] = useState('');
+    const [image, setImage] = useState(null);
+    const [preview, setPreview] = useState(null);
+
+    useEffect(() => {
+        const fetchPost = async () => {
+            setFetching(true);
+            try {
+                const res = await api.get(`/posts/${id}`);
+                const data = res.data;
+                setTitle(data.title);
+                setSubtitle(data.subtitle || '');
+                setContent(data.content);
+                setExternalLink(data.external_link || '');
+                setPreview(data.image_url);
+            } catch (err) {
+                console.error(err);
+                toast.error("Gagal mengambil data berita");
+                navigate('/admin/posts');
+            } finally {
+                setFetching(false);
+            }
+        };
+        if (id) fetchPost();
+    }, [id, navigate]);
+
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.size > 2 * 1024 * 1024) {
+                return toast.error("Ukuran gambar maksimal 2MB!");
+            }
+            setImage(file);
+            setPreview(URL.createObjectURL(file));
         }
     };
-    if (id) fetchPost();
-  }, [id, navigate]);
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-        if (file.size > 2 * 1024 * 1024) { 
-            return toast.error("Ukuran gambar maksimal 2MB!");
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!title || !content) {
+            return toast.warning("Judul dan konten wajib diisi!");
         }
-        setImage(file);
-        setPreview(URL.createObjectURL(file));
-    }
-  };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!title || !content) {
-        return toast.warning("Judul dan konten wajib diisi!");
+        setLoading(true);
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('subtitle', subtitle);
+        formData.append('content', content);
+        formData.append('external_link', externalLink);
+
+        if (image) {
+            formData.append('image', image);
+        }
+
+        try {
+            await api.put(`/posts/${id}`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            toast.success("Berita berhasil diperbarui!");
+            navigate('/admin/posts');
+        } catch (err) {
+            console.error(err);
+            toast.error("Gagal memperbarui berita.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (fetching) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 text-slate-500">
+                <Loader2 className="animate-spin mb-2" size={32} />
+                <p className="font-bold">Memuat data berita...</p>
+            </div>
+        );
     }
 
-    setLoading(true);
-    const formData = new FormData();
-    formData.append('title', title);
-    formData.append('subtitle', subtitle);
-    formData.append('content', content);
-    formData.append('external_link', externalLink);
-    
-    if (image) {
-        formData.append('image', image);
-    }
-
-    try {
-      await api.put(`/posts/${id}`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      
-      toast.success("Berita berhasil diperbarui!");
-      navigate('/admin/posts'); 
-    } catch (err) {
-      console.error(err);
-      toast.error("Gagal memperbarui berita.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (fetching) {
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 text-slate-500">
-            <Loader2 className="animate-spin mb-2" size={32} />
-            <p className="font-bold">Memuat data berita...</p>
-        </div>
-    );
-  }
+        <div className="p-4 md:p-6 bg-gray-50 min-h-screen flex justify-center pb-20 font-sans">
+            <div className="w-full max-w-4xl">
 
-  return (
-    <div className="p-4 md:p-8 bg-gray-50 min-h-screen flex justify-center">
-      <div className="w-full max-w-5xl">
-        
-        <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-4">
-                <button 
-                  onClick={() => navigate(-1)} 
-                  className="p-3 bg-white hover:bg-gray-100 rounded-2xl border border-gray-200 transition-all shadow-sm active:scale-90"
-                >
-                  <ArrowLeft size={20} className="text-slate-600" />
-                </button>
-                <div className="min-w-0">
-                  <h1 className="text-2xl font-black text-slate-900 leading-none">Edit Berita</h1>
-                  <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">Post Editor v2.0</p>
+                <div className="flex items-center gap-3 md:gap-4 mb-5 md:mb-6">
+                    <button onClick={() => navigate(-1)} className="p-2 hover:bg-white rounded-full transition-colors bg-white md:bg-transparent shadow-sm md:shadow-none border border-gray-200 md:border-none"><ArrowLeft size={20} /></button>
+                    <h1 className="text-xl md:text-2xl font-black text-gray-800 tracking-tight">Edit Berita</h1>
                 </div>
-            </div>
-            <div className="hidden sm:flex items-center gap-2 bg-amber-50 text-amber-700 px-4 py-2 rounded-full border border-amber-100 font-bold text-xs uppercase tracking-tighter">
-                <Info size={14}/> Editing Mode
-            </div>
-        </div>
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
-            <div className="lg:col-span-2 space-y-6">
-                <div className="bg-white rounded-3xl border border-gray-200 p-6 md:p-8 shadow-sm space-y-8">
-                    <div>
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 block">Judul Berita Utama <span className="text-red-500">*</span></label>
-                        <textarea 
-                            rows="2"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            placeholder="Tulis judul berita..."
-                            className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 text-xl md:text-2xl font-bold text-slate-900 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all resize-none placeholder-slate-300"
-                            required
-                        />
-                    </div>
+                <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 md:p-8 space-y-6 md:space-y-8">
 
-                    <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1 block">Narasi Berita <span className="text-red-500">*</span></label>
-                        <div className="rounded-2xl border border-gray-200 overflow-hidden bg-gray-50 text-slate-900">
-                            <ReactQuill 
-                                theme="snow" 
-                                value={content} 
-                                onChange={setContent} 
-                                className="bg-white min-h-[400px] text-slate-900"
-                                modules={{
-                                    toolbar: [
-                                        [{ 'header': [1, 2, 3, false] }],
-                                        ['bold', 'italic', 'underline', 'strike'],
-                                        [{'list': 'ordered'}, {'list': 'bullet'}],
-                                        ['link', 'blockquote', 'code-block'],
-                                        ['clean']
-                                    ],
-                                }}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wider text-[11px]">Judul Artikel <span className="text-red-500">*</span></label>
+                            <input
+                                type="text"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                placeholder="Contoh: Kegiatan Bakti Sosial BEM 2025"
+                                className="w-full p-4 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none font-black text-lg md:text-2xl text-slate-900 transition-all placeholder:font-medium placeholder:text-gray-300"
+                                required
                             />
                         </div>
-                    </div>
-                </div>
-            </div>
 
-            <div className="space-y-6">
-                <div className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 block">Gambar Sampul</label>
-                    <div className="relative aspect-video rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-center hover:bg-blue-50/30 hover:border-blue-300 transition-all overflow-hidden group">
-                        <input 
-                            type="file" accept="image/*" onChange={handleImageChange}
-                            className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                        />
-                        {preview ? (
-                            <>
-                                <img src={preview} alt="Preview" className="w-full h-full object-cover" />
-                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                                    <span className="text-white font-bold text-xs uppercase bg-white/20 backdrop-blur-md px-4 py-2 rounded-full border border-white/30">Ganti Media</span>
-                                </div>
-                            </>
-                        ) : (
-                            <div className="p-4 space-y-2 pointer-events-none">
-                                <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
-                                    <ImageIcon size={24}/>
-                                </div>
-                                <p className="text-xs font-bold text-slate-600">Unggah Gambar</p>
-                                <p className="text-[10px] text-slate-400 uppercase tracking-tighter">PNG, JPG, WEBP (Max 2MB)</p>
-                            </div>
-                        )}
-                    </div>
-                    <p className="text-[9px] text-slate-400 mt-2 italic text-center">Kosongkan jika tidak ingin mengubah gambar.</p>
-                </div>
-
-                <div className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm space-y-6">
-                    <div>
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 block">Sub-Judul (Opsional)</label>
-                        <textarea 
-                            rows="3" value={subtitle} onChange={(e) => setSubtitle(e.target.value)}
-                            placeholder="Ringkasan singkat..."
-                            maxLength={150}
-                            className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none placeholder-slate-300"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 block">Link Informasi Luar</label>
-                        <div className="relative">
-                          <LinkIcon size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                          <input 
-                              type="url" value={externalLink} onChange={(e) => setExternalLink(e.target.value)}
-                              placeholder="https://..."
-                              className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-11 pr-4 py-3.5 text-sm font-bold text-blue-600 focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder-slate-300"
-                          />
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wider text-[11px]">Sub-Judul (Ringkasan Singkat)</label>
+                            <input
+                                type="text"
+                                value={subtitle}
+                                onChange={(e) => setSubtitle(e.target.value)}
+                                placeholder="Opsional: Muncul di bawah judul (Max 150 karakter)"
+                                maxLength={150}
+                                className="w-full p-3.5 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none text-sm font-medium text-slate-700 transition-all"
+                            />
                         </div>
+
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wider text-[11px]">Gambar Sampul</label>
+                            <div className="border-2 border-dashed border-gray-300 rounded-xl p-2 flex flex-col items-center justify-center text-center hover:bg-gray-50 transition-colors relative overflow-hidden group min-h-[250px] md:min-h-[350px] bg-slate-50">
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleImageChange}
+                                    className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full"
+                                />
+
+                                {preview ? (
+                                    <div className="relative w-full h-64 md:h-full rounded-lg overflow-hidden">
+                                        <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+                                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white font-bold tracking-widest uppercase text-sm pointer-events-none">
+                                            Ganti Gambar Sampul
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3 py-8 pointer-events-none">
+                                        <div className="w-16 h-16 bg-white shadow-sm border border-gray-100 text-blue-600 rounded-full flex items-center justify-center mx-auto">
+                                            <ImageIcon size={28} />
+                                        </div>
+                                        <p className="text-base font-bold text-slate-700 tracking-tight">Klik untuk upload foto</p>
+                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">PNG, JPG, WEBP (Max 2MB)</p>
+                                    </div>
+                                )}
+                            </div>
+                            <p className="text-[11px] font-bold text-gray-400 mt-2 uppercase tracking-widest">Biarkan kosong jika tidak ingin mengubah gambar.</p>
+                        </div>
+                    </div>
+
+                    {/* AREA ISI BERITA (SIMULASI FRONT-END) */}
+                    <div className="pt-4 border-t border-gray-100">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-4 gap-2">
+                            <label className="block text-sm font-bold text-gray-700 uppercase tracking-wider text-[11px]">
+                                Isi Berita <span className="text-red-500">*</span>
+                            </label>
+                            <div className="flex items-center gap-2 text-[10px] font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full uppercase tracking-widest">
+                                <MonitorPlay size={12} /> Mode Pratinjau Editorial Aktif
+                            </div>
+                        </div>
+
+                        {/* SUNTIKAN CSS KHUSUS AGAR EDITOR SAMA PERSIS DENGAN HALAMAN DETAIL */}
+                        <style>{`
+    .editor-preview .ql-toolbar {
+        border-top-left-radius: 0.75rem;
+        border-top-right-radius: 0.75rem;
+        background-color: #f8fafc;
+        border-color: #e2e8f0;
+        padding: 12px;
+    }
+    .editor-preview .ql-container {
+        border-bottom-left-radius: 0.75rem;
+        border-bottom-right-radius: 0.75rem;
+        border-color: #e2e8f0;
+        font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif !important;
+        font-size: 18px !important;
+        min-height: 500px;
+    }
+    @media (min-width: 768px) {
+        .editor-preview .ql-container { font-size: 20px !important; }
+    }
+    .editor-preview .ql-editor {
+        line-height: 1.8 !important;
+        color: #1e293b !important;
+        padding: 2rem !important;
+    }
+    
+    /* INI KUNCI ANTI TEKS KEPOTONG */
+    .editor-preview .ql-editor p, 
+    .editor-preview .ql-editor li, 
+    .editor-preview .ql-editor div {
+        word-break: normal !important;
+        overflow-wrap: normal !important;
+        white-space: pre-wrap !important;
+        hyphens: none !important;
+        -webkit-hyphens: none !important;
+        text-align: left !important; /* Paksa rata kiri, jangan justify */
+        margin-bottom: 1.5rem;
+    }
+
+    .editor-preview .ql-editor h1, 
+    .editor-preview .ql-editor h2 {
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+        font-weight: 900 !important;
+        color: #0f172a !important;
+        margin-top: 2rem !important;
+        margin-bottom: 1rem !important;
+        text-transform: uppercase !important;
+        text-align: left !important;
+    }
+`}</style>
+
+                        <ReactQuill
+                            theme="snow"
+                            value={content}
+                            onChange={setContent}
+                            className="editor-preview shadow-sm"
+                            modules={{
+                                toolbar: [
+                                    [{ 'header': [2, false] }],
+                                    ['bold', 'italic', 'underline', 'strike', 'blockquote'],
+                                    [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                                    ['link', 'clean']
+                                ],
+                            }}
+                            placeholder="Ketik isi berita Anda di sini... (Tampilan ini sudah disesuaikan dengan hasil akhir di website)"
+                        />
                     </div>
 
                     <div className="pt-4">
-                        <button 
-                            type="submit" disabled={loading}
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-3 shadow-xl shadow-blue-200 transition-all active:scale-[0.98] disabled:bg-slate-400 disabled:shadow-none"
+                        <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wider text-[11px]">Link Eksternal (Opsional)</label>
+                        <input
+                            type="url"
+                            value={externalLink}
+                            onChange={(e) => setExternalLink(e.target.value)}
+                            placeholder="Contoh: https://bit.ly/pendaftaran-acara"
+                            className="w-full p-3.5 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none text-blue-600 font-medium text-sm transition-all"
+                        />
+                        <p className="text-[11px] font-bold text-gray-400 mt-2 uppercase tracking-widest">Gunakan untuk tombol pendaftaran, formulir, atau dokumen g-drive.</p>
+                    </div>
+
+                    <div className="pt-8 border-t border-gray-100 flex flex-col md:flex-row justify-end gap-3 md:gap-4 mt-8">
+                        <button
+                            type="button"
+                            onClick={() => navigate(-1)}
+                            disabled={loading}
+                            className="order-2 md:order-1 px-8 py-3.5 rounded-xl font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-all border border-gray-200 md:border-transparent text-sm uppercase tracking-widest"
                         >
-                            {loading ? <Loader2 className="animate-spin" size={20}/> : <Save size={20}/>}
-                            {loading ? 'Menyimpan...' : 'Simpan Perubahan'}
+                            Batal
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="order-1 md:order-2 w-full md:w-auto bg-blue-600 hover:bg-slate-900 text-white px-10 py-3.5 rounded-xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                            {loading ? 'MENYIMPAN...' : 'SIMPAN PERUBAHAN'}
                         </button>
                     </div>
-                </div>
-            </div>
 
-        </form>
-      </div>
-    </div>
-  );
+                </form>
+            </div>
+        </div>
+    );
 };
 
 export default EditPost;

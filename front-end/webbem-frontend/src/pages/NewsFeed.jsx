@@ -1,18 +1,40 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '../components/Navbar';
-import { Pin, Calendar, ArrowRight, Search, XCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, ArrowRight, Search, XCircle, Clock, MapPin, Mail, Shield, ChevronRight } from 'lucide-react';
 import api from '../api/axios';
 
 const NewsSkeleton = () => (
-    <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm flex flex-col h-full animate-pulse">
-        <div className="aspect-video w-full bg-gray-200" />
-        <div className="p-5 flex-1 flex flex-col gap-3">
-            <div className="h-4 w-1/3 bg-gray-200 rounded" />
-            <div className="h-6 w-full bg-gray-200 rounded" />
-            <div className="h-4 w-full bg-gray-200 rounded" />
-            <div className="mt-auto h-8 w-full bg-gray-200 rounded pt-4" />
+    <div className="flex flex-col gap-4 animate-pulse">
+        <div className="aspect-[4/3] w-full bg-slate-200" />
+        <div className="space-y-2">
+            <div className="h-3 w-1/4 bg-slate-200" />
+            <div className="h-6 w-full bg-slate-200" />
+            <div className="h-6 w-5/6 bg-slate-200" />
+        </div>
+        <div className="h-3 w-full bg-slate-200 mt-2" />
+        <div className="h-3 w-2/3 bg-slate-200" />
+    </div>
+);
+
+const HeadlineSkeleton = () => (
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-16 animate-pulse">
+        <div className="lg:col-span-8">
+            <div className="aspect-video w-full bg-slate-200 mb-4" />
+            <div className="h-10 w-3/4 bg-slate-200 mb-3" />
+            <div className="h-4 w-1/2 bg-slate-200" />
+        </div>
+        <div className="lg:col-span-4 flex flex-col gap-8">
+            <div className="h-4 w-1/3 bg-slate-200 mb-2" />
+            <div className="flex gap-4">
+                <div className="w-1/3 aspect-[4/3] bg-slate-200" />
+                <div className="flex-1 space-y-2"><div className="h-4 w-full bg-slate-200" /><div className="h-4 w-2/3 bg-slate-200" /></div>
+            </div>
+            <div className="flex gap-4">
+                <div className="w-1/3 aspect-[4/3] bg-slate-200" />
+                <div className="flex-1 space-y-2"><div className="h-4 w-full bg-slate-200" /><div className="h-4 w-2/3 bg-slate-200" /></div>
+            </div>
         </div>
     </div>
 );
@@ -20,12 +42,11 @@ const NewsSkeleton = () => (
 const NewsFeed = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const scrollRef = useRef(null);
 
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filterCategory, setFilterCategory] = useState('Semua');
-    const [searchQuery, setSearchQuery] = useState(''); 
+    const [searchQuery, setSearchQuery] = useState('');
     const [visibleCount, setVisibleCount] = useState(6);
 
     const stripHtml = (html) => {
@@ -35,7 +56,7 @@ const NewsFeed = () => {
     };
 
     const handleImageError = (e) => {
-        e.target.src = 'https://via.placeholder.com/600x400?text=No+Image'; 
+        e.target.src = 'https://via.placeholder.com/800x600?text=SIAKSI+NEWS';
     };
 
     useEffect(() => {
@@ -56,11 +77,11 @@ const NewsFeed = () => {
     useEffect(() => {
         const params = new URLSearchParams(location.search);
         const cat = params.get('cat');
-        const search = params.get('search'); 
+        const search = params.get('search');
 
         setFilterCategory(cat ? decodeURIComponent(cat) : 'Semua');
         setSearchQuery(search ? decodeURIComponent(search) : '');
-        setVisibleCount(6); 
+        setVisibleCount(6);
     }, [location.search]);
 
     const filteredPosts = useMemo(() => {
@@ -68,16 +89,10 @@ const NewsFeed = () => {
             const dbName = post.ukm_name ? post.ukm_name.toLowerCase().trim() : '';
             const filterName = filterCategory.toLowerCase().trim();
 
-            const isCategoryMatch = 
-                filterCategory === 'Semua' || 
-                filterCategory === 'All' || 
-                dbName.includes(filterName); 
+            const isCategoryMatch = filterCategory === 'Semua' || filterCategory === 'All' || dbName.includes(filterName);
 
             const query = searchQuery.toLowerCase();
-            const isSearchMatch = 
-                !searchQuery || 
-                post.title.toLowerCase().includes(query) ||
-                (post.content && stripHtml(post.content).toLowerCase().includes(query)); 
+            const isSearchMatch = !searchQuery || post.title.toLowerCase().includes(query) || (post.content && stripHtml(post.content).toLowerCase().includes(query));
 
             return isCategoryMatch && isSearchMatch;
         });
@@ -86,194 +101,244 @@ const NewsFeed = () => {
     const pinnedPosts = useMemo(() => filteredPosts.filter(p => p.is_pinned), [filteredPosts]);
     const displayPosts = filteredPosts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-    const scroll = (direction) => {
-        if(scrollRef.current){
-            const { current } = scrollRef;
-            const scrollAmount = direction === 'left' ? -current.offsetWidth : current.offsetWidth;
-            current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-        }
-    };
+    const clearSearch = () => navigate('/news');
 
-    const clearSearch = () => {
-        navigate('/news'); 
-    };
+    const topHeadline = pinnedPosts.length > 0 ? pinnedPosts[0] : (displayPosts.length > 0 ? displayPosts[0] : null);
+
+    // Jangan tampilkan topHeadline lagi di daftar grid bawah
+    const gridPosts = displayPosts.filter(p => p.id !== topHeadline?.id).slice(0, visibleCount);
+    const subHeadlines = displayPosts.filter(p => p.id !== topHeadline?.id).slice(0, 3); // Ambil 3 untuk sidebar jika tidak ada search
 
     return (
-        <div className="min-h-screen bg-gray-50 font-sans selection:bg-blue-200 selection:text-blue-900 pb-24">
+        <div className="min-h-screen bg-white font-sans selection:bg-blue-200 selection:text-blue-900">
             <Navbar isTransparent={false} />
-            
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 md:pt-32">
-                
-                <div className="mb-8 md:mb-12">
-                    <h2 className="text-2xl md:text-4xl font-black text-gray-900 flex flex-col md:flex-row md:items-center gap-2 mb-3 leading-tight">
-                        {searchQuery ? (
-                            <>
-                                <span className="text-gray-400 font-medium text-lg">Pencarian:</span> 
-                                <span className="italic text-blue-600">"{searchQuery}"</span>
-                            </>
-                        ) : (
-                            <>{filterCategory === 'Semua' ? 'Berita & Kegiatan' : `Kabar ${filterCategory}`}</>
-                        )}
-                    </h2>
-                    
-                    <div className="flex flex-wrap gap-3 items-center text-sm text-gray-500 font-medium">
-                        <span className="bg-white px-3 py-1 rounded-full border border-gray-200 shadow-sm">
-                            {filteredPosts.length} Artikel Ditemukan
-                        </span>
-                        {(filterCategory !== 'Semua' || searchQuery) && (
-                            <button 
-                                onClick={clearSearch}
-                                className="flex items-center gap-1 text-red-600 bg-red-50 px-3 py-1 rounded-full hover:bg-red-100 transition-colors"
-                            >
-                                <XCircle size={14}/> Hapus Filter
+
+            {/* Header Kategori / Search Bar (Ala Editorial) */}
+            <div className="border-b border-slate-200 pt-28 pb-8">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+                    <div>
+                        <h1 className="text-4xl md:text-6xl font-black text-slate-900 uppercase tracking-tighter leading-none mb-2">
+                            {searchQuery ? 'Hasil Pencarian' : 'News & Media'}
+                        </h1>
+                        <p className="text-slate-500 font-medium tracking-wide uppercase text-sm">
+                            {searchQuery ? `Kata Kunci: "${searchQuery}"` : (filterCategory === 'Semua' ? 'Kabar Terbaru BEM & UKM' : `Kategori: ${filterCategory}`)}
+                        </p>
+                    </div>
+
+                    <div className="w-full md:w-80 flex items-center bg-slate-50 border border-slate-200 p-1">
+                        <Search size={18} className="text-slate-400 mx-3" />
+                        <input
+                            type="text"
+                            placeholder="Cari berita..."
+                            className="w-full bg-transparent border-none outline-none text-sm py-2"
+                            value={searchQuery}
+                            onChange={(e) => navigate(e.target.value ? `/news?search=${e.target.value}` : '/news')}
+                        />
+                        {searchQuery && (
+                            <button onClick={clearSearch} className="p-2 text-slate-400 hover:text-red-500 transition-colors">
+                                <XCircle size={16} />
                             </button>
                         )}
                     </div>
                 </div>
+            </div>
 
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 {loading ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-                        {[1, 2, 3, 4, 5, 6].map(i => <NewsSkeleton key={i} />)}
-                    </div>
+                    <>
+                        <HeadlineSkeleton />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mt-12 border-t border-slate-200 pt-12">
+                            {[1, 2, 3].map(i => <NewsSkeleton key={i} />)}
+                        </div>
+                    </>
                 ) : (
                     <>
-                        {!searchQuery && filterCategory === 'Semua' && pinnedPosts.length > 0 && (
-                            <div className="mb-12 md:mb-16 relative group">
-                                <div className="flex items-center gap-2 mb-4 md:mb-6 pl-1">
-                                    <div className="bg-red-100 p-1.5 rounded-lg">
-                                        <Pin size={18} className="text-red-600 fill-red-600"/>
+                        {/* MAIN EDITORIAL SECTION */}
+                        {!searchQuery && topHeadline && (
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 mb-16">
+
+                                {/* Berita Utama (Kiri/Besar) */}
+                                <div
+                                    className="lg:col-span-8 group cursor-pointer"
+                                    onClick={() => navigate(`/news/${topHeadline.id}`)}
+                                >
+                                    <div className="relative overflow-hidden mb-6 aspect-video bg-slate-100">
+                                        <div className="absolute top-4 left-4 z-10">
+                                            <span className="bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 flex items-center gap-2">
+                                                <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" /> SOROTAN UTAMA
+                                            </span>
+                                        </div>
+                                        <img
+                                            src={topHeadline.image_url}
+                                            alt={topHeadline.title}
+                                            onError={handleImageError}
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                                        />
                                     </div>
-                                    <h3 className="font-extrabold text-gray-800 uppercase tracking-widest text-xs md:text-sm">Highlight</h3>
+                                    <div className="flex items-center gap-3 text-xs font-bold text-blue-600 uppercase tracking-widest mb-3">
+                                        <span>{topHeadline.ukm_name}</span>
+                                        <span className="text-slate-300">•</span>
+                                        <span className="text-slate-500">{new Date(topHeadline.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                    </div>
+                                    <h2 className="text-3xl md:text-5xl font-black text-slate-900 leading-[1.1] mb-4 group-hover:text-blue-700 transition-colors">
+                                        {topHeadline.title}
+                                    </h2>
+                                    <p className="text-slate-600 text-base md:text-lg font-serif line-clamp-3 leading-relaxed">
+                                        {stripHtml(topHeadline.content)}
+                                    </p>
                                 </div>
 
-                                {pinnedPosts.length > 1 && (
-                                    <>
-                                        <button onClick={() => scroll('left')} className="hidden md:flex absolute -left-5 top-1/2 -translate-y-1/2 z-30 bg-white hover:bg-gray-50 text-gray-800 p-3 rounded-full shadow-xl border border-gray-100 transition-all opacity-0 group-hover:opacity-100 hover:scale-110">
-                                            <ChevronLeft size={24}/>
-                                        </button>
-                                        <button onClick={() => scroll('right')} className="hidden md:flex absolute -right-5 top-1/2 -translate-y-1/2 z-30 bg-white hover:bg-gray-50 text-gray-800 p-3 rounded-full shadow-xl border border-gray-100 transition-all opacity-0 group-hover:opacity-100 hover:scale-110">
-                                            <ChevronRight size={24}/>
-                                        </button>
-                                    </>
-                                )}
+                                {/* Berita Samping (Kanan) - Ala Koran */}
+                                <div className="lg:col-span-4 flex flex-col border-t lg:border-t-0 lg:border-l border-slate-200 pt-8 lg:pt-0 lg:pl-8">
+                                    <h3 className="font-black text-slate-900 uppercase tracking-widest text-xs mb-6 flex items-center justify-between">
+                                        TERPOPULER <ArrowRight size={14} />
+                                    </h3>
 
-                                <div 
-                                    ref={scrollRef}
-                                    className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar gap-4 md:gap-6 pb-4"
-                                >
-                                    {pinnedPosts.map((post) => (
-                                        <div 
-                                            key={post.id} 
-                                            className="min-w-[85vw] md:min-w-[calc(100%-100px)] lg:min-w-[800px] relative h-[250px] sm:h-[350px] md:h-[450px] snap-center cursor-pointer shrink-0 rounded-2xl md:rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 group/card"
+                                    <div className="flex flex-col gap-8">
+                                        {subHeadlines.map((post, idx) => (
+                                            <div
+                                                key={post.id}
+                                                onClick={() => navigate(`/news/${post.id}`)}
+                                                className={`group cursor-pointer flex gap-4 ${idx !== subHeadlines.length - 1 ? 'border-b border-slate-100 pb-8' : ''}`}
+                                            >
+                                                <div className="w-24 h-24 shrink-0 bg-slate-100 overflow-hidden">
+                                                    <img
+                                                        src={post.image_url}
+                                                        alt={post.title}
+                                                        onError={handleImageError}
+                                                        className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+                                                    />
+                                                </div>
+                                                <div className="flex-1 flex flex-col justify-center">
+                                                    <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1.5">
+                                                        {post.ukm_name}
+                                                    </span>
+                                                    <h4 className="text-sm font-bold text-slate-900 leading-snug group-hover:text-blue-700 transition-colors line-clamp-3">
+                                                        {post.title}
+                                                    </h4>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Kotak Berlangganan (Aksen Visual) */}
+                                    <div className="mt-auto pt-8">
+                                        <div className="bg-blue-50 p-6 border border-blue-100">
+                                            <h4 className="font-black text-blue-900 uppercase tracking-tight mb-2">Tetap Terhubung</h4>
+                                            <p className="text-sm text-blue-800/70 mb-4 font-medium">Dapatkan info kegiatan dan berita BEM langsung di ujung jari Anda.</p>
+                                            <button onClick={() => window.scrollTo(0, 0)} className="w-full bg-blue-600 text-white text-xs font-bold uppercase tracking-widest py-3 hover:bg-slate-900 transition-colors">
+                                                Jelajahi SIAKSI
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        )}
+
+                        {/* GRID BERITA BAWAH (LATEST NEWS) */}
+                        <div className="border-t-4 border-slate-900 pt-8 mt-12">
+                            <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter mb-8">
+                                {searchQuery ? 'Hasil Pencarian' : 'Semua Berita'}
+                            </h3>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
+                                <AnimatePresence mode='popLayout'>
+                                    {gridPosts.map((post) => (
+                                        <motion.div
+                                            key={post.id}
+                                            layout
+                                            initial={{ opacity: 0, y: 20 }}
+                                            whileInView={{ opacity: 1, y: 0 }}
+                                            viewport={{ once: true }}
+                                            className="group cursor-pointer flex flex-col"
                                             onClick={() => navigate(`/news/${post.id}`)}
                                         >
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-10" />
-                                            <img 
-                                                src={post.image_url} 
-                                                alt={post.title} 
-                                                onError={handleImageError}
-                                                className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-700" 
-                                            />
-                                            
-                                            <div className="absolute bottom-0 left-0 w-full p-5 md:p-10 z-20 flex flex-col justify-end h-full">
-                                                <span className="self-start bg-blue-600/90 backdrop-blur-sm text-white text-[10px] md:text-xs font-bold px-3 py-1 rounded-full mb-2 md:mb-4 shadow-sm border border-white/10">
+                                            <div className="aspect-[4/3] w-full overflow-hidden bg-slate-100 mb-4">
+                                                <img
+                                                    src={post.image_url}
+                                                    alt={post.title}
+                                                    loading="lazy"
+                                                    onError={handleImageError}
+                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                                />
+                                            </div>
+
+                                            <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-3">
+                                                <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">
                                                     {post.ukm_name}
                                                 </span>
-                                                <h1 className="text-xl sm:text-2xl md:text-4xl font-bold text-white mb-2 md:mb-3 leading-tight line-clamp-2 md:line-clamp-2">
-                                                    {post.title}
-                                                </h1>
-                                                <p className="text-gray-300 text-xs md:text-base line-clamp-2 max-w-2xl hidden sm:block">
-                                                    {stripHtml(post.content)}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-                            <AnimatePresence mode='popLayout'>
-                                {displayPosts.slice(0, visibleCount).map((post) => (
-                                    <motion.div 
-                                        key={post.id}
-                                        layout
-                                        initial={{ opacity: 0, scale: 0.95 }}
-                                        whileInView={{ opacity: 1, scale: 1 }}
-                                        viewport={{ once: true }}
-                                        className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col h-full group"
-                                        onClick={() => navigate(`/news/${post.id}`)}
-                                    >
-                                        <div className="aspect-video overflow-hidden relative shrink-0">
-                                            <span className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm text-[10px] font-bold px-2 py-1 rounded-md z-10 text-gray-800 shadow-sm">
-                                                {post.ukm_name}
-                                            </span>
-                                            <img 
-                                                src={post.image_url} 
-                                                alt={post.title} 
-                                                loading="lazy"
-                                                onError={handleImageError}
-                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-                                            />
-                                        </div>
-                                        
-                                        <div className="p-5 flex-1 flex flex-col">
-                                            <div className="flex items-center gap-2 text-[10px] md:text-xs text-gray-400 mb-2 font-bold uppercase tracking-wide">
-                                                <Calendar size={12} className="text-blue-500"/> 
-                                                {new Date(post.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                            </div>
-                                            
-                                            <h3 className="text-base md:text-lg font-bold text-gray-900 mb-2 leading-snug group-hover:text-blue-600 transition-colors line-clamp-2">
-                                                {post.title}
-                                            </h3>
-                                            
-                                            <p className="text-gray-500 text-xs md:text-sm line-clamp-3 mb-4 flex-1 leading-relaxed">
-                                                {stripHtml(post.content)}
-                                            </p>
-                                            
-                                            <div className="pt-4 border-t border-gray-50 flex justify-between items-center mt-auto">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-600">
-                                                        {post.ukm_name ? post.ukm_name.charAt(0) : 'A'}
-                                                    </div>
-                                                    <span className="text-xs text-gray-500 font-medium">Admin</span>
-                                                </div>
-                                                <span className="text-blue-600 text-xs font-bold flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                                                    Baca <ArrowRight size={12}/>
+                                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                                                    <Clock size={10} /> {new Date(post.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
                                                 </span>
                                             </div>
-                                        </div>
-                                    </motion.div>
-                                ))}
-                            </AnimatePresence>
-                        </div>
 
-                        {displayPosts.length === 0 && (
-                            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border-2 border-dashed border-gray-200 text-center px-4">
-                                <div className="bg-gray-50 p-4 rounded-full mb-4">
-                                    <Search size={32} className="text-gray-400"/>
+                                            <h3 className="text-lg font-black text-slate-900 mb-2 leading-snug group-hover:text-blue-600 transition-colors line-clamp-3">
+                                                {post.title}
+                                            </h3>
+
+                                            <p className="text-slate-500 text-sm font-serif line-clamp-3">
+                                                {stripHtml(post.content)}
+                                            </p>
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
+                            </div>
+
+                            {displayPosts.length === 0 && (
+                                <div className="py-24 text-center">
+                                    <Search size={48} className="text-slate-200 mx-auto mb-4" />
+                                    <h3 className="text-xl font-black text-slate-900 uppercase">Tidak Ada Berita</h3>
+                                    <p className="text-slate-500 mt-2">Tidak menemukan artikel untuk pencarian ini.</p>
                                 </div>
-                                <h3 className="text-lg font-bold text-gray-900">Tidak ada berita ditemukan</h3>
-                                <p className="text-gray-500 text-sm mt-1 mb-6">Coba kata kunci lain atau reset filter.</p>
-                                <button onClick={clearSearch} className="px-6 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
-                                    Reset Pencarian
-                                </button>
-                            </div>
-                        )}
+                            )}
 
-                        {displayPosts.length > visibleCount && (
-                            <div className="mt-12 flex justify-center">
-                                <button 
-                                    onClick={() => setVisibleCount(prev => prev + 6)}
-                                    className="px-8 py-3 bg-white border border-gray-200 rounded-full text-sm font-bold text-gray-600 hover:bg-gray-50 hover:text-blue-600 hover:border-blue-200 shadow-sm transition-all flex items-center gap-2 active:scale-95"
-                                >
-                                    Muat Lebih Banyak
-                                </button>
-                            </div>
-                        )}
+                            {gridPosts.length < displayPosts.length - 1 && (
+                                <div className="mt-16 text-center">
+                                    <button
+                                        onClick={() => setVisibleCount(prev => prev + 6)}
+                                        className="px-8 py-3 border-2 border-slate-900 text-slate-900 text-xs font-black uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-colors"
+                                    >
+                                        Muat Lebih Banyak
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </>
                 )}
             </div>
+
+            {/* Footer Gelap ala Editorial */}
+            <footer className="bg-slate-900 pt-20 pb-10 px-4 mt-24 border-t-[8px] border-blue-600">
+                <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-12 mb-16">
+                    <div className="md:col-span-5">
+                        <h3 className="text-4xl font-black text-white mb-6 tracking-tighter">SIAKSI.</h3>
+                        <p className="text-slate-400 font-medium leading-relaxed max-w-sm text-sm">
+                            Platform ekosistem digital untuk manajemen organisasi mahasiswa yang adaptif dan terintegrasi. Menyajikan berita aktual dan terpercaya.
+                        </p>
+                    </div>
+                    <div className="md:col-span-3 md:col-start-7">
+                        <h4 className="text-white font-bold mb-6 text-xs uppercase tracking-widest border-b border-slate-800 pb-2">Navigasi</h4>
+                        <ul className="space-y-4 text-sm text-slate-400 font-medium">
+                            <li><button onClick={() => navigate('/')} className="hover:text-white transition-colors flex items-center gap-2"><ChevronRight size={14} /> Beranda</button></li>
+                            <li><button onClick={() => navigate('/news')} className="hover:text-white transition-colors flex items-center gap-2"><ChevronRight size={14} /> Kabar Berita</button></li>
+                        </ul>
+                    </div>
+                    <div className="md:col-span-3">
+                        <h4 className="text-white font-bold mb-6 text-xs uppercase tracking-widest border-b border-slate-800 pb-2">Kontak Redaksi</h4>
+                        <ul className="space-y-4 text-sm text-slate-400 font-medium">
+                            <li className="flex gap-3"><MapPin size={16} className="text-blue-500 shrink-0 mt-0.5" /> STIKOM Poltek Cirebon</li>
+                            <li className="flex gap-3"><Mail size={16} className="text-blue-500 shrink-0 mt-0.5" /> siaksibemstimcrb@gmail.com</li>
+                        </ul>
+                    </div>
+                </div>
+                <div className="max-w-7xl mx-auto pt-8 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                    <p>&copy; {new Date().getFullYear()} BEM STIKOM Poltek Cirebon. All Rights Reserved.</p>
+                    <div className="flex items-center gap-1.5 text-slate-600">
+                        <Shield size={12} /> VERSI 1.0.0
+                    </div>
+                </div>
+            </footer>
         </div>
     );
 };

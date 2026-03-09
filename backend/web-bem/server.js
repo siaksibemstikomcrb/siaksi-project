@@ -86,13 +86,18 @@ app.use((err, req, res, next) => {
     });
 });
 
-app.listen(PORT, async () => {
+app.listen(PORT, async (err) => {
+    if (err) {
+        console.error(`🔥 Gagal memulai server: Port ${PORT} mungkin sudah digunakan. Error:`, err.message);
+        process.exit(1);
+    }
+
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`🔌 Socket.io ready on port ${PORT}`);
 
     try {
         await discordBot.login(process.env.DISCORD_BOT_TOKEN);
-    } catch (err) {
-        console.error("Gagal login Discord Bot:", err.message);
+    } catch (botErr) {
+        console.error("Gagal login Discord Bot:", botErr.message);
     }
 });

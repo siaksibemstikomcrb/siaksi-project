@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 @theme {
   --color-dark-bg: #0b0e14;
@@ -17,11 +18,12 @@
   html {
     scroll-behavior: smooth;
   }
+
   body {
-  @apply bg-white text-[#222222] antialiased;
-  font-family: 'Poppins', sans-serif;
-  letter-spacing: -0.01em;
-  word-break: normal;
+    @apply bg-white text-[#222222] antialiased;
+    font-family: 'Poppins', sans-serif;
+    letter-spacing: -0.01em;
+    word-break: normal;
     hyphens: none;
-}
+  }
 }

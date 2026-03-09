@@ -1,21 +1,21 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { 
-    LogOut, Activity, Users, Calendar, 
-    ShieldCheck, Building, X, Bell, Send, FolderOpen, 
-    Printer, Newspaper, BookOpen, 
+import {
+    LogOut, Activity, Users, Calendar,
+    ShieldCheck, Building, X, Bell, Send, FolderOpen,
+    Printer, Newspaper, BookOpen,
     ChevronRight, MessageCircle, MessageSquare,
     Home, Clock
 } from 'lucide-react';
-import api from '../api/axios'; 
+import api from '../api/axios';
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const role = localStorage.getItem('role');
-    
-    const [unreadCount, setUnreadCount] = useState(0); 
-    const [openMenus, setOpenMenus] = useState({}); 
+
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [openMenus, setOpenMenus] = useState({});
 
     const MENU_ITEMS = [
         {
@@ -31,26 +31,27 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             title: "Manajemen & Kegiatan",
             roles: ['admin', 'super_admin'],
             items: [
-                { 
-                    label: "Kelola Event", 
+                {
+                    label: "Kelola Event",
                     icon: Calendar,
                     roles: ['admin', 'super_admin'],
                     children: [
                         { label: "Buat Jadwal", path: "/admin-dashboard" },
                         { label: "Riwayat Acara", path: "/admin/events" },
                         { label: "Presensi Anggota", path: "/admin/members" },
-                        { label: "Kelola Learning", path: "/admin/learning", roles: ['super_admin']},
-                        { label: "Kategori Learning", path: "/admin/learning/categories", role: ['super_admin']}
+                        { label: "Kelola Learning", path: "/admin/learning", roles: ['super_admin'] },
+                        // TYPO DIPERBAIKI DI SINI (role -> roles)
+                        { label: "Kategori Learning", path: "/admin/learning/categories", roles: ['super_admin'] }
                     ]
                 },
-                { 
-                    label: "Data Master", 
+                {
+                    label: "Data Master",
                     icon: Building,
-                    roles: ['super_admin', 'admin'], 
+                    roles: ['super_admin', 'admin'],
                     children: [
-                        { label: "Kelola UKM", path: "/superadmin/manage-ukm", roles: ['super_admin'] }, 
+                        { label: "Kelola UKM", path: "/superadmin/manage-ukm", roles: ['super_admin'] },
                         { label: "Kelola Users", path: "/superadmin/manage-users", roles: ['super_admin', 'admin'] },
-                        { label: "Import Anggota (Excel)", path: "/superadmin/import-members", roles: ['super_admin', 'admin'] }, 
+                        { label: "Import Anggota (Excel)", path: "/superadmin/import-members", roles: ['super_admin', 'admin'] },
                     ]
                 }
             ]
@@ -133,7 +134,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
     useEffect(() => {
         MENU_ITEMS.forEach(group => {
-            if(group.items) {
+            if (group.items) {
                 group.items.forEach(item => {
                     if (item.children) {
                         const childActive = item.children.some(child => isActive(child.path));
@@ -156,9 +157,9 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     return (
         <>
             {isOpen && (
-                <div 
-                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden transition-opacity duration-300" 
-                    onClick={() => setIsOpen(false)} 
+                <div
+                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden transition-opacity duration-300"
+                    onClick={() => setIsOpen(false)}
                 />
             )}
 
@@ -167,7 +168,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                 transform transition-transform duration-300 ease-in-out flex flex-col shadow-2xl md:shadow-none
                 ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
             `}>
-                
+
                 <div className="h-16 shrink-0 flex items-center justify-between px-6 border-b border-gray-100 bg-white">
                     <div className="flex items-center gap-3">
                         <div className="bg-slate-900 w-8 h-8 rounded-lg flex items-center justify-center text-white">
@@ -198,10 +199,10 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                                         if (item.children) {
                                             const isOpenMenu = openMenus[item.label];
                                             const isChildActive = item.children.some(c => isActive(c.path));
-                                            
+
                                             return (
                                                 <div key={itemIdx} className="mb-1">
-                                                    <button 
+                                                    <button
                                                         onClick={() => toggleMenu(item.label)}
                                                         className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all text-sm font-medium
                                                             ${isOpenMenu || isChildActive ? 'text-slate-800 bg-slate-50' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}
@@ -220,8 +221,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                                                                 if (child.roles && !hasRole(child.roles)) return null;
                                                                 const active = isActive(child.path);
                                                                 return (
-                                                                    <Link 
-                                                                        key={cIdx} 
+                                                                    <Link
+                                                                        key={cIdx}
                                                                         to={child.path}
                                                                         onClick={() => window.innerWidth < 768 && setIsOpen(false)}
                                                                         className={`block px-3 py-2 rounded-md text-sm transition-colors
@@ -240,13 +241,13 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
                                         const active = isActive(item.path);
                                         return (
-                                            <Link 
+                                            <Link
                                                 key={itemIdx}
                                                 to={item.path}
                                                 onClick={() => window.innerWidth < 768 && setIsOpen(false)}
                                                 className={`flex items-center justify-between px-3 py-2.5 rounded-lg transition-all text-sm font-medium mb-1
-                                                    ${active 
-                                                        ? 'bg-slate-900 text-white shadow-md shadow-slate-200' 
+                                                    ${active
+                                                        ? 'bg-slate-900 text-white shadow-md shadow-slate-200'
                                                         : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                                                     }
                                                 `}
@@ -281,8 +282,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                             </Link>
                         </div>
                     </div>
-                    
-                    <button 
+
+                    <button
                         onClick={handleLogout}
                         className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                     >

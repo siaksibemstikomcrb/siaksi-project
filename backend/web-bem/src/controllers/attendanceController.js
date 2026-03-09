@@ -11,7 +11,7 @@ const getJakartaDateString = (dateObj) => {
 
 const submitAttendance = async (req, res) => {
     const { schedule_id, reason, latitude, longitude } = req.body;
-    const user_id = req.user.id; 
+    const user_id = req.user.id;
 
     try {
         const check = await db.query('SELECT id FROM Attendances WHERE user_id = $1 AND schedule_id = $2', [user_id, schedule_id]);
@@ -19,16 +19,16 @@ const submitAttendance = async (req, res) => {
 
         const scheduleRes = await db.query('SELECT * FROM Schedules WHERE id = $1', [schedule_id]);
         if (scheduleRes.rows.length === 0) return res.status(404).json({ msg: 'Jadwal tidak ditemukan' });
-        
+
         const schedule = scheduleRes.rows[0];
-        
+
         const nowJakarta = getJakartaDate();
-        
+
         const eventDateStr = getJakartaDateString(schedule.event_date);
 
         const openTime = new Date(`${eventDateStr}T${schedule.attendance_open_time}`);
         const closeTime = new Date(`${eventDateStr}T${schedule.attendance_close_time}`);
-        
+
         if (closeTime < openTime) {
             closeTime.setDate(closeTime.getDate() + 1);
         }
@@ -40,7 +40,7 @@ const submitAttendance = async (req, res) => {
         if (isIzin) {
             status = 'Izin';
             if (nowJakarta > closeTime) {
-                 return res.status(400).json({ msg: 'Kegiatan sudah selesai, terlambat untuk izin.' });
+                return res.status(400).json({ msg: 'Kegiatan sudah selesai, terlambat untuk izin.' });
             }
         } else {
             if (nowJakarta < openTime) {
@@ -54,18 +54,18 @@ const submitAttendance = async (req, res) => {
                 if (!latitude || !longitude) return res.status(400).json({ msg: 'Lokasi GPS wajib diaktifkan.' });
 
                 const getDistance = (lat1, lon1, lat2, lon2) => {
-                    const R = 6371e3; 
+                    const R = 6371e3;
                     const toRad = x => x * Math.PI / 180;
                     const dLat = toRad(lat2 - lat1);
                     const dLon = toRad(lon2 - lon1);
-                    const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2) * Math.sin(dLon/2);
-                    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
                     return R * c;
                 };
 
                 const distance = getDistance(latitude, longitude, schedule.latitude, schedule.longitude);
-                const radius = schedule.radius_meters || 50; 
-                
+                const radius = schedule.radius_meters || 50;
+
                 if (distance > radius) {
                     return res.status(400).json({ msg: `Di luar lokasi. Jarak: ${Math.floor(distance)}m (Maks: ${radius}m).` });
                 }
@@ -88,16 +88,16 @@ const submitAttendance = async (req, res) => {
 
 const getMemberHistory = async (req, res) => {
     try {
-        const targetUserId = req.params.userId || req.user.id; 
+        const targetUserId = req.params.userId || req.user.id;
         const userRes = await db.query('SELECT id, name, nia, ukm_id FROM Users WHERE id = $1', [targetUserId]);
         if (userRes.rows.length === 0) return res.status(404).json({ msg: 'User tidak ditemukan' });
-        
+
         const user = userRes.rows[0];
 
         const historyRes = await db.query(`
             SELECT 
                 s.id, s.event_name, s.event_date, s.start_time, s.end_time, s.attendance_close_time,
-                a.status, a.attendance_time, a.reason
+                a.status as attendance_status, a.attendance_time, a.reason
             FROM Schedules s
             LEFT JOIN Attendances a ON s.id = a.schedule_id AND a.user_id = $1
             WHERE s.ukm_id = $2 AND s.status != 'BATAL' 
@@ -105,24 +105,24 @@ const getMemberHistory = async (req, res) => {
         `, [targetUserId, user.ukm_id]);
 
         const nowJakarta = getJakartaDate();
-        
+
         const formattedHistory = historyRes.rows.map(row => {
             const eventDateStr = getJakartaDateString(row.event_date);
             const closeTime = new Date(`${eventDateStr}T${row.attendance_close_time}`);
             const startTime = new Date(`${eventDateStr}T${row.start_time}`);
-            
+
             if (closeTime < startTime) closeTime.setDate(closeTime.getDate() + 1);
 
-            let computedStatus = row.status;
+            let computedStatus = row.attendance_status;
             if (!computedStatus) {
-                if (nowJakarta > closeTime) computedStatus = 'Alpa'; 
+                if (nowJakarta > closeTime) computedStatus = 'Alpa';
                 else computedStatus = 'Belum Absen';
             }
 
             return {
                 ...row,
                 status: computedStatus,
-                attendance_time: row.attendance_time ? new Date(row.attendance_time).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}) : null,
+                attendance_time: row.attendance_time ? new Date(row.attendance_time).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : null,
                 event_date: new Date(row.event_date).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
             };
         });

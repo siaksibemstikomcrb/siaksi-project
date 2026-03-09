@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://siaksi.stikompoltekcirebon.ac.id/api', 
+  baseURL: 'http://siaksi.stikompoltekcirebon.ac.id/api',
   withCredentials: true,
   timeout: 60000,
 });
@@ -10,11 +10,11 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     if (config.data instanceof FormData) {
-        delete config.headers['Content-Type'];
+      delete config.headers['Content-Type'];
     } else {
-        config.headers['Content-Type'] = 'application/json';
+      config.headers['Content-Type'] = 'application/json';
     }
-    
+
     return config;
   },
   (error) => Promise.reject(error)
@@ -25,12 +25,12 @@ api.interceptors.response.use(
   (error) => {
     if (error.response && error.response.status === 401) {
       console.warn("Sesi kadaluarsa atau token tidak valid.");
-      
-      localStorage.clear(); 
-      
+
+      localStorage.clear();
+
       if (window.location.pathname !== '/login') {
-         alert("Sesi Anda telah berakhir. Silakan login kembali.");
-         window.location.href = '/login';
+        alert("Sesi Anda telah berakhir. Silakan login kembali.");
+        window.location.href = '/login';
       }
     }
     return Promise.reject(error);

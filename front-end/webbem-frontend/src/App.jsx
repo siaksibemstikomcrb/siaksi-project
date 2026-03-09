@@ -10,8 +10,8 @@ import SmoothScrollManager from './components/SmootScrollManager';
 
 import Login from './pages/Login';
 import HomePage from './pages/Home';
-import NewsFeed from './pages/NewsFeed'; 
-import PostDetail from './pages/PostDetail'; 
+import NewsFeed from './pages/NewsFeed';
+import PostDetail from './pages/PostDetail';
 
 import Absen from './pages/Absen';
 import MyHistory from './pages/MyHistory';
@@ -40,12 +40,12 @@ import EditPost from './pages/EditPost';
 import EditSchedule from './pages/EditSchedule';
 import ProfileUKM from './pages/ProfileUKM';
 
-import FinanceTools from './pages/FinanceTools'; 
+import FinanceTools from './pages/FinanceTools';
 import UserProfile from './pages/UserProfile';
 import MemberManagement from './pages/MemberManagement';
 
 import UserComplaint from './pages/UserComplaint';
-import UserComplaintHistory from './pages/complaints/UserComplaintHistory'; 
+import UserComplaintHistory from './pages/complaints/UserComplaintHistory';
 import AdminComplaints from './pages/AdminComplaints';
 
 import UserAspiration from './pages/UserAspiration';
@@ -55,7 +55,7 @@ import ConnectDiscord from './pages/ConnectDiscord';
 
 import NotFound from './pages/response/NotFound';
 import MaintenancePage from './pages/response/MaintenancePage';
-import GeneralError from './pages/response/GeneralError'; 
+import GeneralError from './pages/response/GeneralError';
 
 import LearningCenter from './pages/learning/LearningCenter';
 import VideoDetail from './pages/learning/VideoDetail';
@@ -68,21 +68,21 @@ function App() {
   return (
     <Router>
       <Toaster position="top-center" richColors closeButton />
-      
+
       <SmoothScrollManager />
-      
+
       <IdleTimer />
 
       <Routes>
-        <Route path="/" element={<HomePage/>} />
+        <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<Login />} />
-        
-        <Route path="/news" element={<MaintenancePage title="Portal Berita Lagi Update Dulu Ya..." />} />
-        <Route path="/news/:id" element={<MaintenancePage title="Berita Tidak Tersedia" />} />
+
+        <Route path="/news" element={<NewsFeed />} />
+        <Route path="/news/:id" element={<PostDetail />} />
 
         <Route path="/learning" element={<LearningLayout />}>
-            <Route index element={<LearningCenter />} />
-            <Route path="nonton/:id" element={<VideoDetail />} />
+          <Route index element={<LearningCenter />} />
+          <Route path="nonton/:id" element={<VideoDetail />} />
         </Route>
 
         <Route path="/privacy" element={<LegalPage />} />
@@ -90,28 +90,28 @@ function App() {
         <Route path="/absen" element={<Layout><Absen /></Layout>} />
         <Route path="/my-history" element={<Layout><MyHistory /></Layout>} />
         <Route path="/admin-dashboard" element={<Layout><Dashboard /></Layout>} />
-        
+
         <Route path="/monitoring" element={<Layout><GlobalMonitoring /></Layout>} />
         <Route path="/monitoring/ukm/:id" element={<Layout><UKMDetail /></Layout>} />
         <Route path="/monitoring/user/:userId" element={<Layout><MemberDetail /></Layout>} />
         <Route path="/connect/discord" element={<ConnectDiscord />} />
-        
-        <Route 
-          path="/monitoring/:id" 
+
+        <Route
+          path="/monitoring/:id"
           element={
             <ProtectedRoute allowedRoles={['super_admin', 'admin', 'admin_ukm']}>
-                <Layout><MonitoringDetail /></Layout>
+              <Layout><MonitoringDetail /></Layout>
             </ProtectedRoute>
-          } 
+          }
         />
 
-        <Route 
-          path="/admin/members" 
+        <Route
+          path="/admin/members"
           element={
             <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
-               <Layout><MemberManagement /></Layout>
+              <Layout><MemberManagement /></Layout>
             </ProtectedRoute>
-          } 
+          }
         />
 
         <Route path="/admin/profile" element={<Layout><ProfileUKM /></Layout>} />
@@ -125,56 +125,56 @@ function App() {
         <Route path="/admin/posts/edit/:id" element={<Layout><EditPost /></Layout>} />
         <Route path="/admin/events" element={<Layout><EventList /></Layout>} />
         <Route path="/admin/events/:scheduleId" element={<Layout><EventReport /></Layout>} />
-        <Route path="/admin/events/edit/:id" element={<Layout><MaintenancePage title="Edit Event Ditutup Guys..." /></Layout>} />
+        <Route path="/admin/events/edit/:id" element={<Layout><EditSchedule /></Layout>} />
         <Route path="/notifications" element={<Layout><NotificationsPage /></Layout>} />
         <Route path="/admin/archives" element={<Layout><DocumentArchive /></Layout>} />
-        <Route path="/admin/letter-generator" element={<Layout><MaintenancePage title="Generator Surat Lagi Di Update ya :)" /></Layout>} />
+        <Route path="/admin/letter-generator" element={<Layout><LetterGenerator /></Layout>} />
         <Route path="/admin/finance-tools" element={<Layout><FinanceTools /></Layout>} />
         <Route path="/info/compose" element={<Layout><ComposeMessage /></Layout>} />
         <Route path="/info/inbox" element={<Layout><InfoInbox /></Layout>} />
         <Route path="/info/approval" element={<Layout><BroadcastApproval /></Layout>} />
-        
-        <Route path="/complaint" element={<Layout><UserComplaint /></Layout>} />
-        <Route path="/complaint/history" element={<Layout><UserComplaintHistory /></Layout>} /> 
 
-        <Route 
-          path="/superadmin/complaints" 
+        <Route path="/complaint" element={<Layout><UserComplaint /></Layout>} />
+        <Route path="/complaint/history" element={<Layout><UserComplaintHistory /></Layout>} />
+
+        <Route
+          path="/superadmin/complaints"
           element={
             <ProtectedRoute allowedRoles={['super_admin']}>
-                <Layout><AdminComplaints /></Layout>
+              <Layout><AdminComplaints /></Layout>
             </ProtectedRoute>
-          } 
+          }
         />
 
-        <Route 
-            path="/admin/learning" 
-            element={
-                <ProtectedRoute allowedRoles={['super_admin', 'admin']}>
-                    <Layout><ManageLearning /></Layout>
-                </ProtectedRoute>
-            } 
+        <Route
+          path="/admin/learning"
+          element={
+            <ProtectedRoute allowedRoles={['super_admin', 'admin']}>
+              <Layout><ManageLearning /></Layout>
+            </ProtectedRoute>
+          }
         />
 
-        <Route 
-            path="/admin/learning/categories" 
-            element={
-                <ProtectedRoute allowedRoles={['super_admin']}>
-                    <Layout><ManageCategories /></Layout>
-                </ProtectedRoute>
-            } 
+        <Route
+          path="/admin/learning/categories"
+          element={
+            <ProtectedRoute allowedRoles={['super_admin']}>
+              <Layout><ManageCategories /></Layout>
+            </ProtectedRoute>
+          }
         />
 
         <Route path="/aspirasi" element={<Layout><UserAspiration /></Layout>} />
 
-        <Route 
-          path="/admin/aspirasi" 
+        <Route
+          path="/admin/aspirasi"
           element={
             <ProtectedRoute allowedRoles={['super_admin', 'admin']}>
-                <Layout><InboxAspiration /></Layout>
+              <Layout><InboxAspiration /></Layout>
             </ProtectedRoute>
-          } 
+          }
         />
-  
+
         <Route path="/maintenance" element={<MaintenancePage />} />
         <Route path="/forbidden" element={<GeneralError type="403" />} />
         <Route path="/server-error" element={<GeneralError type="500" />} />
@@ -186,50 +186,50 @@ function App() {
 }
 
 const IdleTimer = () => {
-    const navigate = useNavigate();
-    
-    useEffect(() => {
-        const TIMEOUT_MS = 30 * 60 * 1000; 
-        let logoutTimer;
+  const navigate = useNavigate();
 
-        const performLogout = async () => {
-           console.log("⏳ User tidak aktif (Idle), otomatis logout...");
-           try {
-               await api.post('/auth/logout'); 
-           } catch (e) {
-               console.error("Gagal logout di server (mungkin token sudah expired)", e);
-           } finally {
-               localStorage.clear();
-               navigate('/login');
-           }
-        };
+  useEffect(() => {
+    const TIMEOUT_MS = 30 * 60 * 1000;
+    let logoutTimer;
 
-        const resetTimer = () => {
-            if (window.location.pathname === '/login' || window.location.pathname === '/') return;
+    const performLogout = async () => {
+      console.log("⏳ User tidak aktif (Idle), otomatis logout...");
+      try {
+        await api.post('/auth/logout');
+      } catch (e) {
+        console.error("Gagal logout di server (mungkin token sudah expired)", e);
+      } finally {
+        localStorage.clear();
+        navigate('/login');
+      }
+    };
 
-            if (logoutTimer) clearTimeout(logoutTimer);
-            logoutTimer = setTimeout(performLogout, TIMEOUT_MS);
-        };
+    const resetTimer = () => {
+      if (window.location.pathname === '/login' || window.location.pathname === '/') return;
 
-        window.addEventListener('mousemove', resetTimer);
-        window.addEventListener('keypress', resetTimer);
-        window.addEventListener('click', resetTimer);
-        window.addEventListener('scroll', resetTimer);
-        window.addEventListener('touchstart', resetTimer);
+      if (logoutTimer) clearTimeout(logoutTimer);
+      logoutTimer = setTimeout(performLogout, TIMEOUT_MS);
+    };
 
-        resetTimer();
+    window.addEventListener('mousemove', resetTimer);
+    window.addEventListener('keypress', resetTimer);
+    window.addEventListener('click', resetTimer);
+    window.addEventListener('scroll', resetTimer);
+    window.addEventListener('touchstart', resetTimer);
 
-        return () => {
-            if (logoutTimer) clearTimeout(logoutTimer);
-            window.removeEventListener('mousemove', resetTimer);
-            window.removeEventListener('keypress', resetTimer);
-            window.removeEventListener('click', resetTimer);
-            window.removeEventListener('scroll', resetTimer);
-            window.removeEventListener('touchstart', resetTimer);
-        };
-    }, [navigate]);
+    resetTimer();
 
-    return null;
+    return () => {
+      if (logoutTimer) clearTimeout(logoutTimer);
+      window.removeEventListener('mousemove', resetTimer);
+      window.removeEventListener('keypress', resetTimer);
+      window.removeEventListener('click', resetTimer);
+      window.removeEventListener('scroll', resetTimer);
+      window.removeEventListener('touchstart', resetTimer);
+    };
+  }, [navigate]);
+
+  return null;
 };
 
 export default App;

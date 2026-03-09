@@ -4,7 +4,7 @@ const path = require('path');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { client: discordBot } = require('./src/discord/bot');
-const cookieParser = require('cookie-parser'); 
+const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
 const activityLogger = require('./src/middleware/activityLongger');
@@ -15,9 +15,9 @@ require('./src/config/db');
 
 app.set('trust proxy', 1);
 app.use(helmet());
-app.use(express.json()); 
-app.use(express.urlencoded({ extended: true })); 
-app.use(cookieParser()); 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -35,6 +35,8 @@ app.use(cors({
     origin: [
         'http://localhost:5173',
         'http://127.0.0.1:5173',
+        'http://localhost:5174',
+        'http://127.0.0.1:5174',
         'http://145.79.15.166',
         'http://siaksi.stikompoltekcirebon.ac.id',
         'https://siaksi.stikompoltekcirebon.ac.id'
@@ -55,7 +57,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', require('./src/routes/authRoutes'));
 app.use('/api/admin', require('./src/routes/adminRoutes'));
 app.use('/api/users', require('./src/routes/userRoutes'));
-app.use('/api/ukms', require('./src/routes/ukmRoutes')); 
+app.use('/api/ukms', require('./src/routes/ukmRoutes'));
 app.use('/api/posts', require('./src/routes/postRoutes'));
 app.use('/api/documents', require('./src/routes/documentRoutes'));
 app.use('/api/mail', require('./src/routes/mailRoutes'));
@@ -78,19 +80,19 @@ app.use((err, req, res, next) => {
 
     res.status(statusCode).json({
         status: 'error',
-        msg: process.env.NODE_ENV === 'production' 
-            ? 'Terjadi kesalahan pada sistem. Silakan hubungi admin.' 
+        msg: process.env.NODE_ENV === 'production'
+            ? 'Terjadi kesalahan pada sistem. Silakan hubungi admin.'
             : err.message
     });
 });
 
-app.listen(PORT , async () => {
-   console.log(`🚀 Server running on port ${PORT}`);
-   console.log(`🔌 Socket.io ready on port ${PORT}`);
+app.listen(PORT, async () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`🔌 Socket.io ready on port ${PORT}`);
 
-   try {
+    try {
         await discordBot.login(process.env.DISCORD_BOT_TOKEN);
-   } catch (err) {
+    } catch (err) {
         console.error("Gagal login Discord Bot:", err.message);
-   }
+    }
 });

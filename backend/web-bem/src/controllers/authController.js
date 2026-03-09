@@ -7,11 +7,11 @@ const register = async (req, res) => {
 
     try {
         if (!ukm_id || ukm_id === "") {
-            ukm_id = 9; 
+            ukm_id = 9;
         }
 
         role_id = parseInt(role_id);
-        
+
         const userExist = await db.query('SELECT * FROM users WHERE username = $1', [username]);
         if (userExist.rows.length > 0) {
             return res.status(400).json({ msg: 'Username sudah digunakan!' });
@@ -59,36 +59,37 @@ const login = async (req, res) => {
             user: {
                 id: user.id,
                 role: user.role_name,
-                ukm_id: user.ukm_id, 
+                ukm_id: user.ukm_id,
             },
         };
 
-jwt.sign(
-    payload,
-    process.env.JWT_SECRET,
-    { expiresIn: '1h' },
-    (err, token) => {
-        if (err) throw err;
+        jwt.sign(
+            payload,
+            process.env.JWT_SECRET,
+            { expiresIn: '1h' },
+            (err, token) => {
+                if (err) throw err;
 
-        const cookieOptions = {
-            maxAge: 60 * 60 * 1000, 
-            
-            httpOnly: true, 
-            secure: process.env.NODE_ENV === 'production', 
-            sameSite: 'strict'
-        };
+                const cookieOptions = {
+                    maxAge: 60 * 60 * 1000,
+
+                    httpOnly: true,
+                    secure: process.env.NODE_ENV === 'production',
+                    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
+                };
 
                 res.cookie('token', token, cookieOptions);
 
-                res.json({ 
+                res.json({
                     msg: "Login berhasil",
-                    user: { 
-                        id: user.id, 
-                        name: user.name, 
+                    token: token,
+                    user: {
+                        id: user.id,
+                        name: user.name,
                         username: user.username,
                         role: user.role_name,
                         ukm_id: user.ukm_id
-                    } 
+                    }
                 });
             }
         );
@@ -105,7 +106,7 @@ const logout = (req, res) => {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict'
     });
-    
+
     res.status(200).json({ msg: 'Logout berhasil' });
 };
 

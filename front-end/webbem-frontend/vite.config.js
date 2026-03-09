@@ -7,17 +7,17 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   base: '/',
 
-    resolve: {
+  resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
   build: {
-    sourcemap: false, 
+    sourcemap: false,
   },
 
   esbuild: {
-    drop: ['console', 'debugger'], 
+    drop: ['console', 'debugger'],
   }
 
 

@@ -38,9 +38,13 @@ const login = async (req, res) => {
     const { username, password } = req.body;
 
     try {
+        // 1. BERSIHKAN INPUT USER: Hapus spasi depan/belakang & jadikan huruf kecil
+        const cleanUsername = username.trim().toLowerCase();
+
+        // 2. UBAH QUERY: Gunakan LOWER() agar database tidak peduli huruf besar/kecil
         const userResult = await db.query(
-            'SELECT u.*, r.role_name FROM Users u JOIN Roles r ON u.role_id = r.id WHERE u.username = $1',
-            [username]
+            'SELECT u.*, r.role_name FROM Users u JOIN Roles r ON u.role_id = r.id WHERE LOWER(u.username) = $1',
+            [cleanUsername]
         );
 
         const user = userResult.rows[0];
@@ -49,7 +53,9 @@ const login = async (req, res) => {
             return res.status(401).json({ msg: 'Kredensial tidak valid.' });
         }
 
-        const isMatch = await bcrypt.compare(password, user.password_hash);
+        // 3. Pastikan password juga di-trim (dihilangkan spasi nyangkut di akhir)
+        const cleanPassword = password.trim();
+        const isMatch = await bcrypt.compare(cleanPassword, user.password_hash);
 
         if (!isMatch) {
             return res.status(401).json({ msg: 'Kredensial tidak valid.' });
@@ -63,7 +69,6 @@ const login = async (req, res) => {
             },
         };
 
-        // Memperpanjang batas waktu token JWT menjadi 24 jam
         jwt.sign(
             payload,
             process.env.JWT_SECRET,
@@ -71,13 +76,10 @@ const login = async (req, res) => {
             (err, token) => {
                 if (err) throw err;
 
-                // --- BAGIAN YANG DIUBAH (DIPERLONGGAR) ---
                 const cookieOptions = {
-                    maxAge: 24 * 60 * 60 * 1000, // 24 Jam
+                    maxAge: 24 * 60 * 60 * 1000,
                     httpOnly: true,
-                    // Mematikan paksaan HTTPS agar bisa login dari HP/Laptop via HTTP biasa
                     secure: false,
-                    // Menggunakan 'lax' agar browser tidak memblokir cookie di environment VPS/Lokal
                     sameSite: 'lax'
                 };
 

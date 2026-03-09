@@ -63,19 +63,22 @@ const login = async (req, res) => {
             },
         };
 
+        // Memperpanjang batas waktu token JWT menjadi 24 jam
         jwt.sign(
             payload,
             process.env.JWT_SECRET,
-            { expiresIn: '1h' },
+            { expiresIn: '24h' },
             (err, token) => {
                 if (err) throw err;
 
+                // --- BAGIAN YANG DIUBAH (DIPERLONGGAR) ---
                 const cookieOptions = {
-                    maxAge: 60 * 60 * 1000,
-
+                    maxAge: 24 * 60 * 60 * 1000, // 24 Jam
                     httpOnly: true,
-                    secure: process.env.NODE_ENV === 'production',
-                    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
+                    // Mematikan paksaan HTTPS agar bisa login dari HP/Laptop via HTTP biasa
+                    secure: false,
+                    // Menggunakan 'lax' agar browser tidak memblokir cookie di environment VPS/Lokal
+                    sameSite: 'lax'
                 };
 
                 res.cookie('token', token, cookieOptions);
@@ -101,10 +104,11 @@ const login = async (req, res) => {
 };
 
 const logout = (req, res) => {
+    // --- SAMAKAN DENGAN PENGATURAN LOGIN AGAR BISA CLEAR COOKIE ---
     res.clearCookie('token', {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
+        secure: false,
+        sameSite: 'lax'
     });
 
     res.status(200).json({ msg: 'Logout berhasil' });

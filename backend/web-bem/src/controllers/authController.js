@@ -38,32 +38,31 @@ const login = async (req, res) => {
     const { username, password } = req.body;
 
     try {
-        const cleanUsername = username.trim().toLowerCase();
+        // 1. Cukup hapus spasi nyangkut, jangan paksa jadi huruf kecil
+        const cleanUsername = username.trim();
 
-        // UBAHAN 1: Pakai TRIM() di database dan LEFT JOIN (biar kalau role_id gak ada, user tetep ketemu)
+        // 2. Gunakan ILIKE di PostgreSQL agar pencarian KEBAL huruf besar/kecil
         const userResult = await db.query(
-            'SELECT u.*, r.role_name FROM Users u LEFT JOIN Roles r ON u.role_id = r.id WHERE TRIM(LOWER(u.username)) = $1',
+            'SELECT u.*, r.role_name FROM Users u LEFT JOIN Roles r ON u.role_id = r.id WHERE u.username ILIKE $1',
             [cleanUsername]
         );
 
         const user = userResult.rows[0];
 
-        // UBAHAN 2: Pesan error dipecah biar ketahuan apanya yang salah
         if (!user) {
-            return res.status(401).json({ msg: `Username '${cleanUsername}' TIDAK DITEMUKAN di database!` });
+            return res.status(401).json({ msg: 'Kredensial tidak valid.' }); // Kembalikan pesan aslinya biar rapi
         }
 
         const cleanPassword = password.trim();
         const isMatch = await bcrypt.compare(cleanPassword, user.password_hash);
 
         if (!isMatch) {
-            return res.status(401).json({ msg: `Password untuk '${cleanUsername}' SALAH!` });
+            return res.status(401).json({ msg: 'Kredensial tidak valid.' });
         }
 
         const payload = {
             user: {
                 id: user.id,
-                // Kasih fallback kalau role_name kosong
                 role: user.role_name || 'user',
                 ukm_id: user.ukm_id,
             },
@@ -91,6 +90,7 @@ const login = async (req, res) => {
                     user: {
                         id: user.id,
                         name: user.name,
+                        // 3. PENTING: Kembalikan username DARI DATABASE (Yang pasti huruf besar aslinya)
                         username: user.username,
                         role: user.role_name || 'user',
                         ukm_id: user.ukm_id
